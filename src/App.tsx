@@ -74,6 +74,7 @@ export function App() {
     updateActiveCommonProps,
     deselectAll,
     recalculateOffset,
+    canPanCanvasAt,
     cancelPointerAction,
     beginObjectPinch,
     updateObjectPinch,
@@ -226,6 +227,7 @@ export function App() {
             }}
             onDropImageFile={(file) => void addImageFromFile(file)}
             onRecalculateOffset={recalculateOffset}
+            onCanPanCanvasAt={canPanCanvasAt}
             onCancelPointerAction={cancelPointerAction}
             onBeginObjectPinch={beginObjectPinch}
             onUpdateObjectPinch={updateObjectPinch}

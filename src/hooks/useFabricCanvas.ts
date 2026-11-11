@@ -455,7 +455,7 @@ export function useFabricCanvas() {
       width: initialPreset.width,
       height: initialPreset.height,
       preserveObjectStacking: true,
-      selection: true,
+      selection: false,
       backgroundColor: '#18181b',
     });
 
@@ -1310,6 +1310,25 @@ export function useFabricCanvas() {
     canvasRef.current?.calcOffset();
   }, []);
 
+  const canPanCanvasAt = useCallback(
+    (e: MouseEvent | TouchEvent | PointerEvent): boolean => {
+      const canvas = canvasRef.current;
+      if (!canvas) return false;
+      const active = canvas.getActiveObject();
+      if (
+        active &&
+        'isEditing' in active &&
+        Boolean((active as fabric.IText).isEditing)
+      ) {
+        return false;
+      }
+      canvas.calcOffset();
+      const target = canvas.findTarget(e as fabric.TPointerEvent);
+      return !target;
+    },
+    []
+  );
+
   const cancelPointerAction = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1629,6 +1648,7 @@ export function useFabricCanvas() {
     updateActiveCommonProps,
     deselectAll,
     recalculateOffset,
+    canPanCanvasAt,
     cancelPointerAction,
     beginObjectPinch,
     updateObjectPinch,

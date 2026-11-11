@@ -23,6 +23,7 @@ interface CanvasViewportProps {
   onDeselectAll: () => void;
   onDropImageFile: (file: File) => void;
   onRecalculateOffset: () => void;
+  onCanPanCanvasAt?: (e: globalThis.MouseEvent | globalThis.TouchEvent) => boolean;
   onCancelPointerAction?: () => void;
   onBeginObjectPinch?: (
     touch1: { x: number; y: number },
@@ -82,6 +83,7 @@ export function CanvasViewport({
   onDeselectAll,
   onDropImageFile,
   onRecalculateOffset,
+  onCanPanCanvasAt,
   onCancelPointerAction,
   onBeginObjectPinch,
   onUpdateObjectPinch,
@@ -147,6 +149,7 @@ export function CanvasViewport({
     containerSize,
     isSpacePressed,
     onDeselectAll,
+    onCanPanCanvasAt,
     onCancelPointerAction,
     onBeginObjectPinch,
     onUpdateObjectPinch,
@@ -162,6 +165,7 @@ export function CanvasViewport({
       containerSize,
       isSpacePressed,
       onDeselectAll,
+      onCanPanCanvasAt,
       onCancelPointerAction,
       onBeginObjectPinch,
       onUpdateObjectPinch,
@@ -396,7 +400,13 @@ export function CanvasViewport({
           panX: live.pan.x,
           panY: live.pan.y,
         };
-      } else if (e.touches.length === 1 && e.target === el && !awaitingAllFingersLift) {
+      } else if (
+        e.touches.length === 1 &&
+        !awaitingAllFingersLift &&
+        (e.target === el ||
+          (frameBoxRef.current?.contains(e.target as Node) &&
+            Boolean(liveRef.current.onCanPanCanvasAt?.(e))))
+      ) {
         const live = liveRef.current;
         gestureMode = 'backdrop-touch-pan';
         backdropTouchStart = {
@@ -625,8 +635,15 @@ export function CanvasViewport({
       const isMiddle = e.button === 1;
       const isSpaceDrag = e.button === 0 && live.isSpacePressed;
       const isBackdropDrag = e.button === 0 && e.target === el;
+      const isEmptyCanvasDrag =
+        e.button === 0 &&
+        !isBackdropDrag &&
+        Boolean(
+          frameBoxRef.current?.contains(e.target as Node) &&
+            live.onCanPanCanvasAt?.(e)
+        );
 
-      if (!isMiddle && !isSpaceDrag && !isBackdropDrag) {
+      if (!isMiddle && !isSpaceDrag && !isBackdropDrag && !isEmptyCanvasDrag) {
         return;
       }
 
@@ -641,7 +658,7 @@ export function CanvasViewport({
         startY: e.clientY,
         startPanX: live.pan.x,
         startPanY: live.pan.y,
-        deselectOnClick: isBackdropDrag,
+        deselectOnClick: isBackdropDrag || isEmptyCanvasDrag,
         moved: false,
       };
     };
@@ -735,7 +752,7 @@ export function CanvasViewport({
       className={cn(
         'relative flex-1 min-h-0 studio-grid-bg flex items-center justify-center lg:pb-10 overflow-hidden select-none',
         isPanning
-          ? 'cursor-grabbing'
+          ? 'cursor-grabbing [&_*]:!cursor-grabbing'
           : isSpacePressed
             ? 'cursor-grab'
             : undefined
