@@ -39,20 +39,11 @@ export interface GradientStop {
   color: string;
 }
 
-export interface GradientHotspot {
-  cx: number;
-  cy: number;
-  rx: number;
-  ry: number;
-  stops: GradientStop[];
-}
-
 export interface GradientConfig {
   startColor: string;
   endColor: string;
   angle: number;
   stops?: GradientStop[];
-  hotspot?: GradientHotspot;
 }
 
 export type GradientBlendMode =

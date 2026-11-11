@@ -202,38 +202,6 @@ export function createLinearGradient(
   });
 }
 
-export function renderGradientHotspot(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  config: GradientConfig
-): void {
-  const hotspot = config.hotspot;
-  if (!hotspot || !hotspot.stops.length) return;
-
-  const centerX = hotspot.cx * width;
-  const centerY = hotspot.cy * height;
-  const radiusX = Math.max(1, hotspot.rx * width);
-  const radiusY = Math.max(1, hotspot.ry * height);
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, 0, width, height);
-  ctx.clip();
-
-  ctx.translate(centerX, centerY);
-  ctx.scale(radiusX, radiusY);
-
-  const radGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
-  for (const s of hotspot.stops) {
-    radGrad.addColorStop(Math.max(0, Math.min(1, s.offset)), s.color);
-  }
-
-  ctx.fillStyle = radGrad;
-  ctx.fillRect(-4, -4, 8, 8);
-  ctx.restore();
-}
-
 export function buildGradientCssPreview(config: GradientConfig): string {
   const linearStops =
     config.stops && config.stops.length >= 2
@@ -242,17 +210,7 @@ export function buildGradientCssPreview(config: GradientConfig): string {
           .join(', ')
       : `${config.startColor} 0%, ${config.endColor} 100%`;
 
-  const linearLayer = `linear-gradient(${config.angle}deg, ${linearStops})`;
-  if (!config.hotspot || !config.hotspot.stops.length) {
-    return linearLayer;
-  }
-
-  const h = config.hotspot;
-  const radialStops = h.stops
-    .map((s) => `${s.color} ${Math.round(s.offset * 100)}%`)
-    .join(', ');
-  const radialLayer = `radial-gradient(ellipse ${Math.round(h.rx * 100)}% ${Math.round(h.ry * 100)}% at ${Math.round(h.cx * 100)}% ${Math.round(h.cy * 100)}%, ${radialStops})`;
-  return `${radialLayer}, ${linearLayer}`;
+  return `linear-gradient(${config.angle}deg, ${linearStops})`;
 }
 
 export function positionBackgroundImage(

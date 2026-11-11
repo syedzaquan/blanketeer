@@ -49,171 +49,125 @@ const SOLID_SWATCHES = [
 
 const GRADIENT_PRESETS: { name: string; gradient: GradientConfig }[] = [
   {
-    name: 'Rosewood',
+    name: 'Dusk Rose',
     gradient: {
-      startColor: '#f6c5bd',
-      endColor: '#200714',
-      angle: 180,
+      startColor: '#F2A7A0',
+      endColor: '#4D1D42',
+      angle: 155,
       stops: [
-        { offset: 0, color: '#f6c5bd' },
-        { offset: 0.18, color: '#f19692' },
-        { offset: 0.38, color: '#e2546e' },
-        { offset: 0.54, color: '#b82654' },
-        { offset: 0.72, color: '#6c1439' },
-        { offset: 0.88, color: '#360c20' },
-        { offset: 1, color: '#200714' },
+        { offset: 0, color: '#F2A7A0' },
+        { offset: 0.35, color: '#D6687E' },
+        { offset: 0.7, color: '#983862' },
+        { offset: 1, color: '#4D1D42' },
       ],
-      hotspot: {
-        cx: 0.82,
-        cy: 0.16,
-        rx: 0.65,
-        ry: 0.45,
-        stops: [
-          { offset: 0, color: 'rgba(255, 240, 235, 0.95)' },
-          { offset: 0.35, color: 'rgba(253, 206, 196, 0.6)' },
-          { offset: 0.7, color: 'rgba(240, 140, 148, 0)' },
-        ],
-      },
     },
   },
   {
-    name: 'Amber Dusk',
+    name: 'Sunset Glow',
     gradient: {
-      startColor: '#fde2c4',
-      endColor: '#1a0603',
-      angle: 180,
+      startColor: '#F9C98E',
+      endColor: '#67244E',
+      angle: 150,
       stops: [
-        { offset: 0, color: '#fde2c4' },
-        { offset: 0.18, color: '#f7b279' },
-        { offset: 0.38, color: '#ea6a37' },
-        { offset: 0.55, color: '#b8371b' },
-        { offset: 0.73, color: '#69190b' },
-        { offset: 0.88, color: '#330b05' },
-        { offset: 1, color: '#1a0603' },
+        { offset: 0, color: '#F9C98E' },
+        { offset: 0.35, color: '#EC8366' },
+        { offset: 0.7, color: '#BF4862' },
+        { offset: 1, color: '#67244E' },
       ],
-      hotspot: {
-        cx: 0.8,
-        cy: 0.15,
-        rx: 0.65,
-        ry: 0.45,
-        stops: [
-          { offset: 0, color: 'rgba(255, 248, 237, 0.95)' },
-          { offset: 0.35, color: 'rgba(254, 215, 170, 0.58)' },
-          { offset: 0.7, color: 'rgba(234, 106, 55, 0)' },
-        ],
-      },
     },
   },
   {
-    name: 'Iris Glow',
+    name: 'Honey Amber',
     gradient: {
-      startColor: '#dcd7fe',
-      endColor: '#09051c',
-      angle: 180,
+      startColor: '#F7D488',
+      endColor: '#7D3423',
+      angle: 155,
       stops: [
-        { offset: 0, color: '#dcd7fe' },
-        { offset: 0.18, color: '#b19ffc' },
-        { offset: 0.38, color: '#7c5dfa' },
-        { offset: 0.55, color: '#4e2ec8' },
-        { offset: 0.73, color: '#291575' },
-        { offset: 0.88, color: '#140a3d' },
-        { offset: 1, color: '#09051c' },
+        { offset: 0, color: '#F7D488' },
+        { offset: 0.5, color: '#DE7E46' },
+        { offset: 1, color: '#7D3423' },
       ],
-      hotspot: {
-        cx: 0.82,
-        cy: 0.16,
-        rx: 0.65,
-        ry: 0.45,
-        stops: [
-          { offset: 0, color: 'rgba(245, 243, 255, 0.95)' },
-          { offset: 0.35, color: 'rgba(216, 180, 254, 0.55)' },
-          { offset: 0.7, color: 'rgba(124, 93, 250, 0)' },
-        ],
-      },
     },
   },
   {
-    name: 'Ocean Mist',
+    name: 'Iris Twilight',
     gradient: {
-      startColor: '#ccf2f4',
-      endColor: '#03101c',
-      angle: 180,
+      startColor: '#D4C4FC',
+      endColor: '#241763',
+      angle: 155,
       stops: [
-        { offset: 0, color: '#ccf2f4' },
-        { offset: 0.18, color: '#7fd6e2' },
-        { offset: 0.38, color: '#2ea1c4' },
-        { offset: 0.55, color: '#15678f' },
-        { offset: 0.73, color: '#0b3957' },
-        { offset: 0.88, color: '#061f33' },
-        { offset: 1, color: '#03101c' },
+        { offset: 0, color: '#D4C4FC' },
+        { offset: 0.35, color: '#937DF2' },
+        { offset: 0.7, color: '#5640B8' },
+        { offset: 1, color: '#241763' },
       ],
-      hotspot: {
-        cx: 0.82,
-        cy: 0.16,
-        rx: 0.65,
-        ry: 0.45,
-        stops: [
-          { offset: 0, color: 'rgba(240, 253, 250, 0.95)' },
-          { offset: 0.35, color: 'rgba(165, 243, 252, 0.58)' },
-          { offset: 0.7, color: 'rgba(46, 161, 196, 0)' },
-        ],
-      },
     },
   },
   {
-    name: 'Sage Bloom',
+    name: 'Coastal Tide',
     gradient: {
-      startColor: '#d3f5e3',
-      endColor: '#03120b',
-      angle: 180,
+      startColor: '#AEE5DE',
+      endColor: '#113B57',
+      angle: 160,
       stops: [
-        { offset: 0, color: '#d3f5e3' },
-        { offset: 0.18, color: '#8ce0b5' },
-        { offset: 0.38, color: '#37a978' },
-        { offset: 0.55, color: '#19734f' },
-        { offset: 0.73, color: '#0c422c' },
-        { offset: 0.88, color: '#062417' },
-        { offset: 1, color: '#03120b' },
+        { offset: 0, color: '#AEE5DE' },
+        { offset: 0.35, color: '#56B4BF' },
+        { offset: 0.7, color: '#287394' },
+        { offset: 1, color: '#113B57' },
       ],
-      hotspot: {
-        cx: 0.82,
-        cy: 0.16,
-        rx: 0.65,
-        ry: 0.45,
-        stops: [
-          { offset: 0, color: 'rgba(240, 253, 244, 0.95)' },
-          { offset: 0.35, color: 'rgba(167, 243, 208, 0.55)' },
-          { offset: 0.7, color: 'rgba(55, 169, 120, 0)' },
-        ],
-      },
     },
   },
   {
-    name: 'Obsidian',
+    name: 'Emerald Sage',
     gradient: {
-      startColor: '#e5e5e5',
-      endColor: '#08080a',
-      angle: 180,
+      startColor: '#BCE3C5',
+      endColor: '#1C4B3B',
+      angle: 160,
       stops: [
-        { offset: 0, color: '#e5e5e5' },
-        { offset: 0.18, color: '#b8b8be' },
-        { offset: 0.38, color: '#75757e' },
-        { offset: 0.54, color: '#45454d' },
-        { offset: 0.72, color: '#26262b' },
-        { offset: 0.88, color: '#131316' },
-        { offset: 1, color: '#08080a' },
+        { offset: 0, color: '#BCE3C5' },
+        { offset: 0.5, color: '#4E9672' },
+        { offset: 1, color: '#1C4B3B' },
       ],
-      hotspot: {
-        cx: 0.82,
-        cy: 0.16,
-        rx: 0.65,
-        ry: 0.45,
-        stops: [
-          { offset: 0, color: 'rgba(255, 255, 255, 0.92)' },
-          { offset: 0.35, color: 'rgba(212, 212, 216, 0.5)' },
-          { offset: 0.7, color: 'rgba(117, 117, 126, 0)' },
-        ],
-      },
+    },
+  },
+  {
+    name: 'Cotton Candy',
+    gradient: {
+      startColor: '#FAD0C4',
+      endColor: '#8F8AE0',
+      angle: 145,
+      stops: [
+        { offset: 0, color: '#FAD0C4' },
+        { offset: 0.5, color: '#E899B8' },
+        { offset: 1, color: '#8F8AE0' },
+      ],
+    },
+  },
+  {
+    name: 'Aurora Sky',
+    gradient: {
+      startColor: '#D7ECF7',
+      endColor: '#2C3E73',
+      angle: 155,
+      stops: [
+        { offset: 0, color: '#D7ECF7' },
+        { offset: 0.35, color: '#8ABEE2' },
+        { offset: 0.7, color: '#597BBF' },
+        { offset: 1, color: '#2C3E73' },
+      ],
+    },
+  },
+  {
+    name: 'Espresso Slate',
+    gradient: {
+      startColor: '#9CA3B2',
+      endColor: '#1D212B',
+      angle: 165,
+      stops: [
+        { offset: 0, color: '#9CA3B2' },
+        { offset: 0.5, color: '#4F5666' },
+        { offset: 1, color: '#1D212B' },
+      ],
     },
   },
 ];
@@ -509,22 +463,47 @@ export function BackgroundTab({
               Curated Gradients
             </p>
             <div className="grid grid-cols-3 gap-2">
-              {GRADIENT_PRESETS.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => onGradientChange(preset.gradient)}
-                  className="group relative h-12 rounded-md border border-white/10 overflow-hidden transition-transform hover:scale-[1.02]"
-                  style={{
-                    backgroundColor: preset.gradient.endColor,
-                    backgroundImage: buildGradientCssPreview(preset.gradient),
-                  }}
-                >
-                  <span className="absolute inset-x-0 bottom-0 py-0.5 bg-black/45 backdrop-blur-[2px] text-[10px] font-medium text-white">
-                    {preset.name}
-                  </span>
-                </button>
-              ))}
+              {GRADIENT_PRESETS.map((preset) => {
+                const currentStops = background.gradient.stops ?? [];
+                const presetStops = preset.gradient.stops ?? [];
+                const stopsMatch =
+                  currentStops.length === presetStops.length &&
+                  currentStops.every(
+                    (stop, idx) =>
+                      stop.offset === presetStops[idx]?.offset &&
+                      stop.color.toLowerCase() ===
+                        presetStops[idx]?.color.toLowerCase()
+                  );
+                const isActive =
+                  background.gradient.startColor.toLowerCase() ===
+                    preset.gradient.startColor.toLowerCase() &&
+                  background.gradient.endColor.toLowerCase() ===
+                    preset.gradient.endColor.toLowerCase() &&
+                  background.gradient.angle === preset.gradient.angle &&
+                  stopsMatch;
+
+                return (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => onGradientChange(preset.gradient)}
+                    className={cn(
+                      'group relative h-12 rounded-md border overflow-hidden transition-transform hover:scale-[1.02]',
+                      isActive
+                        ? 'border-white ring-1 ring-white/50'
+                        : 'border-white/10'
+                    )}
+                    style={{
+                      backgroundColor: preset.gradient.endColor,
+                      backgroundImage: buildGradientCssPreview(preset.gradient),
+                    }}
+                  >
+                    <span className="absolute inset-x-0 bottom-0 py-0.5 bg-black/45 backdrop-blur-[2px] text-[10px] font-medium text-white">
+                      {preset.name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
