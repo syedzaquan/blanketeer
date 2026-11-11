@@ -181,12 +181,20 @@ export function renderGuidesOnTopContext(
 
   // Safe area boundary box (faint dashed outline)
   if (showSafeAreaOverlay || guides.isDragging) {
+    topCtx.save();
     topCtx.strokeStyle = guides.isDragging
-      ? 'rgba(56, 189, 248, 0.42)'
+      ? 'rgba(125, 211, 252, 0.55)'
       : 'rgba(255, 255, 255, 0.24)';
-    topCtx.lineWidth = 2;
+    topCtx.lineWidth = guides.isDragging ? 3 : 2;
     topCtx.setLineDash([12, 10]);
+    if (guides.isDragging) {
+      topCtx.shadowColor = 'rgba(0, 0, 0, 0.28)';
+      topCtx.shadowBlur = 4;
+      topCtx.shadowOffsetX = 0;
+      topCtx.shadowOffsetY = 1;
+    }
     topCtx.strokeRect(safe.left, safe.top, safe.width, safe.height);
+    topCtx.restore();
 
     if (showSafeAreaOverlay && !guides.isDragging) {
       topCtx.setLineDash([]);
@@ -196,26 +204,31 @@ export function renderGuidesOnTopContext(
     }
   }
 
-  // Active magnetic snap lines
-  topCtx.setLineDash([]);
-  topCtx.lineWidth = 2.5;
+  // Active magnetic snap lines (+1px thicker, light blue, subtle drop shadow)
+  if (guides.x !== null || guides.y !== null) {
+    topCtx.save();
+    topCtx.setLineDash([]);
+    topCtx.lineWidth = 3.5;
+    topCtx.strokeStyle = '#7dd3fc';
+    topCtx.shadowColor = 'rgba(0, 0, 0, 0.42)';
+    topCtx.shadowBlur = 6;
+    topCtx.shadowOffsetX = 0;
+    topCtx.shadowOffsetY = 2;
 
-  if (guides.x !== null) {
-    topCtx.strokeStyle =
-      guides.xKind === 'center' ? '#f472b6' : '#38bdf8';
-    topCtx.beginPath();
-    topCtx.moveTo(guides.x, 0);
-    topCtx.lineTo(guides.x, height);
-    topCtx.stroke();
-  }
+    if (guides.x !== null) {
+      topCtx.beginPath();
+      topCtx.moveTo(guides.x, 0);
+      topCtx.lineTo(guides.x, height);
+      topCtx.stroke();
+    }
 
-  if (guides.y !== null) {
-    topCtx.strokeStyle =
-      guides.yKind === 'center' ? '#f472b6' : '#38bdf8';
-    topCtx.beginPath();
-    topCtx.moveTo(0, guides.y);
-    topCtx.lineTo(width, guides.y);
-    topCtx.stroke();
+    if (guides.y !== null) {
+      topCtx.beginPath();
+      topCtx.moveTo(0, guides.y);
+      topCtx.lineTo(width, guides.y);
+      topCtx.stroke();
+    }
+    topCtx.restore();
   }
 
   // Rotation angle badge HUD on contextTop when rotating

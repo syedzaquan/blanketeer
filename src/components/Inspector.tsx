@@ -302,10 +302,15 @@ export function Inspector({
               </select>
             </div>
 
-            {/* Font Size slider + numeric input */}
+            {/* Font Size slider (desktop inspector; mobile uses left-side canvas slider) + numeric input */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[11px] text-zinc-400">Font Size</label>
+                <label className="text-[11px] text-zinc-400">
+                  Font Size
+                  <span className="lg:hidden text-[10px] text-zinc-500 ml-1">
+                    (left slider)
+                  </span>
+                </label>
                 <div className="flex items-center gap-1">
                   <input
                     type="number"
@@ -331,7 +336,7 @@ export function Inspector({
                 onChange={(e) =>
                   onUpdateText({ fontSize: Number(e.target.value) })
                 }
-                className="w-full accent-violet-500"
+                className="hidden lg:block w-full accent-violet-500"
               />
             </div>
 

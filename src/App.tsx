@@ -74,6 +74,10 @@ export function App() {
     updateActiveCommonProps,
     deselectAll,
     recalculateOffset,
+    cancelPointerAction,
+    beginObjectPinch,
+    updateObjectPinch,
+    endObjectPinch,
     exportPNG,
   } = useFabricCanvas();
 
@@ -209,6 +213,12 @@ export function App() {
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
             showSafeArea={showSafeArea}
+            selectedTextFontSize={
+              selectedObject?.kind === 'text' ? selectedObject.fontSize : null
+            }
+            onChangeTextFontSize={(fontSize) =>
+              void updateTextProps({ fontSize })
+            }
             onToggleSafeArea={toggleSafeArea}
             onDeselectAll={() => {
               deselectAll();
@@ -216,6 +226,10 @@ export function App() {
             }}
             onDropImageFile={(file) => void addImageFromFile(file)}
             onRecalculateOffset={recalculateOffset}
+            onCancelPointerAction={cancelPointerAction}
+            onBeginObjectPinch={beginObjectPinch}
+            onUpdateObjectPinch={updateObjectPinch}
+            onEndObjectPinch={endObjectPinch}
           />
 
           <div className={cn(hasMobileSheet ? 'hidden lg:contents' : 'shrink-0 lg:contents')}>

@@ -49,6 +49,101 @@ interface HistorySnapshot {
   canvasJson: Record<string, unknown>;
 }
 
+interface ObjectPinchSession {
+  target: fabric.FabricObject;
+  initialDist: number;
+  initialScaleX: number;
+  initialScaleY: number;
+  initialCenter: fabric.Point;
+  initialMidCanvas: { x: number; y: number };
+  isTextbox: boolean;
+}
+
+const EMPTY_SNAP_GUIDES: ActiveSnapGuides = {
+  x: null,
+  xKind: null,
+  y: null,
+  yKind: null,
+  isDragging: false,
+};
+
+function normalizeTextboxScale(target: fabric.FabricObject): boolean {
+  if (!(target instanceof StoryTextbox || target instanceof fabric.Textbox)) {
+    return false;
+  }
+  const sx = Math.abs(target.scaleX ?? 1);
+  const sy = Math.abs(target.scaleY ?? 1);
+  if (Math.abs(sx - 1) <= 0.001 && Math.abs(sy - 1) <= 0.001) {
+    return false;
+  }
+
+  const uniformScale = (sx + sy) / 2;
+  const prevCenter = target.getCenterPoint();
+  const baseFontSize = target.fontSize || 48;
+  const nextFontSize = Math.max(
+    12,
+    Math.min(400, Math.round(baseFontSize * uniformScale))
+  );
+  const factor = nextFontSize / baseFontSize;
+  const nextWidth = Math.max(20, (target.width || 100) * factor);
+  target.set({
+    fontSize: nextFontSize,
+    width: nextWidth,
+    scaleX: 1,
+    scaleY: 1,
+  });
+  if (target instanceof StoryTextbox) {
+    target.set({
+      pillRadius: Math.max(4, Math.round((target.pillRadius ?? 20) * factor)),
+      pillPaddingX: Math.max(
+        4,
+        Math.round((target.pillPaddingX ?? 24) * factor)
+      ),
+      pillPaddingY: Math.max(
+        2,
+        Math.round((target.pillPaddingY ?? 8) * factor)
+      ),
+    });
+  }
+  target.initDimensions();
+  target.setPositionByOrigin(prevCenter, 'center', 'center');
+  target.setCoords();
+  return true;
+}
+
+function clientPointToCanvas(
+  canvas: fabric.Canvas,
+  clientPt: { x: number; y: number }
+): { x: number; y: number; cssScale: number } | null {
+  const rect = canvas.getElement().getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return null;
+  const cw = canvas.width || 1080;
+  const ch = canvas.height || 1350;
+  return {
+    x: ((clientPt.x - rect.left) / rect.width) * cw,
+    y: ((clientPt.y - rect.top) / rect.height) * ch,
+    cssScale: rect.width / cw,
+  };
+}
+
+function isPointNearObject(
+  obj: fabric.FabricObject,
+  point: { x: number; y: number },
+  padCanvas: number
+): boolean {
+  const center = obj.getCenterPoint();
+  const rad = -((obj.angle ?? 0) * Math.PI) / 180;
+  const dx = point.x - center.x;
+  const dy = point.y - center.y;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const lx = dx * cos - dy * sin;
+  const ly = dx * sin + dy * cos;
+  const halfW = obj.getScaledWidth() / 2 + padCanvas;
+  const halfH = obj.getScaledHeight() / 2 + padCanvas;
+  return Math.abs(lx) <= halfW && Math.abs(ly) <= halfH;
+}
+
 const DEFAULT_BACKGROUND: BackgroundState = {
   mode: 'gradient',
   color: '#FE5925',
@@ -125,6 +220,7 @@ export function useFabricCanvas() {
   const historyIndexRef = useRef<number>(-1);
   const isRestoringRef = useRef<boolean>(false);
   const historyTimerRef = useRef<number | null>(null);
+  const objectPinchRef = useRef<ObjectPinchSession | null>(null);
 
   const preset = ASPECT_RATIO_PRESETS[aspectRatio];
 
@@ -421,49 +517,8 @@ export function useFabricCanvas() {
 
     const handleObjectModified = (e?: { target?: fabric.FabricObject }) => {
       const target = e?.target;
-      if (
-        target &&
-        (target instanceof StoryTextbox || target instanceof fabric.Textbox)
-      ) {
-        const sx = Math.abs(target.scaleX ?? 1);
-        const sy = Math.abs(target.scaleY ?? 1);
-        if (Math.abs(sx - 1) > 0.001 || Math.abs(sy - 1) > 0.001) {
-          const uniformScale = (sx + sy) / 2;
-          const prevCenter = target.getCenterPoint();
-          const baseFontSize = target.fontSize || 48;
-          const nextFontSize = Math.max(
-            12,
-            Math.min(400, Math.round(baseFontSize * uniformScale))
-          );
-          const factor = nextFontSize / baseFontSize;
-          const nextWidth = Math.max(20, (target.width || 100) * factor);
-          target.set({
-            fontSize: nextFontSize,
-            width: nextWidth,
-            scaleX: 1,
-            scaleY: 1,
-          });
-          if (target instanceof StoryTextbox) {
-            target.set({
-              pillRadius: Math.max(
-                4,
-                Math.round((target.pillRadius ?? 20) * factor)
-              ),
-              pillPaddingX: Math.max(
-                4,
-                Math.round((target.pillPaddingX ?? 24) * factor)
-              ),
-              pillPaddingY: Math.max(
-                2,
-                Math.round((target.pillPaddingY ?? 8) * factor)
-              ),
-            });
-          }
-          target.initDimensions();
-          target.setPositionByOrigin(prevCenter, 'center', 'center');
-          target.setCoords();
-          canvas.requestRenderAll();
-        }
+      if (target && normalizeTextboxScale(target)) {
+        canvas.requestRenderAll();
       }
       clearSnapGuides();
       syncSelectionAndLayers();
@@ -1154,6 +1209,169 @@ export function useFabricCanvas() {
     canvasRef.current?.calcOffset();
   }, []);
 
+  const cancelPointerAction = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const raw = canvas as unknown as {
+      _currentTransform?: unknown;
+      _groupSelector?: unknown;
+    };
+    if (raw._currentTransform) {
+      canvas.endCurrentTransform();
+    }
+    if (raw._groupSelector) {
+      raw._groupSelector = null;
+      canvas.requestRenderAll();
+    }
+  }, []);
+
+  const beginObjectPinch = useCallback(
+    (
+      touch1: { x: number; y: number },
+      touch2: { x: number; y: number }
+    ): boolean => {
+      const canvas = canvasRef.current;
+      if (!canvas) return false;
+      const active = canvas.getActiveObject();
+      if (!active) return false;
+      if (
+        ensureObjectMeta(active).locked ||
+        active.lockScalingX ||
+        active.lockScalingY
+      ) {
+        return false;
+      }
+
+      const p1 = clientPointToCanvas(canvas, touch1);
+      const p2 = clientPointToCanvas(canvas, touch2);
+      if (!p1 || !p2) return false;
+
+      const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+      const padCanvas = Math.max(44, 36 / Math.max(0.15, p1.cssScale));
+      const isNearTarget =
+        isPointNearObject(active, mid, padCanvas) ||
+        isPointNearObject(active, p1, padCanvas) ||
+        isPointNearObject(active, p2, padCanvas);
+
+      if (!isNearTarget) {
+        return false;
+      }
+
+      if ('isEditing' in active && (active as fabric.IText).isEditing) {
+        (active as fabric.IText).exitEditing();
+      }
+      if (
+        (canvas as unknown as { _currentTransform?: unknown })._currentTransform
+      ) {
+        canvas.endCurrentTransform();
+      }
+
+      activeSnapGuidesRef.current = { ...EMPTY_SNAP_GUIDES };
+      activeRotationSnapRef.current = {
+        isRotating: false,
+        angle: 0,
+        snapped: false,
+      };
+
+      objectPinchRef.current = {
+        target: active,
+        initialDist: Math.max(
+          Math.hypot(touch2.x - touch1.x, touch2.y - touch1.y),
+          1
+        ),
+        initialScaleX: active.scaleX ?? 1,
+        initialScaleY: active.scaleY ?? 1,
+        initialCenter: active.getCenterPoint(),
+        initialMidCanvas: mid,
+        isTextbox:
+          active instanceof StoryTextbox || active instanceof fabric.Textbox,
+      };
+      return true;
+    },
+    []
+  );
+
+  const updateObjectPinch = useCallback(
+    (touch1: { x: number; y: number }, touch2: { x: number; y: number }) => {
+      const session = objectPinchRef.current;
+      const canvas = canvasRef.current;
+      if (!session || !canvas) return;
+
+      const dist = Math.hypot(touch2.x - touch1.x, touch2.y - touch1.y);
+      const rawFactor = dist / session.initialDist;
+      const {
+        target,
+        initialCenter,
+        initialMidCanvas,
+        initialScaleX,
+        initialScaleY,
+        isTextbox,
+      } = session;
+
+      if (isTextbox) {
+        const uniformScale = Math.min(
+          12,
+          Math.max(0.15, Math.abs(initialScaleX) * rawFactor)
+        );
+        target.set({ scaleX: uniformScale, scaleY: uniformScale });
+      } else {
+        const signX = initialScaleX < 0 ? -1 : 1;
+        const signY = initialScaleY < 0 ? -1 : 1;
+        const nextScaleX =
+          signX * Math.min(15, Math.max(0.08, Math.abs(initialScaleX) * rawFactor));
+        const nextScaleY =
+          signY * Math.min(15, Math.max(0.08, Math.abs(initialScaleY) * rawFactor));
+        target.set({ scaleX: nextScaleX, scaleY: nextScaleY });
+      }
+
+      const p1 = clientPointToCanvas(canvas, touch1);
+      const p2 = clientPointToCanvas(canvas, touch2);
+      const dx =
+        p1 && p2 && !target.lockMovementX
+          ? (p1.x + p2.x) / 2 - initialMidCanvas.x
+          : 0;
+      const dy =
+        p1 && p2 && !target.lockMovementY
+          ? (p1.y + p2.y) / 2 - initialMidCanvas.y
+          : 0;
+
+      const nextCenter = new fabric.Point(
+        initialCenter.x + dx,
+        initialCenter.y + dy
+      );
+      target.setPositionByOrigin(nextCenter, 'center', 'center');
+      target.setCoords();
+
+      if (Math.hypot(dx, dy) > 4) {
+        const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+        activeSnapGuidesRef.current = snapObjectToGuides(target, width, height);
+      }
+
+      canvas.requestRenderAll();
+    },
+    []
+  );
+
+  const endObjectPinch = useCallback(() => {
+    const session = objectPinchRef.current;
+    objectPinchRef.current = null;
+    if (!session) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (session.isTextbox) {
+      normalizeTextboxScale(session.target);
+    } else {
+      session.target.setCoords();
+    }
+
+    activeSnapGuidesRef.current = { ...EMPTY_SNAP_GUIDES };
+    canvas.requestRenderAll();
+    syncSelectionAndLayers();
+    commitHistoryNow();
+  }, [commitHistoryNow, syncSelectionAndLayers]);
+
   const toggleSafeArea = useCallback(() => {
     setShowSafeArea((prev) => {
       const next = !prev;
@@ -1297,6 +1515,10 @@ export function useFabricCanvas() {
     updateActiveCommonProps,
     deselectAll,
     recalculateOffset,
+    cancelPointerAction,
+    beginObjectPinch,
+    updateObjectPinch,
+    endObjectPinch,
     showSafeArea,
     toggleSafeArea,
     exportPNG,
