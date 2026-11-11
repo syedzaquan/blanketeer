@@ -35,41 +35,36 @@ interface CanvasViewportProps {
   onEndObjectPinch?: () => void;
 }
 
-const MIN_ZOOM_FACTOR = 0.4;
-const MAX_ZOOM_FACTOR = 4;
-const ZOOM_BUTTON_STEP = 0.25;
+const DEFAULT_CANVAS_SCALE = 0.26;
+const MIN_CANVAS_SCALE = 0.1;
+const MAX_CANVAS_SCALE = 2.5;
+const SCALE_BUTTON_STEP = 0.1;
 
-const clampZoomFactor = (value: number): number =>
-  Math.min(MAX_ZOOM_FACTOR, Math.max(MIN_ZOOM_FACTOR, Number(value.toFixed(3))));
-
-const calculateFitScale = (
-  containerWidth: number,
-  containerHeight: number,
-  canvasWidth: number,
-  canvasHeight: number,
-  isDesktop: boolean
-): number => {
-  const paddingX = isDesktop ? 64 : 24;
-  const paddingY = isDesktop ? 104 : 28;
-  const availableWidth = Math.max(containerWidth - paddingX, 120);
-  const availableHeight = Math.max(containerHeight - paddingY, 120);
-  return Math.min(availableWidth / canvasWidth, availableHeight / canvasHeight, 1);
-};
+const clampCanvasScale = (value: number): number =>
+  Math.min(MAX_CANVAS_SCALE, Math.max(MIN_CANVAS_SCALE, Number(value.toFixed(3))));
 
 function clampPan(
   panX: number,
   panY: number,
-  zoomFactor: number,
   scaledWidth: number,
   scaledHeight: number,
   containerWidth: number,
   containerHeight: number
 ): { x: number; y: number } {
-  if (zoomFactor <= 1) {
-    return { x: 0, y: 0 };
-  }
-  const maxX = Math.max(60, (scaledWidth - containerWidth) / 2 + 96);
-  const maxY = Math.max(60, (scaledHeight - containerHeight) / 2 + 96);
+  const maxX = Math.max(
+    48,
+    Math.min(
+      (containerWidth + scaledWidth) / 2 - 48,
+      Math.abs(scaledWidth - containerWidth) / 2 + 80
+    )
+  );
+  const maxY = Math.max(
+    48,
+    Math.min(
+      (containerHeight + scaledHeight) / 2 - 48,
+      Math.abs(scaledHeight - containerHeight) / 2 + 80
+    )
+  );
   return {
     x: Math.min(maxX, Math.max(-maxX, panX)),
     y: Math.min(maxY, Math.max(-maxY, panY)),
@@ -101,7 +96,7 @@ export function CanvasViewport({
   const aspectKey = `${canvasWidth}x${canvasHeight}`;
   const [viewState, setViewState] = useState({
     aspectKey,
-    zoom: 1,
+    scale: DEFAULT_CANVAS_SCALE,
     panX: 0,
     panY: 0,
   });
@@ -109,7 +104,8 @@ export function CanvasViewport({
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
 
-  const zoomFactor = viewState.aspectKey === aspectKey ? viewState.zoom : 1;
+  const canvasScale =
+    viewState.aspectKey === aspectKey ? viewState.scale : DEFAULT_CANVAS_SCALE;
   const rawPanX = viewState.aspectKey === aspectKey ? viewState.panX : 0;
   const rawPanY = viewState.aspectKey === aspectKey ? viewState.panY : 0;
 
@@ -130,21 +126,11 @@ export function CanvasViewport({
     return () => observer.disconnect();
   }, [windowSize.width, windowSize.height]);
 
-  const isDesktop = windowSize.width >= 1024;
-  const fitScale = calculateFitScale(
-    containerSize.width,
-    containerSize.height,
-    canvasWidth,
-    canvasHeight,
-    isDesktop
-  );
-  const effectiveScale = fitScale * zoomFactor;
-  const scaledWidth = Math.round(canvasWidth * effectiveScale);
-  const scaledHeight = Math.round(canvasHeight * effectiveScale);
+  const scaledWidth = Math.round(canvasWidth * canvasScale);
+  const scaledHeight = Math.round(canvasHeight * canvasScale);
   const pan = clampPan(
     rawPanX,
     rawPanY,
-    zoomFactor,
     scaledWidth,
     scaledHeight,
     containerSize.width,
@@ -154,10 +140,8 @@ export function CanvasViewport({
   // Sync latest layout/zoom values into a ref for native wheel, touch pinch, and key listeners
   const liveRef = useRef({
     aspectKey,
-    zoomFactor,
+    canvasScale,
     pan,
-    fitScale,
-    effectiveScale,
     canvasWidth,
     canvasHeight,
     containerSize,
@@ -171,10 +155,8 @@ export function CanvasViewport({
   useEffect(() => {
     liveRef.current = {
       aspectKey,
-      zoomFactor,
+      canvasScale,
       pan,
-      fitScale,
-      effectiveScale,
       canvasWidth,
       canvasHeight,
       containerSize,
@@ -192,29 +174,27 @@ export function CanvasViewport({
       onRecalculateOffset();
     });
     return () => window.cancelAnimationFrame(id);
-  }, [effectiveScale, pan.x, pan.y, canvasWidth, canvasHeight, onRecalculateOffset]);
+  }, [canvasScale, pan.x, pan.y, canvasWidth, canvasHeight, onRecalculateOffset]);
 
   const applyZoom = useCallback(
     (
-      nextZoomOrUpdater: number | ((currentZoom: number) => number),
+      nextScaleOrUpdater: number | ((currentScale: number) => number),
       focalClientPoint?: { x: number; y: number }
     ) => {
       const live = liveRef.current;
       setViewState((prev) => {
-        const currentZoom =
-          prev.aspectKey === live.aspectKey ? prev.zoom : 1;
+        const currentScale =
+          prev.aspectKey === live.aspectKey ? prev.scale : DEFAULT_CANVAS_SCALE;
         const currentPanX =
           prev.aspectKey === live.aspectKey ? prev.panX : 0;
         const currentPanY =
           prev.aspectKey === live.aspectKey ? prev.panY : 0;
 
-        const targetZoomRaw =
-          typeof nextZoomOrUpdater === 'function'
-            ? nextZoomOrUpdater(currentZoom)
-            : nextZoomOrUpdater;
-        const nextZoom = clampZoomFactor(targetZoomRaw);
-        const prevScale = live.fitScale * currentZoom;
-        const nextScale = live.fitScale * nextZoom;
+        const targetScaleRaw =
+          typeof nextScaleOrUpdater === 'function'
+            ? nextScaleOrUpdater(currentScale)
+            : nextScaleOrUpdater;
+        const nextScale = clampCanvasScale(targetScaleRaw);
         const nextW = Math.round(live.canvasWidth * nextScale);
         const nextH = Math.round(live.canvasHeight * nextScale);
 
@@ -229,7 +209,7 @@ export function CanvasViewport({
             frameRect.top + frameRect.height / 2 - currentPanY;
           const dx = focalClientPoint.x - unpannedCenterX;
           const dy = focalClientPoint.y - unpannedCenterY;
-          const ratio = prevScale > 0 ? nextScale / prevScale : 1;
+          const ratio = currentScale > 0 ? nextScale / currentScale : 1;
           nextPanX = dx - (dx - currentPanX) * ratio;
           nextPanY = dy - (dy - currentPanY) * ratio;
         }
@@ -237,7 +217,6 @@ export function CanvasViewport({
         const clamped = clampPan(
           nextPanX,
           nextPanY,
-          nextZoom,
           nextW,
           nextH,
           live.containerSize.width,
@@ -246,7 +225,7 @@ export function CanvasViewport({
 
         return {
           aspectKey: live.aspectKey,
-          zoom: nextZoom,
+          scale: nextScale,
           panX: clamped.x,
           panY: clamped.y,
         };
@@ -255,10 +234,10 @@ export function CanvasViewport({
     []
   );
 
-  const resetZoom = useCallback(() => {
+  const resetViewport = useCallback(() => {
     setViewState({
       aspectKey: liveRef.current.aspectKey,
-      zoom: 1,
+      scale: DEFAULT_CANVAS_SCALE,
       panX: 0,
       panY: 0,
     });
@@ -267,16 +246,15 @@ export function CanvasViewport({
   const shiftPan = useCallback((deltaX: number, deltaY: number) => {
     const live = liveRef.current;
     setViewState((prev) => {
-      const currentZoom = prev.aspectKey === live.aspectKey ? prev.zoom : 1;
+      const currentScale =
+        prev.aspectKey === live.aspectKey ? prev.scale : DEFAULT_CANVAS_SCALE;
       const currentPanX = prev.aspectKey === live.aspectKey ? prev.panX : 0;
       const currentPanY = prev.aspectKey === live.aspectKey ? prev.panY : 0;
-      const scale = live.fitScale * currentZoom;
-      const sw = Math.round(live.canvasWidth * scale);
-      const sh = Math.round(live.canvasHeight * scale);
+      const sw = Math.round(live.canvasWidth * currentScale);
+      const sh = Math.round(live.canvasHeight * currentScale);
       const clamped = clampPan(
         currentPanX + deltaX,
         currentPanY + deltaY,
-        currentZoom,
         sw,
         sh,
         live.containerSize.width,
@@ -284,28 +262,27 @@ export function CanvasViewport({
       );
       return {
         aspectKey: live.aspectKey,
-        zoom: currentZoom,
+        scale: currentScale,
         panX: clamped.x,
         panY: clamped.y,
       };
     });
   }, []);
 
-  // Trackpad pinch / Ctrl+wheel zoom and zoomed wheel panning
+  // Trackpad pinch / Ctrl+wheel zoom and free wheel panning at any zoom rate
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const handleWheel = (e: WheelEvent) => {
-      const live = liveRef.current;
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         const factor = Math.min(1.35, Math.max(0.75, Math.exp(-e.deltaY * 0.0045)));
-        applyZoom((z) => z * factor, { x: e.clientX, y: e.clientY });
+        applyZoom((s) => s * factor, { x: e.clientX, y: e.clientY });
         return;
       }
 
-      if (live.zoomFactor > 1 && (Math.abs(e.deltaX) > 0 || Math.abs(e.deltaY) > 0)) {
+      if (Math.abs(e.deltaX) > 0 || Math.abs(e.deltaY) > 0) {
         e.preventDefault();
         shiftPan(-e.deltaX, -e.deltaY);
       }
@@ -315,23 +292,33 @@ export function CanvasViewport({
     return () => el.removeEventListener('wheel', handleWheel);
   }, [applyZoom, shiftPan]);
 
-  // Smart Option 1 two-finger pinch: resizes selected unlocked object when touching near it,
-  // otherwise zooms and pans the canvas viewport (Safari iOS / Android Chrome).
+  // Smart Option 1 two-finger pinch (object resize/move vs viewport zoom/pan)
+  // plus single-finger touch panning on empty studio backdrop at any zoom level.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    let gestureMode: 'object-pinch' | 'viewport-pinch' | null = null;
+    let gestureMode:
+      | 'object-pinch'
+      | 'viewport-pinch'
+      | 'backdrop-touch-pan'
+      | null = null;
     let awaitingAllFingersLift = false;
     const activeTouchPointers = new Set<number>();
+    let backdropTouchStart: {
+      x: number;
+      y: number;
+      panX: number;
+      panY: number;
+      moved: boolean;
+    } | null = null;
     let pinchStart: {
       dist: number;
       midX: number;
       midY: number;
-      zoom: number;
+      scale: number;
       panX: number;
       panY: number;
-      fitScale: number;
     } | null = null;
 
     const readTouchPoints = (touches: TouchList) => {
@@ -349,14 +336,24 @@ export function CanvasViewport({
     const onPointerDownCapture = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
       activeTouchPointers.add(e.pointerId);
-      if (activeTouchPointers.size >= 2 || gestureMode !== null || awaitingAllFingersLift) {
+      if (
+        activeTouchPointers.size >= 2 ||
+        gestureMode === 'object-pinch' ||
+        gestureMode === 'viewport-pinch' ||
+        awaitingAllFingersLift
+      ) {
         e.stopPropagation();
       }
     };
 
     const onPointerMoveCapture = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
-      if (activeTouchPointers.size >= 2 || gestureMode !== null || awaitingAllFingersLift) {
+      if (
+        activeTouchPointers.size >= 2 ||
+        gestureMode === 'object-pinch' ||
+        gestureMode === 'viewport-pinch' ||
+        awaitingAllFingersLift
+      ) {
         e.stopPropagation();
       }
     };
@@ -364,7 +361,10 @@ export function CanvasViewport({
     const onPointerUpCapture = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
       const shouldBlock =
-        activeTouchPointers.size >= 2 || gestureMode !== null || awaitingAllFingersLift;
+        activeTouchPointers.size >= 2 ||
+        gestureMode === 'object-pinch' ||
+        gestureMode === 'viewport-pinch' ||
+        awaitingAllFingersLift;
       activeTouchPointers.delete(e.pointerId);
       if (shouldBlock) {
         e.stopPropagation();
@@ -376,6 +376,7 @@ export function CanvasViewport({
         e.preventDefault();
         e.stopPropagation();
         awaitingAllFingersLift = false;
+        backdropTouchStart = null;
         const pair = readTouchPoints(e.touches);
         const live = liveRef.current;
 
@@ -391,16 +392,28 @@ export function CanvasViewport({
           dist: Math.max(pair.dist, 1),
           midX: pair.midX,
           midY: pair.midY,
-          zoom: live.zoomFactor,
+          scale: live.canvasScale,
           panX: live.pan.x,
           panY: live.pan.y,
-          fitScale: live.fitScale,
+        };
+      } else if (e.touches.length === 1 && e.target === el && !awaitingAllFingersLift) {
+        const live = liveRef.current;
+        gestureMode = 'backdrop-touch-pan';
+        backdropTouchStart = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+          panX: live.pan.x,
+          panY: live.pan.y,
+          moved: false,
         };
       }
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && gestureMode) {
+      if (
+        e.touches.length === 2 &&
+        (gestureMode === 'object-pinch' || gestureMode === 'viewport-pinch')
+      ) {
         e.preventDefault();
         e.stopPropagation();
         const pair = readTouchPoints(e.touches);
@@ -413,8 +426,8 @@ export function CanvasViewport({
 
         if (gestureMode === 'viewport-pinch' && pinchStart) {
           const scaleChange = pair.dist / pinchStart.dist;
-          const nextZoom = clampZoomFactor(pinchStart.zoom * scaleChange);
-          const ratio = pinchStart.zoom > 0 ? nextZoom / pinchStart.zoom : 1;
+          const nextScale = clampCanvasScale(pinchStart.scale * scaleChange);
+          const ratio = pinchStart.scale > 0 ? nextScale / pinchStart.scale : 1;
 
           let nextPanX = pinchStart.panX + (pair.midX - pinchStart.midX);
           let nextPanY = pinchStart.panY + (pair.midY - pinchStart.midY);
@@ -431,11 +444,9 @@ export function CanvasViewport({
             nextPanY = currentDy - (startDy - pinchStart.panY) * ratio;
           }
 
-          const nextScale = pinchStart.fitScale * nextZoom;
           const clamped = clampPan(
             nextPanX,
             nextPanY,
-            nextZoom,
             Math.round(live.canvasWidth * nextScale),
             Math.round(live.canvasHeight * nextScale),
             live.containerSize.width,
@@ -444,11 +455,37 @@ export function CanvasViewport({
 
           setViewState({
             aspectKey: live.aspectKey,
-            zoom: nextZoom,
+            scale: nextScale,
             panX: clamped.x,
             panY: clamped.y,
           });
         }
+      } else if (
+        e.touches.length === 1 &&
+        gestureMode === 'backdrop-touch-pan' &&
+        backdropTouchStart
+      ) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - backdropTouchStart.x;
+        const dy = e.touches[0].clientY - backdropTouchStart.y;
+        if (Math.hypot(dx, dy) > 4) {
+          backdropTouchStart.moved = true;
+        }
+        const live = liveRef.current;
+        const clamped = clampPan(
+          backdropTouchStart.panX + dx,
+          backdropTouchStart.panY + dy,
+          Math.round(live.canvasWidth * live.canvasScale),
+          Math.round(live.canvasHeight * live.canvasScale),
+          live.containerSize.width,
+          live.containerSize.height
+        );
+        setViewState({
+          aspectKey: live.aspectKey,
+          scale: live.canvasScale,
+          panX: clamped.x,
+          panY: clamped.y,
+        });
       } else if (awaitingAllFingersLift) {
         e.preventDefault();
         e.stopPropagation();
@@ -456,6 +493,15 @@ export function CanvasViewport({
     };
 
     const onTouchEnd = (e: TouchEvent) => {
+      if (gestureMode === 'backdrop-touch-pan') {
+        if (backdropTouchStart && !backdropTouchStart.moved && e.touches.length === 0) {
+          liveRef.current.onDeselectAll();
+        }
+        backdropTouchStart = null;
+        gestureMode = null;
+        return;
+      }
+
       if (gestureMode) {
         e.stopPropagation();
         if (e.touches.length < 2) {
@@ -527,13 +573,13 @@ export function CanvasViewport({
       if (e.metaKey || e.ctrlKey) {
         if (e.key === '=' || e.key === '+') {
           e.preventDefault();
-          applyZoom((z) => z + ZOOM_BUTTON_STEP);
+          applyZoom((s) => s + SCALE_BUTTON_STEP);
         } else if (e.key === '-') {
           e.preventDefault();
-          applyZoom((z) => z - ZOOM_BUTTON_STEP);
+          applyZoom((s) => s - SCALE_BUTTON_STEP);
         } else if (e.key === '0') {
           e.preventDefault();
-          resetZoom();
+          resetViewport();
         }
       }
     };
@@ -558,9 +604,9 @@ export function CanvasViewport({
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [applyZoom, resetZoom]);
+  }, [applyZoom, resetViewport]);
 
-  // Capture-phase mouse pan for Space+drag, middle-mouse drag, or zoomed backdrop drag
+  // Capture-phase mouse pan for Space+drag, middle-mouse drag, or backdrop drag at any zoom rate
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -578,8 +624,7 @@ export function CanvasViewport({
       const live = liveRef.current;
       const isMiddle = e.button === 1;
       const isSpaceDrag = e.button === 0 && live.isSpacePressed;
-      const isBackdropDrag =
-        e.button === 0 && e.target === el && live.zoomFactor > 1;
+      const isBackdropDrag = e.button === 0 && e.target === el;
 
       if (!isMiddle && !isSpaceDrag && !isBackdropDrag) {
         return;
@@ -609,12 +654,11 @@ export function CanvasViewport({
         panDrag.moved = true;
       }
       const live = liveRef.current;
-      const sw = Math.round(live.canvasWidth * live.effectiveScale);
-      const sh = Math.round(live.canvasHeight * live.effectiveScale);
+      const sw = Math.round(live.canvasWidth * live.canvasScale);
+      const sh = Math.round(live.canvasHeight * live.canvasScale);
       const clamped = clampPan(
         panDrag.startPanX + dx,
         panDrag.startPanY + dy,
-        live.zoomFactor,
         sw,
         sh,
         live.containerSize.width,
@@ -622,7 +666,7 @@ export function CanvasViewport({
       );
       setViewState({
         aspectKey: live.aspectKey,
-        zoom: live.zoomFactor,
+        scale: live.canvasScale,
         panX: clamped.x,
         panY: clamped.y,
       });
@@ -648,15 +692,9 @@ export function CanvasViewport({
     };
   }, []);
 
-  const handleBackdropMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && zoomFactor <= 1 && !isSpacePressed) {
-      onDeselectAll();
-    }
-  };
-
   const handleBackdropDoubleClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && zoomFactor !== 1) {
-      resetZoom();
+    if (e.target === e.currentTarget && isZoomedOrPanned) {
+      resetViewport();
     }
   };
 
@@ -683,14 +721,13 @@ export function CanvasViewport({
   };
 
   const isZoomedOrPanned =
-    Math.abs(zoomFactor - 1) > 0.005 ||
+    Math.abs(canvasScale - DEFAULT_CANVAS_SCALE) > 0.005 ||
     Math.abs(pan.x) > 1 ||
     Math.abs(pan.y) > 1;
 
   return (
     <div
       ref={containerRef}
-      onMouseDown={handleBackdropMouseDown}
       onDoubleClick={handleBackdropDoubleClick}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -718,7 +755,7 @@ export function CanvasViewport({
           style={{
             width: `${canvasWidth}px`,
             height: `${canvasHeight}px`,
-            transform: `scale(${effectiveScale})`,
+            transform: `scale(${canvasScale})`,
             transformOrigin: 'top left',
           }}
         >
@@ -760,8 +797,8 @@ export function CanvasViewport({
       >
         <button
           type="button"
-          onClick={() => applyZoom((z) => z - ZOOM_BUTTON_STEP)}
-          disabled={zoomFactor <= MIN_ZOOM_FACTOR + 0.001}
+          onClick={() => applyZoom((s) => s - SCALE_BUTTON_STEP)}
+          disabled={canvasScale <= MIN_CANVAS_SCALE + 0.001}
           aria-label="Zoom out canvas"
           title="Zoom out (Cmd/Ctrl -)"
           className="p-1 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
@@ -771,18 +808,18 @@ export function CanvasViewport({
 
         <button
           type="button"
-          onClick={resetZoom}
+          onClick={resetViewport}
           aria-label="Reset canvas zoom"
-          title={`Reset zoom to fit (${canvasWidth} × ${canvasHeight})`}
+          title={`Reset to 26% & center (${canvasWidth} × ${canvasHeight})`}
           className="px-1.5 py-0.5 rounded-full hover:bg-zinc-800 text-zinc-200 font-semibold min-w-[2.5rem] text-center transition-colors"
         >
-          {Math.round(effectiveScale * 100)}%
+          {Math.round(canvasScale * 100)}%
         </button>
 
         <button
           type="button"
-          onClick={() => applyZoom((z) => z + ZOOM_BUTTON_STEP)}
-          disabled={zoomFactor >= MAX_ZOOM_FACTOR - 0.001}
+          onClick={() => applyZoom((s) => s + SCALE_BUTTON_STEP)}
+          disabled={canvasScale >= MAX_CANVAS_SCALE - 0.001}
           aria-label="Zoom in canvas"
           title="Zoom in (Cmd/Ctrl +)"
           className="p-1 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
@@ -790,18 +827,21 @@ export function CanvasViewport({
           <Plus className="w-3 h-3" />
         </button>
 
-        {isZoomedOrPanned && (
-          <button
-            type="button"
-            onClick={resetZoom}
-            aria-label="Fit canvas to screen"
-            title="Fit to screen"
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-violet-600/25 hover:bg-violet-600/40 text-violet-200 text-[10px] font-sans font-medium transition-colors"
-          >
-            <RotateCcw className="w-2.5 h-2.5" />
-            <span>Fit</span>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={resetViewport}
+          aria-label="Reset canvas position and zoom"
+          title="Reset to default position & 26% zoom (Cmd/Ctrl 0)"
+          className={cn(
+            'flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-sans font-medium transition-colors',
+            isZoomedOrPanned
+              ? 'bg-violet-600/25 hover:bg-violet-600/40 text-violet-200'
+              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+          )}
+        >
+          <RotateCcw className="w-2.5 h-2.5" />
+          <span>Reset</span>
+        </button>
       </div>
 
       {/* Drag & Drop Image Overlay */}
