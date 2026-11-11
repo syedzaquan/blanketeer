@@ -1,12 +1,4 @@
-import {
-  Download,
-  Redo2,
-  RectangleVertical,
-  Square,
-  Smartphone,
-  Undo2,
-  Layers,
-} from 'lucide-react';
+import { Download, Redo2, Undo2 } from 'lucide-react';
 import {
   ASPECT_RATIO_PRESETS,
   type AspectRatioKey,
@@ -23,12 +15,6 @@ interface HeaderProps {
   onExportPNG: () => void;
 }
 
-const RATIO_ICONS: Record<AspectRatioKey, typeof Smartphone> = {
-  '9:16': Smartphone,
-  '1:1': Square,
-  '4:5': RectangleVertical,
-};
-
 export function Header({
   aspectRatio,
   onAspectRatioChange,
@@ -41,36 +27,25 @@ export function Header({
   const currentPreset = ASPECT_RATIO_PRESETS[aspectRatio];
 
   return (
-    <header className="h-14 shrink-0 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur px-2.5 sm:px-4 flex items-center justify-between gap-2 sm:gap-3 z-30">
+    <header className="h-11 shrink-0 border-b border-neutral-800/80 bg-[#0f0f0f] px-3 flex items-center justify-between gap-2 z-30">
       {/* Brand */}
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-400 flex items-center justify-center shadow-lg shadow-violet-500/20 shrink-0">
-          <Layers className="w-4 h-4 text-white" />
-        </div>
-        <div className="hidden sm:flex items-baseline gap-2 truncate">
-          <span
-            className="font-fraunces font-bold text-base sm:text-lg tracking-tight text-white"
-            style={{
-              fontVariationSettings: "'opsz' 24, 'wght' 700, 'SOFT' 50, 'WONK' 0",
-            }}
-          >
-            Blanketeer
-          </span>
-          <span className="hidden md:inline-block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-            Story Studio
-          </span>
-        </div>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="text-xs font-semibold text-neutral-100 tracking-tight select-none">
+          Blanketeer
+        </span>
+        <span className="hidden md:inline-block text-[11px] font-mono text-neutral-500">
+          {currentPreset.width}×{currentPreset.height}
+        </span>
       </div>
 
       {/* Aspect Ratio Presets */}
       <div
-        className="flex items-center gap-0.5 sm:gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800/80"
+        className="flex items-center gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800"
         role="group"
         aria-label="Canvas aspect ratio"
       >
         {(Object.keys(ASPECT_RATIO_PRESETS) as AspectRatioKey[]).map((key) => {
           const preset = ASPECT_RATIO_PRESETS[key];
-          const Icon = RATIO_ICONS[key];
           const active = aspectRatio === key;
           return (
             <button
@@ -79,18 +54,17 @@ export function Header({
               onClick={() => onAspectRatioChange(key)}
               title={`${preset.label} (${preset.width} × ${preset.height}px)`}
               className={cn(
-                'flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-all',
+                'flex items-center gap-1 px-2.5 py-1 rounded-[5px] text-xs font-medium transition-colors',
                 active
-                  ? 'bg-violet-600 text-white shadow-sm shadow-violet-600/30'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/70'
+                  ? 'bg-neutral-800 text-neutral-100'
+                  : 'text-neutral-500 hover:text-neutral-200'
               )}
             >
-              <Icon className="hidden sm:block w-3.5 h-3.5" />
               <span className="hidden sm:inline">{preset.label}</span>
               <span
                 className={cn(
-                  'text-[10px] px-1 py-0.5 rounded',
-                  active ? 'bg-white/15 text-white' : 'bg-zinc-800 text-zinc-400 sm:text-zinc-500'
+                  'font-mono text-[11px]',
+                  active ? 'text-neutral-300' : 'text-neutral-500'
                 )}
               >
                 {preset.ratioLabel}
@@ -100,26 +74,22 @@ export function Header({
         })}
       </div>
 
-      {/* Right Actions: Resolution Badge + Undo/Redo + Export */}
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <span className="hidden xl:inline-flex items-center px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400">
-          {currentPreset.width} × {currentPreset.height}px
-        </span>
-
-        <div className="flex items-center gap-0.5 sm:gap-1 border-r border-zinc-800 pr-1.5 sm:pr-2">
+      {/* Right Actions: Undo/Redo + Export */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-0.5 border-r border-neutral-800 pr-1.5">
           <button
             type="button"
             onClick={onUndo}
             disabled={!canUndo}
             title="Undo (Cmd/Ctrl + Z)"
             className={cn(
-              'p-1.5 sm:p-2 rounded-lg transition-colors',
+              'p-1.5 rounded-md transition-colors',
               canUndo
-                ? 'text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700'
-                : 'text-zinc-600 cursor-not-allowed'
+                ? 'text-neutral-300 hover:text-white hover:bg-neutral-800'
+                : 'text-neutral-700 cursor-not-allowed'
             )}
           >
-            <Undo2 className="w-4 h-4" />
+            <Undo2 className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
@@ -127,22 +97,22 @@ export function Header({
             disabled={!canRedo}
             title="Redo (Cmd/Ctrl + Shift + Z)"
             className={cn(
-              'p-1.5 sm:p-2 rounded-lg transition-colors',
+              'p-1.5 rounded-md transition-colors',
               canRedo
-                ? 'text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700'
-                : 'text-zinc-600 cursor-not-allowed'
+                ? 'text-neutral-300 hover:text-white hover:bg-neutral-800'
+                : 'text-neutral-700 cursor-not-allowed'
             )}
           >
-            <Redo2 className="w-4 h-4" />
+            <Redo2 className="w-3.5 h-3.5" />
           </button>
         </div>
 
         <button
           type="button"
           onClick={onExportPNG}
-          className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 active:scale-[0.99] text-white text-xs font-semibold shadow-lg shadow-violet-600/25 transition-all"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-neutral-100 hover:bg-white active:bg-neutral-200 text-neutral-950 text-xs font-medium transition-colors"
         >
-          <Download className="w-4 h-4" />
+          <Download className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Export PNG</span>
           <span className="sm:hidden">Export</span>
         </button>
@@ -150,4 +120,3 @@ export function Header({
     </header>
   );
 }
-

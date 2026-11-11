@@ -31,18 +31,18 @@ export function TextTab({
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Featured Fonts
+        <div className="flex items-center justify-between mb-2.5">
+          <h2 className="text-xs font-medium text-neutral-300">
+            Fonts
           </h2>
-          <span className="text-[10px] text-zinc-500">
-            {selectedText ? 'Click to apply' : 'Select text to apply'}
+          <span className="text-[11px] text-neutral-500">
+            {selectedText ? 'Click to apply' : 'Click to add'}
           </span>
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1">
           {availableFonts.map((font) => {
             const lowerFamily = font.family.toLowerCase();
             const isActive =
@@ -62,16 +62,16 @@ export function TextTab({
                   }
                 }}
                 className={cn(
-                  'flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all',
+                  'flex items-center justify-between px-2.5 py-2 rounded-md border text-left transition-colors',
                   isActive
-                    ? 'bg-violet-600/15 border-violet-500/60 text-white'
-                    : 'bg-zinc-900/50 border-zinc-800/80 text-zinc-300 hover:bg-zinc-800/70 hover:border-zinc-700'
+                    ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                    : 'bg-neutral-900/60 border-neutral-800/80 text-neutral-300 hover:bg-neutral-800/60 hover:border-neutral-700'
                 )}
               >
                 <span
                   className={cn(
                     'truncate',
-                    isTallCondensed ? 'text-[26px] leading-none py-0.5' : 'text-base'
+                    isTallCondensed ? 'text-[26px] leading-none py-0.5' : 'text-[15px]'
                   )}
                   style={
                     lowerFamily === 'fraunces'
@@ -86,7 +86,7 @@ export function TextTab({
                 >
                   {font.name}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 shrink-0 ml-2">
+                <span className="text-[10px] text-neutral-500 shrink-0 ml-2">
                   {font.categoryLabel}
                 </span>
               </button>
@@ -104,13 +104,12 @@ export function TextTab({
         <button
           type="button"
           onClick={() => fontInputRef.current?.click()}
-          className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-zinc-700 hover:border-violet-500/60 hover:bg-zinc-900 text-xs font-medium text-zinc-300 transition-colors"
+          className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border border-neutral-800 hover:border-neutral-700 bg-neutral-900 hover:bg-neutral-800/80 text-xs font-medium text-neutral-300 transition-colors"
         >
-          <Upload className="w-3.5 h-3.5 text-violet-400" />
-          <span>Load Local Font (.ttf / .otf / .woff2)</span>
+          <Upload className="w-3.5 h-3.5 text-neutral-400" />
+          <span>Upload Font (.ttf, .otf, .woff2)</span>
         </button>
       </div>
     </div>
   );
 }
-

@@ -11,7 +11,6 @@ import {
   FlipHorizontal2,
   FlipVertical2,
   Italic,
-  Keyboard,
   RotateCcw,
   Strikethrough,
   Trash2,
@@ -85,23 +84,23 @@ interface InspectorProps {
 
 const TEXT_COLOR_SWATCHES = [
   '#ffffff',
-  '#09090b',
+  '#0a0a0a',
+  '#d4d4d4',
   '#fde68a',
   '#f472b6',
-  '#a78bfa',
   '#38bdf8',
   '#34d399',
   '#fb7185',
   '#f97316',
-  '#e4e4e7',
+  '#a3a3a3',
 ];
 
 const HIGHLIGHT_SWATCHES = [
   '#ffffff',
-  '#09090b',
+  '#0a0a0a',
+  '#262626',
   '#fde68a',
-  '#8b5cf6',
-  '#ec4899',
+  '#f97316',
   '#0ea5e9',
   '#10b981',
   '#f43f5e',
@@ -137,66 +136,58 @@ export function Inspector({
   if (!selectedObject) {
     const preset = ASPECT_RATIO_PRESETS[aspectRatio];
     return (
-      <aside className="w-80 shrink-0 border-l border-zinc-800/80 bg-zinc-950/90 p-4 overflow-y-auto hidden lg:flex flex-col gap-5">
+      <aside className="w-72 shrink-0 border-l border-neutral-800/80 bg-[#0f0f0f] p-3.5 overflow-y-auto hidden lg:flex flex-col gap-4">
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
+          <h2 className="text-xs font-medium text-neutral-300 mb-2">
             Canvas Overview
           </h2>
-          <div className="p-3.5 rounded-2xl bg-zinc-900/70 border border-zinc-800 flex flex-col gap-2.5 text-xs">
+          <div className="flex flex-col gap-2 text-xs border-t border-neutral-800/80 pt-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400">Format</span>
-              <span className="font-medium text-zinc-100">
+              <span className="text-neutral-500">Format</span>
+              <span className="text-neutral-200">
                 {preset.label} ({preset.ratioLabel})
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400">Export Size</span>
-              <span className="font-mono text-zinc-200">
+              <span className="text-neutral-500">Dimensions</span>
+              <span className="font-mono text-neutral-300">
                 {preset.width} × {preset.height}px
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400">Background</span>
-              <span className="capitalize text-zinc-200">{background.mode}</span>
+              <span className="text-neutral-500">Background</span>
+              <span className="capitalize text-neutral-300">{background.mode}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400">Layers</span>
-              <span className="font-mono text-zinc-200">{layerCount}</span>
+              <span className="text-neutral-500">Layers</span>
+              <span className="font-mono text-neutral-300">{layerCount}</span>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-zinc-800/80 pt-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Keyboard className="w-3.5 h-3.5 text-violet-400" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Quick Shortcuts
-            </h2>
-          </div>
-          <div className="flex flex-col gap-2 text-xs">
+        <div className="border-t border-neutral-800/80 pt-3.5">
+          <h2 className="text-xs font-medium text-neutral-300 mb-2">
+            Shortcuts
+          </h2>
+          <div className="flex flex-col gap-1.5 text-xs">
             {[
-              { label: 'Edit text inline', keys: 'Double-click' },
+              { label: 'Edit text', keys: 'Double-click' },
               { label: 'Undo / Redo', keys: 'Cmd/Ctrl + Z' },
-              { label: 'Duplicate layer', keys: 'Cmd/Ctrl + D' },
-              { label: 'Delete layer', keys: 'Del / Backspace' },
-              { label: 'Nudge position', keys: 'Arrow keys' },
+              { label: 'Duplicate', keys: 'Cmd/Ctrl + D' },
+              { label: 'Delete', keys: 'Backspace' },
+              { label: 'Nudge', keys: 'Arrow keys' },
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-zinc-900/50 border border-zinc-800/60"
+                className="flex items-center justify-between py-1 text-neutral-400"
               >
-                <span className="text-zinc-400">{item.label}</span>
-                <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-zinc-200">
+                <span>{item.label}</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-[10px] font-mono text-neutral-300">
                   {item.keys}
                 </kbd>
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="mt-auto p-3.5 rounded-2xl bg-gradient-to-br from-violet-950/40 to-zinc-900/80 border border-violet-500/20 text-xs text-zinc-300 leading-relaxed">
-          Select any text or image on the canvas to customize Fedro / Fraunces
-          typography, pill highlights, shape cutouts, and layer order.
         </div>
       </aside>
     );
@@ -205,23 +196,23 @@ export function Inspector({
   return (
     <aside
       className={cn(
-        'border-zinc-800/80 bg-zinc-950/95 p-3.5 sm:p-4 overflow-y-auto flex-col gap-4 sm:gap-5 shrink-0',
+        'border-neutral-800/80 bg-[#0f0f0f] p-3.5 overflow-y-auto flex-col gap-3.5 shrink-0',
         mobileOpen
-          ? 'flex w-full h-[38vh] max-h-[340px] border-t lg:w-80 lg:h-auto lg:max-h-none lg:border-t-0 lg:border-l'
-          : 'hidden lg:flex lg:w-80 lg:border-l'
+          ? 'flex w-full h-[38vh] max-h-[340px] border-t lg:w-72 lg:h-auto lg:max-h-none lg:border-t-0 lg:border-l'
+          : 'hidden lg:flex lg:w-72 lg:border-l'
       )}
     >
-      {/* Header badge */}
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-violet-400">
+        <div className="min-w-0">
+          <span className="block text-[11px] text-neutral-500">
             {selectedObject.kind === 'text'
-              ? 'Text Inspector'
+              ? 'Text Layer'
               : selectedObject.kind === 'image'
-                ? 'Image Inspector'
-                : 'Object Inspector'}
+                ? 'Image Layer'
+                : 'Layer'}
           </span>
-          <h2 className="text-sm font-semibold text-white truncate max-w-[175px]">
+          <h2 className="text-xs font-medium text-neutral-100 truncate max-w-[165px]">
             {selectedObject.name}
           </h2>
         </div>
@@ -231,7 +222,7 @@ export function Inspector({
             type="button"
             onClick={onDuplicate}
             title="Duplicate"
-            className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 transition-colors"
+            className="p-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 transition-colors"
           >
             <Copy className="w-3.5 h-3.5" />
           </button>
@@ -239,7 +230,7 @@ export function Inspector({
             type="button"
             onClick={onDelete}
             title="Delete"
-            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-400 transition-colors"
+            className="p-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-red-400 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -247,7 +238,7 @@ export function Inspector({
             type="button"
             onClick={onCloseMobile}
             title="Done"
-            className="lg:hidden flex items-center gap-1 px-2 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-xs font-medium text-white transition-colors"
+            className="lg:hidden flex items-center gap-1 px-2 py-1 rounded-md bg-neutral-100 text-xs font-medium text-neutral-950 transition-colors"
           >
             <X className="w-3.5 h-3.5" />
             <span>Done</span>
@@ -258,34 +249,33 @@ export function Inspector({
       {/* TEXT INSPECTOR */}
       {selectedObject.kind === 'text' && (
         <>
-          {/* Live Text Content */}
           <div>
-            <label className="block text-[11px] font-medium text-zinc-400 mb-1.5">
-              Text Content
+            <label className="block text-[11px] text-neutral-400 mb-1">
+              Content
             </label>
             <textarea
               rows={2}
               value={selectedObject.text}
               onChange={(e) => onUpdateText({ text: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 resize-y"
-              placeholder="Type your story text..."
+              className="w-full px-2.5 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600 resize-y"
+              placeholder="Enter text..."
             />
           </div>
 
-          {/* Font Family & Size */}
-          <div className="border-t border-zinc-800/80 pt-4 flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          {/* Typography */}
+          <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-3">
+            <h3 className="text-xs font-medium text-neutral-300">
               Typography
             </h3>
 
             <div>
-              <label className="block text-[11px] text-zinc-400 mb-1">
-                Font Family
+              <label className="block text-[11px] text-neutral-400 mb-1">
+                Font
               </label>
               <select
                 value={selectedObject.fontFamily}
                 onChange={(e) => onUpdateText({ fontFamily: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-100 focus:outline-none focus:border-violet-500"
+                className="w-full px-2.5 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-100 focus:outline-none focus:border-neutral-600"
               >
                 {availableFonts.map((font) => (
                   <option key={font.family} value={font.family}>
@@ -295,14 +285,10 @@ export function Inspector({
               </select>
             </div>
 
-            {/* Font Size slider (desktop inspector; mobile uses left-side canvas slider) + numeric input */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[11px] text-zinc-400">
-                  Font Size
-                  <span className="lg:hidden text-[10px] text-zinc-500 ml-1">
-                    (left slider)
-                  </span>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] text-neutral-400">
+                  Size
                 </label>
                 <div className="flex items-center gap-1">
                   <input
@@ -316,9 +302,9 @@ export function Inspector({
                         onUpdateText({ fontSize: Math.min(400, val) });
                       }
                     }}
-                    className="w-16 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-right text-zinc-100 focus:outline-none focus:border-violet-500"
+                    className="w-14 px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-xs font-mono text-right text-neutral-100 focus:outline-none focus:border-neutral-600"
                   />
-                  <span className="text-[11px] text-zinc-500">px</span>
+                  <span className="text-[10px] text-neutral-500">px</span>
                 </div>
               </div>
               <input
@@ -329,21 +315,21 @@ export function Inspector({
                 onChange={(e) =>
                   onUpdateText({ fontSize: Number(e.target.value) })
                 }
-                className="hidden lg:block w-full accent-violet-500"
+                className="hidden lg:block w-full"
               />
             </div>
 
-            {/* Font Weight: Slider + quick presets for Fraunces, discrete available weight buttons for other fonts */}
+            {/* Font Weight */}
             {selectedObject.fontFamily.toLowerCase() === 'fraunces' ? (
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label
                     htmlFor="inspector-font-weight"
-                    className="text-[11px] text-zinc-400"
+                    className="text-[11px] text-neutral-400"
                   >
-                    Weight (wght)
+                    Weight
                   </label>
-                  <span className="text-[11px] font-mono text-zinc-200">
+                  <span className="text-[11px] font-mono text-neutral-300">
                     {selectedObject.fontWeight}
                   </span>
                 </div>
@@ -358,19 +344,19 @@ export function Inspector({
                   onChange={(e) =>
                     onUpdateText({ fontWeight: Number(e.target.value) })
                   }
-                  className="w-full accent-violet-500"
+                  className="w-full"
                 />
-                <div className="grid grid-cols-5 gap-1 mt-1.5 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+                <div className="grid grid-cols-5 gap-1 mt-1 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
                   {WEIGHT_PRESETS.map((w) => (
                     <button
                       key={w.value}
                       type="button"
                       onClick={() => onUpdateText({ fontWeight: w.value })}
                       className={cn(
-                        'py-1 rounded-lg text-[11px] font-medium transition-colors',
+                        'py-1 rounded text-[11px] font-medium transition-colors',
                         selectedObject.fontWeight === w.value
-                          ? 'bg-violet-600 text-white'
-                          : 'text-zinc-400 hover:text-zinc-200'
+                          ? 'bg-neutral-800 text-neutral-100'
+                          : 'text-neutral-500 hover:text-neutral-200'
                       )}
                     >
                       {w.label}
@@ -394,17 +380,17 @@ export function Inspector({
                         : 'grid-cols-4';
                 return (
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11px] text-zinc-400">
-                        Font Weight
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] text-neutral-400">
+                        Weight
                       </span>
-                      <span className="text-[11px] font-mono text-zinc-200">
+                      <span className="text-[11px] font-mono text-neutral-300">
                         {selectedObject.fontWeight}
                       </span>
                     </div>
                     <div
                       className={cn(
-                        'grid gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800',
+                        'grid gap-1 p-0.5 rounded-md bg-neutral-900 border border-neutral-800',
                         colsClass
                       )}
                       role="group"
@@ -416,16 +402,16 @@ export function Inspector({
                           type="button"
                           onClick={() => onUpdateText({ fontWeight: w.value })}
                           className={cn(
-                            'py-1.5 px-1 rounded-lg flex flex-col items-center justify-center leading-tight transition-colors',
+                            'py-1 px-1 rounded flex flex-col items-center justify-center leading-tight transition-colors',
                             selectedObject.fontWeight === w.value
-                              ? 'bg-violet-600 text-white'
-                              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                              ? 'bg-neutral-800 text-neutral-100'
+                              : 'text-neutral-500 hover:text-neutral-200'
                           )}
                         >
-                          <span className="text-[11px] font-semibold">
+                          <span className="text-[11px] font-medium">
                             {w.value}
                           </span>
-                          <span className="text-[9px] opacity-80 truncate max-w-full">
+                          <span className="text-[9px] text-neutral-500 truncate max-w-full">
                             {w.label}
                           </span>
                         </button>
@@ -436,12 +422,12 @@ export function Inspector({
               })()
             )}
 
-            {/* Fraunces 4-Axis Variable Font Controls */}
+            {/* Fraunces Variable Axes */}
             {selectedObject.fontFamily.toLowerCase() === 'fraunces' && (
-              <div className="p-3 rounded-xl bg-violet-950/20 border border-violet-500/25 flex flex-col gap-3">
+              <div className="p-2.5 rounded-md bg-neutral-900 border border-neutral-800 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-violet-300">
-                    Fraunces Variable Axes
+                  <span className="text-[11px] font-medium text-neutral-300">
+                    Variable Axes
                   </span>
                   <button
                     type="button"
@@ -456,22 +442,21 @@ export function Inspector({
                         fontWonk: 0,
                       })
                     }
-                    className="text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors"
+                    className="text-[11px] text-neutral-500 hover:text-neutral-200 transition-colors"
                   >
                     Reset
                   </button>
                 </div>
 
-                {/* Optical Size (opsz: 9..144) */}
                 <div>
                   <div className="flex items-center justify-between text-[11px] mb-1">
                     <label
                       htmlFor="inspector-font-opsz"
-                      className="text-zinc-300"
+                      className="text-neutral-400"
                     >
-                      Optical Size (opsz)
+                      Optical Size
                     </label>
-                    <span className="font-mono text-zinc-200">
+                    <span className="font-mono text-neutral-300">
                       {selectedObject.fontOpsz}
                     </span>
                   </div>
@@ -486,20 +471,19 @@ export function Inspector({
                     onChange={(e) =>
                       onUpdateText({ fontOpsz: Number(e.target.value) })
                     }
-                    className="w-full accent-violet-500"
+                    className="w-full"
                   />
                 </div>
 
-                {/* Softness (SOFT: 000..100) */}
                 <div>
                   <div className="flex items-center justify-between text-[11px] mb-1">
                     <label
                       htmlFor="inspector-font-soft"
-                      className="text-zinc-300"
+                      className="text-neutral-400"
                     >
-                      Softness (SOFT)
+                      Softness
                     </label>
-                    <span className="font-mono text-zinc-200">
+                    <span className="font-mono text-neutral-300">
                       {String(selectedObject.fontSoft).padStart(3, '0')}
                     </span>
                   </div>
@@ -514,20 +498,19 @@ export function Inspector({
                     onChange={(e) =>
                       onUpdateText({ fontSoft: Number(e.target.value) })
                     }
-                    className="w-full accent-violet-500"
+                    className="w-full"
                   />
                 </div>
 
-                {/* Wonky (WONK: 0..1) */}
                 <div>
                   <div className="flex items-center justify-between text-[11px] mb-1">
                     <label
                       htmlFor="inspector-font-wonk"
-                      className="text-zinc-300"
+                      className="text-neutral-400"
                     >
-                      Wonky (WONK)
+                      Wonky
                     </label>
-                    <span className="font-mono text-zinc-200">
+                    <span className="font-mono text-neutral-300">
                       {selectedObject.fontWonk >= 0.5 ? '1 (On)' : '0 (Off)'}
                     </span>
                   </div>
@@ -542,15 +525,15 @@ export function Inspector({
                     onChange={(e) =>
                       onUpdateText({ fontWonk: Number(e.target.value) })
                     }
-                    className="w-full accent-violet-500"
+                    className="w-full"
                   />
                 </div>
               </div>
             )}
 
-            {/* Italic, Underline, Strikethrough + Alignment */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+            {/* Style & Alignment */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
                 <button
                   type="button"
                   title="Italic"
@@ -563,10 +546,10 @@ export function Inspector({
                     })
                   }
                   className={cn(
-                    'flex-1 py-1.5 rounded-lg flex items-center justify-center transition-colors',
+                    'flex-1 py-1.5 rounded flex items-center justify-center transition-colors',
                     selectedObject.fontStyle === 'italic'
-                      ? 'bg-violet-600 text-white'
-                      : 'text-zinc-400 hover:text-white'
+                      ? 'bg-neutral-800 text-neutral-100'
+                      : 'text-neutral-500 hover:text-neutral-200'
                   )}
                 >
                   <Italic className="w-3.5 h-3.5" />
@@ -578,10 +561,10 @@ export function Inspector({
                     onUpdateText({ underline: !selectedObject.underline })
                   }
                   className={cn(
-                    'flex-1 py-1.5 rounded-lg flex items-center justify-center transition-colors',
+                    'flex-1 py-1.5 rounded flex items-center justify-center transition-colors',
                     selectedObject.underline
-                      ? 'bg-violet-600 text-white'
-                      : 'text-zinc-400 hover:text-white'
+                      ? 'bg-neutral-800 text-neutral-100'
+                      : 'text-neutral-500 hover:text-neutral-200'
                   )}
                 >
                   <Underline className="w-3.5 h-3.5" />
@@ -593,17 +576,17 @@ export function Inspector({
                     onUpdateText({ linethrough: !selectedObject.linethrough })
                   }
                   className={cn(
-                    'flex-1 py-1.5 rounded-lg flex items-center justify-center transition-colors',
+                    'flex-1 py-1.5 rounded flex items-center justify-center transition-colors',
                     selectedObject.linethrough
-                      ? 'bg-violet-600 text-white'
-                      : 'text-zinc-400 hover:text-white'
+                      ? 'bg-neutral-800 text-neutral-100'
+                      : 'text-neutral-500 hover:text-neutral-200'
                   )}
                 >
                   <Strikethrough className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+              <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
                 {(
                   [
                     { id: 'left', icon: AlignLeft },
@@ -620,10 +603,10 @@ export function Inspector({
                       title={`Align ${align.id}`}
                       onClick={() => onUpdateText({ textAlign: align.id })}
                       className={cn(
-                        'flex-1 py-1.5 rounded-lg flex items-center justify-center transition-colors',
+                        'flex-1 py-1.5 rounded flex items-center justify-center transition-colors',
                         selectedObject.textAlign === align.id
-                          ? 'bg-violet-600 text-white'
-                          : 'text-zinc-400 hover:text-white'
+                          ? 'bg-neutral-800 text-neutral-100'
+                          : 'text-neutral-500 hover:text-neutral-200'
                       )}
                     >
                       <Icon className="w-3.5 h-3.5" />
@@ -635,23 +618,23 @@ export function Inspector({
           </div>
 
           {/* Text Color */}
-          <div className="border-t border-zinc-800/80 pt-4 flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Text Color
+          <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
+            <h3 className="text-xs font-medium text-neutral-300">
+              Color
             </h3>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <input
                 type="color"
                 value={selectedObject.fill}
                 onChange={(e) => onUpdateText({ fill: e.target.value })}
                 aria-label="Text fill color"
-                className="w-9 h-9 rounded-lg border border-zinc-700 bg-transparent cursor-pointer shrink-0"
+                className="w-7 h-7 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
               />
               <input
                 type="text"
                 value={selectedObject.fill}
                 onChange={(e) => onUpdateText({ fill: e.target.value })}
-                className="flex-1 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-100 uppercase focus:outline-none focus:border-violet-500"
+                className="flex-1 px-2.5 py-1 rounded-md bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-600"
               />
             </div>
             <div className="grid grid-cols-5 gap-1.5">
@@ -662,10 +645,10 @@ export function Inspector({
                   onClick={() => onUpdateText({ fill: swatch })}
                   aria-label={`Set text color ${swatch}`}
                   className={cn(
-                    'h-7 rounded-lg border transition-transform hover:scale-105',
+                    'h-6 rounded border transition-colors',
                     selectedObject.fill.toLowerCase() === swatch.toLowerCase()
-                      ? 'border-violet-400 ring-2 ring-violet-500/40'
-                      : 'border-white/15'
+                      ? 'border-white ring-1 ring-white/50'
+                      : 'border-neutral-800 hover:border-neutral-600'
                   )}
                   style={{ backgroundColor: swatch }}
                 />
@@ -673,13 +656,13 @@ export function Inspector({
             </div>
           </div>
 
-          {/* Instagram Pill / Line Background */}
-          <div className="border-t border-zinc-800/80 pt-4 flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Line Highlight / Pill
+          {/* Line Highlight / Pill */}
+          <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
+            <h3 className="text-xs font-medium text-neutral-300">
+              Highlight
             </h3>
 
-            <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+            <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
               {(
                 [
                   { id: 'none', label: 'None' },
@@ -692,10 +675,10 @@ export function Inspector({
                   type="button"
                   onClick={() => onUpdateText({ bgStyle: mode.id })}
                   className={cn(
-                    'py-1.5 rounded-lg text-xs font-medium transition-colors',
+                    'py-1 rounded-[5px] text-xs font-medium transition-colors',
                     selectedObject.bgStyle === mode.id
-                      ? 'bg-violet-600 text-white'
-                      : 'text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-neutral-800 text-neutral-100'
+                      : 'text-neutral-500 hover:text-neutral-200'
                   )}
                 >
                   {mode.label}
@@ -704,8 +687,8 @@ export function Inspector({
             </div>
 
             {selectedObject.bgStyle !== 'none' && (
-              <div className="flex flex-col gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
-                <div className="flex items-center gap-2.5">
+              <div className="flex flex-col gap-2.5 pt-1">
+                <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={selectedObject.textBgColor}
@@ -713,7 +696,7 @@ export function Inspector({
                       onUpdateText({ textBgColor: e.target.value })
                     }
                     aria-label="Highlight background color"
-                    className="w-8 h-8 rounded-md border border-zinc-700 bg-transparent cursor-pointer shrink-0"
+                    className="w-7 h-7 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
                   />
                   <input
                     type="text"
@@ -721,7 +704,7 @@ export function Inspector({
                     onChange={(e) =>
                       onUpdateText({ textBgColor: e.target.value })
                     }
-                    className="flex-1 px-2 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-100 uppercase focus:outline-none focus:border-violet-500"
+                    className="flex-1 px-2.5 py-1 rounded-md bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-600"
                   />
                 </div>
 
@@ -733,11 +716,11 @@ export function Inspector({
                       onClick={() => onUpdateText({ textBgColor: swatch })}
                       aria-label={`Set highlight color ${swatch}`}
                       className={cn(
-                        'h-6 rounded-md border transition-transform hover:scale-105',
+                        'h-6 rounded border transition-colors',
                         selectedObject.textBgColor.toLowerCase() ===
                           swatch.toLowerCase()
-                          ? 'border-violet-400 ring-2 ring-violet-500/40'
-                          : 'border-white/15'
+                          ? 'border-white ring-1 ring-white/50'
+                          : 'border-neutral-800 hover:border-neutral-600'
                       )}
                       style={{ backgroundColor: swatch }}
                     />
@@ -748,8 +731,8 @@ export function Inspector({
                   <>
                     <div>
                       <div className="flex items-center justify-between text-[11px] mb-1">
-                        <span className="text-zinc-400">Pill Radius</span>
-                        <span className="font-mono text-zinc-200">
+                        <span className="text-neutral-400">Pill Radius</span>
+                        <span className="font-mono text-neutral-300">
                           {selectedObject.pillRadius}px
                         </span>
                       </div>
@@ -761,14 +744,14 @@ export function Inspector({
                         onChange={(e) =>
                           onUpdateText({ pillRadius: Number(e.target.value) })
                         }
-                        className="w-full accent-violet-500"
+                        className="w-full"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="text-zinc-400">Pad X</span>
-                          <span className="font-mono text-zinc-200">
+                          <span className="text-neutral-400">Pad X</span>
+                          <span className="font-mono text-neutral-300">
                             {selectedObject.pillPaddingX}
                           </span>
                         </div>
@@ -782,13 +765,13 @@ export function Inspector({
                               pillPaddingX: Number(e.target.value),
                             })
                           }
-                          className="w-full accent-violet-500"
+                          className="w-full"
                         />
                       </div>
                       <div>
                         <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="text-zinc-400">Pad Y</span>
-                          <span className="font-mono text-zinc-200">
+                          <span className="text-neutral-400">Pad Y</span>
+                          <span className="font-mono text-neutral-300">
                             {selectedObject.pillPaddingY}
                           </span>
                         </div>
@@ -802,7 +785,7 @@ export function Inspector({
                               pillPaddingY: Number(e.target.value),
                             })
                           }
-                          className="w-full accent-violet-500"
+                          className="w-full"
                         />
                       </div>
                     </div>
@@ -813,8 +796,8 @@ export function Inspector({
           </div>
 
           {/* Spacing Controls */}
-          <div className="border-t border-zinc-800/80 pt-4 flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
+            <h3 className="text-xs font-medium text-neutral-300">
               Spacing
             </h3>
 
@@ -822,11 +805,11 @@ export function Inspector({
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <label
                   htmlFor="inspector-line-height"
-                  className="text-zinc-400"
+                  className="text-neutral-400"
                 >
                   Line Height
                 </label>
-                <span className="font-mono text-zinc-200">
+                <span className="font-mono text-neutral-300">
                   {selectedObject.lineHeight.toFixed(2)}
                 </span>
               </div>
@@ -841,7 +824,7 @@ export function Inspector({
                 onChange={(e) =>
                   onUpdateText({ lineHeight: Number(e.target.value) })
                 }
-                className="w-full accent-violet-500"
+                className="w-full"
               />
             </div>
 
@@ -849,11 +832,11 @@ export function Inspector({
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <label
                   htmlFor="inspector-char-spacing"
-                  className="text-zinc-400"
+                  className="text-neutral-400"
                 >
                   Letter Spacing
                 </label>
-                <span className="font-mono text-zinc-200">
+                <span className="font-mono text-neutral-300">
                   {selectedObject.charSpacing}
                 </span>
               </div>
@@ -868,7 +851,7 @@ export function Inspector({
                 onChange={(e) =>
                   onUpdateText({ charSpacing: Number(e.target.value) })
                 }
-                className="w-full accent-violet-500"
+                className="w-full"
               />
             </div>
           </div>
@@ -886,30 +869,30 @@ export function Inspector({
       )}
 
       {/* COMMON TRANSFORM & LAYER ORDER */}
-      <div className="border-t border-zinc-800/80 pt-4 flex flex-col gap-3">
+      <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Transform & Opacity
+          <h3 className="text-xs font-medium text-neutral-300">
+            Transform
           </h3>
           <button
             type="button"
             onClick={() => onUpdateCommon({ resetTransform: true })}
-            className="flex items-center gap-1 text-[11px] text-violet-400 hover:text-violet-300 transition-colors"
+            className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-neutral-200 transition-colors"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Reset</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1.5">
           <button
             type="button"
             onClick={() => onUpdateCommon({ flipX: !selectedObject.flipX })}
             className={cn(
-              'flex items-center justify-center gap-1.5 py-2 rounded-xl border text-xs font-medium transition-colors',
+              'flex items-center justify-center gap-1.5 py-1.5 rounded-md border text-xs font-medium transition-colors',
               selectedObject.flipX
-                ? 'bg-violet-600/20 border-violet-500 text-white'
-                : 'bg-zinc-900/70 border-zinc-800 text-zinc-300 hover:bg-zinc-800'
+                ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800/70 hover:text-neutral-200'
             )}
           >
             <FlipHorizontal2 className="w-3.5 h-3.5" />
@@ -919,10 +902,10 @@ export function Inspector({
             type="button"
             onClick={() => onUpdateCommon({ flipY: !selectedObject.flipY })}
             className={cn(
-              'flex items-center justify-center gap-1.5 py-2 rounded-xl border text-xs font-medium transition-colors',
+              'flex items-center justify-center gap-1.5 py-1.5 rounded-md border text-xs font-medium transition-colors',
               selectedObject.flipY
-                ? 'bg-violet-600/20 border-violet-500 text-white'
-                : 'bg-zinc-900/70 border-zinc-800 text-zinc-300 hover:bg-zinc-800'
+                ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800/70 hover:text-neutral-200'
             )}
           >
             <FlipVertical2 className="w-3.5 h-3.5" />
@@ -932,8 +915,8 @@ export function Inspector({
 
         <div>
           <div className="flex items-center justify-between text-[11px] mb-1">
-            <span className="text-zinc-400">Opacity</span>
-            <span className="font-mono text-zinc-200">
+            <span className="text-neutral-400">Opacity</span>
+            <span className="font-mono text-neutral-300">
               {Math.round(selectedObject.opacity * 100)}%
             </span>
           </div>
@@ -946,14 +929,14 @@ export function Inspector({
             onChange={(e) =>
               onUpdateCommon({ opacity: Number(e.target.value) })
             }
-            className="w-full accent-violet-500"
+            className="w-full"
           />
         </div>
 
         <div>
           <div className="flex items-center justify-between text-[11px] mb-1">
-            <span className="text-zinc-400">Rotation</span>
-            <span className="font-mono text-zinc-200">
+            <span className="text-neutral-400">Rotation</span>
+            <span className="font-mono text-neutral-300">
               {selectedObject.angle}°
             </span>
           </div>
@@ -968,22 +951,22 @@ export function Inspector({
                 : selectedObject.angle
             }
             onChange={(e) => onUpdateCommon({ angle: Number(e.target.value) })}
-            className="w-full accent-violet-500"
+            className="w-full"
           />
         </div>
       </div>
 
       {/* Layer Ordering */}
-      <div className="border-t border-zinc-800/80 pt-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2.5">
-          Layer Order
+      <div className="border-t border-neutral-800/80 pt-3.5">
+        <h3 className="text-xs font-medium text-neutral-300 mb-2">
+          Arrange
         </h3>
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-4 gap-1">
           <button
             type="button"
             onClick={onBringToFront}
             title="Bring to Front"
-            className="flex flex-col items-center gap-1 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[10px] text-zinc-300 transition-colors"
+            className="flex flex-col items-center gap-1 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
           >
             <ArrowUpToLine className="w-3.5 h-3.5" />
             <span>Front</span>
@@ -992,7 +975,7 @@ export function Inspector({
             type="button"
             onClick={onBringForward}
             title="Bring Forward"
-            className="flex flex-col items-center gap-1 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[10px] text-zinc-300 transition-colors"
+            className="flex flex-col items-center gap-1 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
           >
             <ArrowUp className="w-3.5 h-3.5" />
             <span>Forward</span>
@@ -1001,7 +984,7 @@ export function Inspector({
             type="button"
             onClick={onSendBackward}
             title="Send Backward"
-            className="flex flex-col items-center gap-1 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[10px] text-zinc-300 transition-colors"
+            className="flex flex-col items-center gap-1 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
           >
             <ArrowDown className="w-3.5 h-3.5" />
             <span>Back</span>
@@ -1010,7 +993,7 @@ export function Inspector({
             type="button"
             onClick={onSendToBack}
             title="Send to Back"
-            className="flex flex-col items-center gap-1 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[10px] text-zinc-300 transition-colors"
+            className="flex flex-col items-center gap-1 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
           >
             <ArrowDownToLine className="w-3.5 h-3.5" />
             <span>Bottom</span>
@@ -1020,4 +1003,3 @@ export function Inspector({
     </aside>
   );
 }
-

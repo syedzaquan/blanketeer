@@ -28,7 +28,6 @@ export function MobileFontSizeSlider({
     if (!track) return;
     const rect = track.getBoundingClientRect();
     if (rect.height <= 0) return;
-    // Instagram-style vertical convention: top = larger font, bottom = smaller font
     const nextRatio = Math.min(
       1,
       Math.max(0, (rect.bottom - clientY) / rect.height)
@@ -80,16 +79,16 @@ export function MobileFontSizeSlider({
     >
       <div
         className={cn(
-          'px-1.5 py-0.5 rounded-full text-[10px] font-mono font-semibold border backdrop-blur-md transition-colors shadow-md min-w-[2.1rem] text-center',
+          'px-1.5 py-0.5 rounded-md text-[10px] font-mono font-medium border transition-colors min-w-[2.1rem] text-center',
           isDragging
-            ? 'bg-violet-600 border-violet-400/60 text-white'
-            : 'bg-zinc-950/80 border-white/15 text-zinc-200'
+            ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+            : 'bg-[#141414] border-neutral-800 text-neutral-200'
         )}
       >
         {Math.round(fontSize)}
       </div>
 
-      <div className="px-1.5 py-2.5 rounded-full bg-zinc-950/75 border border-white/15 backdrop-blur-md shadow-xl">
+      <div className="px-1.5 py-2.5 rounded-lg bg-[#141414] border border-neutral-800">
         <div
           ref={trackRef}
           role="slider"
@@ -106,21 +105,19 @@ export function MobileFontSizeSlider({
           onKeyDown={handleKeyDown}
           className="relative w-5 h-36 sm:h-44 flex items-center justify-center touch-none cursor-ns-resize outline-none"
         >
-          <div className="relative w-1.5 h-full rounded-full bg-white/20 overflow-hidden">
+          <div className="relative w-1 h-full rounded-full bg-neutral-800 overflow-hidden">
             <div
-              className="absolute bottom-0 left-0 right-0 rounded-full bg-gradient-to-t from-violet-500 to-fuchsia-400"
+              className="absolute bottom-0 left-0 right-0 rounded-full bg-neutral-200"
               style={{ height: `${percent}%` }}
             />
           </div>
 
           <div
             className={cn(
-              'pointer-events-none absolute w-[18px] h-[18px] rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.55)] ring-2 transition-transform',
-              isDragging
-                ? 'ring-violet-400 scale-110'
-                : 'ring-white/30 scale-100'
+              'pointer-events-none absolute w-3.5 h-3.5 rounded-full bg-white border border-neutral-900 transition-transform',
+              isDragging ? 'scale-110' : 'scale-100'
             )}
-            style={{ bottom: `calc(${percent}% - 9px)` }}
+            style={{ bottom: `calc(${percent}% - 7px)` }}
           />
         </div>
       </div>

@@ -31,26 +31,26 @@ export function LayersTab({
   onDeleteLayer,
 }: LayersTabProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          Layer Stack
+        <h2 className="text-xs font-medium text-neutral-300">
+          Layers
         </h2>
-        <span className="text-[11px] font-mono text-zinc-500">
+        <span className="text-[11px] font-mono text-neutral-500">
           {layers.length} {layers.length === 1 ? 'layer' : 'layers'}
         </span>
       </div>
 
       {layers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 text-center">
-          <Layers className="w-7 h-7 text-zinc-600 mb-2" />
-          <p className="text-xs font-medium text-zinc-300">No layers yet</p>
-          <p className="text-[11px] text-zinc-500 mt-1">
-            Add text or upload an image to start composing your story.
+        <div className="flex flex-col items-center justify-center py-8 px-3 rounded-md bg-neutral-900/50 border border-neutral-800/80 text-center">
+          <Layers className="w-5 h-5 text-neutral-600 mb-1.5" />
+          <p className="text-xs font-medium text-neutral-400">No layers</p>
+          <p className="text-[11px] text-neutral-600 mt-0.5">
+            Add text or an image to begin.
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1">
           {layers.map((layer, displayIdx) => {
             const Icon =
               layer.kind === 'text'
@@ -72,18 +72,18 @@ export function LayersTab({
                   }
                 }}
                 className={cn(
-                  'group flex items-center gap-2 p-2 rounded-xl border transition-all cursor-pointer',
+                  'group flex items-center gap-2 px-2 py-1.5 rounded-md border transition-colors cursor-pointer',
                   layer.isSelected
-                    ? 'bg-violet-600/15 border-violet-500/60 text-white'
-                    : 'bg-zinc-900/60 border-zinc-800/80 text-zinc-300 hover:bg-zinc-800/70'
+                    ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                    : 'bg-neutral-900/50 border-neutral-800/80 text-neutral-300 hover:bg-neutral-800/60'
                 )}
               >
                 <div
                   className={cn(
-                    'w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
+                    'w-6 h-6 rounded flex items-center justify-center shrink-0',
                     layer.isSelected
-                      ? 'bg-violet-500/25 text-violet-300'
-                      : 'bg-zinc-800 text-zinc-400'
+                      ? 'bg-neutral-700 text-neutral-100'
+                      : 'bg-neutral-800/80 text-neutral-500'
                   )}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -92,7 +92,7 @@ export function LayersTab({
                 <span
                   className={cn(
                     'flex-1 min-w-0 truncate text-xs font-medium',
-                    !layer.visible && 'opacity-45 line-through'
+                    !layer.visible && 'opacity-40 line-through'
                   )}
                 >
                   {layer.label}
@@ -108,10 +108,10 @@ export function LayersTab({
                     onClick={() => onMoveLayer(layer.id, 'up')}
                     title="Move Up"
                     className={cn(
-                      'p-1 rounded-md transition-colors',
+                      'p-1 rounded transition-colors',
                       displayIdx === 0
-                        ? 'text-zinc-700 cursor-not-allowed'
-                        : 'text-zinc-400 hover:text-white hover:bg-zinc-700/70'
+                        ? 'text-neutral-700 cursor-not-allowed'
+                        : 'text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60'
                     )}
                   >
                     <ArrowUp className="w-3 h-3" />
@@ -122,10 +122,10 @@ export function LayersTab({
                     onClick={() => onMoveLayer(layer.id, 'down')}
                     title="Move Down"
                     className={cn(
-                      'p-1 rounded-md transition-colors',
+                      'p-1 rounded transition-colors',
                       displayIdx === layers.length - 1
-                        ? 'text-zinc-700 cursor-not-allowed'
-                        : 'text-zinc-400 hover:text-white hover:bg-zinc-700/70'
+                        ? 'text-neutral-700 cursor-not-allowed'
+                        : 'text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60'
                     )}
                   >
                     <ArrowDown className="w-3 h-3" />
@@ -134,22 +134,22 @@ export function LayersTab({
                     type="button"
                     onClick={() => onToggleVisibility(layer.id)}
                     title={layer.visible ? 'Hide Layer' : 'Show Layer'}
-                    className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-700/70 transition-colors"
+                    className="p-1 rounded text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60 transition-colors"
                   >
                     {layer.visible ? (
                       <Eye className="w-3 h-3" />
                     ) : (
-                      <EyeOff className="w-3 h-3 text-zinc-500" />
+                      <EyeOff className="w-3 h-3 text-neutral-600" />
                     )}
                   </button>
                   <button
                     type="button"
                     onClick={() => onToggleLock(layer.id)}
                     title={layer.locked ? 'Unlock Layer' : 'Lock Layer'}
-                    className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-700/70 transition-colors"
+                    className="p-1 rounded text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60 transition-colors"
                   >
                     {layer.locked ? (
-                      <Lock className="w-3 h-3 text-amber-400" />
+                      <Lock className="w-3 h-3 text-neutral-200" />
                     ) : (
                       <Unlock className="w-3 h-3" />
                     )}
@@ -158,7 +158,7 @@ export function LayersTab({
                     type="button"
                     onClick={() => onDeleteLayer(layer.id)}
                     title="Delete Layer"
-                    className="p-1 rounded-md text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    className="p-1 rounded text-neutral-500 hover:text-red-400 hover:bg-neutral-700/60 transition-colors"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -171,4 +171,3 @@ export function LayersTab({
     </div>
   );
 }
-

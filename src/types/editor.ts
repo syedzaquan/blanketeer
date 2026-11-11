@@ -34,10 +34,25 @@ export const ASPECT_RATIO_PRESETS: Record<AspectRatioKey, AspectRatioPreset> = {
 
 export type BackgroundMode = 'color' | 'gradient' | 'image';
 
+export interface GradientStop {
+  offset: number;
+  color: string;
+}
+
+export interface GradientHotspot {
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+  stops: GradientStop[];
+}
+
 export interface GradientConfig {
   startColor: string;
   endColor: string;
   angle: number;
+  stops?: GradientStop[];
+  hotspot?: GradientHotspot;
 }
 
 export type GradientBlendMode =

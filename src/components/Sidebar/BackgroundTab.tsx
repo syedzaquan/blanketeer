@@ -1,11 +1,7 @@
 import { useRef, type ChangeEvent } from 'react';
 import {
   ArrowUpDown,
-  Image as ImageIcon,
-  Palette,
   RotateCcw,
-  SlidersHorizontal,
-  Sparkles,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -22,7 +18,10 @@ import {
   DEFAULT_BG_ADJUSTMENTS,
   isNeutralAdjustments,
 } from '../../utils/backgroundFilters';
-import { DEFAULT_OVERLAY_GRADIENT } from '../../utils/canvasHelpers';
+import {
+  DEFAULT_OVERLAY_GRADIENT,
+  buildGradientCssPreview,
+} from '../../utils/canvasHelpers';
 import { cn } from '../../utils/cn';
 
 interface BackgroundTabProps {
@@ -50,28 +49,172 @@ const SOLID_SWATCHES = [
 
 const GRADIENT_PRESETS: { name: string; gradient: GradientConfig }[] = [
   {
-    name: 'Twilight',
-    gradient: { startColor: '#2e1065', endColor: '#c026d3', angle: 145 },
+    name: 'Rosewood',
+    gradient: {
+      startColor: '#f6c5bd',
+      endColor: '#200714',
+      angle: 180,
+      stops: [
+        { offset: 0, color: '#f6c5bd' },
+        { offset: 0.18, color: '#f19692' },
+        { offset: 0.38, color: '#e2546e' },
+        { offset: 0.54, color: '#b82654' },
+        { offset: 0.72, color: '#6c1439' },
+        { offset: 0.88, color: '#360c20' },
+        { offset: 1, color: '#200714' },
+      ],
+      hotspot: {
+        cx: 0.82,
+        cy: 0.16,
+        rx: 0.65,
+        ry: 0.45,
+        stops: [
+          { offset: 0, color: 'rgba(255, 240, 235, 0.95)' },
+          { offset: 0.35, color: 'rgba(253, 206, 196, 0.6)' },
+          { offset: 0.7, color: 'rgba(240, 140, 148, 0)' },
+        ],
+      },
+    },
   },
   {
-    name: 'Sunset',
-    gradient: { startColor: '#f97316', endColor: '#db2777', angle: 135 },
+    name: 'Amber Dusk',
+    gradient: {
+      startColor: '#fde2c4',
+      endColor: '#1a0603',
+      angle: 180,
+      stops: [
+        { offset: 0, color: '#fde2c4' },
+        { offset: 0.18, color: '#f7b279' },
+        { offset: 0.38, color: '#ea6a37' },
+        { offset: 0.55, color: '#b8371b' },
+        { offset: 0.73, color: '#69190b' },
+        { offset: 0.88, color: '#330b05' },
+        { offset: 1, color: '#1a0603' },
+      ],
+      hotspot: {
+        cx: 0.8,
+        cy: 0.15,
+        rx: 0.65,
+        ry: 0.45,
+        stops: [
+          { offset: 0, color: 'rgba(255, 248, 237, 0.95)' },
+          { offset: 0.35, color: 'rgba(254, 215, 170, 0.58)' },
+          { offset: 0.7, color: 'rgba(234, 106, 55, 0)' },
+        ],
+      },
+    },
   },
   {
-    name: 'Ocean',
-    gradient: { startColor: '#0f172a', endColor: '#0284c7', angle: 160 },
+    name: 'Iris Glow',
+    gradient: {
+      startColor: '#dcd7fe',
+      endColor: '#09051c',
+      angle: 180,
+      stops: [
+        { offset: 0, color: '#dcd7fe' },
+        { offset: 0.18, color: '#b19ffc' },
+        { offset: 0.38, color: '#7c5dfa' },
+        { offset: 0.55, color: '#4e2ec8' },
+        { offset: 0.73, color: '#291575' },
+        { offset: 0.88, color: '#140a3d' },
+        { offset: 1, color: '#09051c' },
+      ],
+      hotspot: {
+        cx: 0.82,
+        cy: 0.16,
+        rx: 0.65,
+        ry: 0.45,
+        stops: [
+          { offset: 0, color: 'rgba(245, 243, 255, 0.95)' },
+          { offset: 0.35, color: 'rgba(216, 180, 254, 0.55)' },
+          { offset: 0.7, color: 'rgba(124, 93, 250, 0)' },
+        ],
+      },
+    },
   },
   {
-    name: 'Cream',
-    gradient: { startColor: '#fef3c7', endColor: '#fde68a', angle: 180 },
+    name: 'Ocean Mist',
+    gradient: {
+      startColor: '#ccf2f4',
+      endColor: '#03101c',
+      angle: 180,
+      stops: [
+        { offset: 0, color: '#ccf2f4' },
+        { offset: 0.18, color: '#7fd6e2' },
+        { offset: 0.38, color: '#2ea1c4' },
+        { offset: 0.55, color: '#15678f' },
+        { offset: 0.73, color: '#0b3957' },
+        { offset: 0.88, color: '#061f33' },
+        { offset: 1, color: '#03101c' },
+      ],
+      hotspot: {
+        cx: 0.82,
+        cy: 0.16,
+        rx: 0.65,
+        ry: 0.45,
+        stops: [
+          { offset: 0, color: 'rgba(240, 253, 250, 0.95)' },
+          { offset: 0.35, color: 'rgba(165, 243, 252, 0.58)' },
+          { offset: 0.7, color: 'rgba(46, 161, 196, 0)' },
+        ],
+      },
+    },
   },
   {
-    name: 'Sage',
-    gradient: { startColor: '#064e3b', endColor: '#10b981', angle: 150 },
+    name: 'Sage Bloom',
+    gradient: {
+      startColor: '#d3f5e3',
+      endColor: '#03120b',
+      angle: 180,
+      stops: [
+        { offset: 0, color: '#d3f5e3' },
+        { offset: 0.18, color: '#8ce0b5' },
+        { offset: 0.38, color: '#37a978' },
+        { offset: 0.55, color: '#19734f' },
+        { offset: 0.73, color: '#0c422c' },
+        { offset: 0.88, color: '#062417' },
+        { offset: 1, color: '#03120b' },
+      ],
+      hotspot: {
+        cx: 0.82,
+        cy: 0.16,
+        rx: 0.65,
+        ry: 0.45,
+        stops: [
+          { offset: 0, color: 'rgba(240, 253, 244, 0.95)' },
+          { offset: 0.35, color: 'rgba(167, 243, 208, 0.55)' },
+          { offset: 0.7, color: 'rgba(55, 169, 120, 0)' },
+        ],
+      },
+    },
   },
   {
     name: 'Obsidian',
-    gradient: { startColor: '#09090b', endColor: '#3f3f46', angle: 180 },
+    gradient: {
+      startColor: '#e5e5e5',
+      endColor: '#08080a',
+      angle: 180,
+      stops: [
+        { offset: 0, color: '#e5e5e5' },
+        { offset: 0.18, color: '#b8b8be' },
+        { offset: 0.38, color: '#75757e' },
+        { offset: 0.54, color: '#45454d' },
+        { offset: 0.72, color: '#26262b' },
+        { offset: 0.88, color: '#131316' },
+        { offset: 1, color: '#08080a' },
+      ],
+      hotspot: {
+        cx: 0.82,
+        cy: 0.16,
+        rx: 0.65,
+        ry: 0.45,
+        stops: [
+          { offset: 0, color: 'rgba(255, 255, 255, 0.92)' },
+          { offset: 0.35, color: 'rgba(212, 212, 216, 0.5)' },
+          { offset: 0.7, color: 'rgba(117, 117, 126, 0)' },
+        ],
+      },
+    },
   },
 ];
 
@@ -214,21 +357,20 @@ export function BackgroundTab({
   ];
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {/* Mode Switcher */}
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2.5">
-          Background Type
+        <h2 className="text-xs font-medium text-neutral-300 mb-2">
+          Background
         </h2>
-        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+        <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
           {(
             [
-              { id: 'color', label: 'Solid', icon: Palette },
-              { id: 'gradient', label: 'Gradient', icon: Sparkles },
-              { id: 'image', label: 'Image', icon: ImageIcon },
+              { id: 'color', label: 'Solid' },
+              { id: 'gradient', label: 'Gradient' },
+              { id: 'image', label: 'Image' },
             ] as const
           ).map((item) => {
-            const Icon = item.icon;
             const active = background.mode === item.id;
             return (
               <button
@@ -236,14 +378,13 @@ export function BackgroundTab({
                 type="button"
                 onClick={() => onModeChange(item.id)}
                 className={cn(
-                  'flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all',
+                  'py-1.5 rounded-[5px] text-xs font-medium transition-colors',
                   active
-                    ? 'bg-violet-600 text-white shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-neutral-800 text-neutral-100'
+                    : 'text-neutral-500 hover:text-neutral-200'
                 )}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
+                {item.label}
               </button>
             );
           })}
@@ -252,31 +393,28 @@ export function BackgroundTab({
 
       {/* Solid Color Controls */}
       {background.mode === 'color' && (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
             <input
               type="color"
               value={background.color}
               onChange={(e) => onColorChange(e.target.value)}
               aria-label="Solid background color"
-              className="w-10 h-10 rounded-lg border border-zinc-700 bg-transparent cursor-pointer shrink-0"
+              className="w-7 h-7 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
             />
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] text-zinc-400 mb-1">Canvas Color</p>
-              <input
-                type="text"
-                value={background.color}
-                onChange={(e) => onColorChange(e.target.value)}
-                className="w-full px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-100 uppercase focus:outline-none focus:border-violet-500"
-              />
-            </div>
+            <input
+              type="text"
+              value={background.color}
+              onChange={(e) => onColorChange(e.target.value)}
+              className="flex-1 px-2.5 py-1 rounded-md bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-200 focus:outline-none focus:border-neutral-600"
+            />
           </div>
 
           <div>
-            <p className="text-xs font-medium text-zinc-400 mb-2">
-              Studio Swatches
+            <p className="text-[11px] text-neutral-500 mb-1.5">
+              Presets
             </p>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 gap-1.5">
               {SOLID_SWATCHES.map((swatch) => (
                 <button
                   key={swatch}
@@ -284,10 +422,10 @@ export function BackgroundTab({
                   onClick={() => onColorChange(swatch)}
                   aria-label={`Set background ${swatch}`}
                   className={cn(
-                    'w-full aspect-square rounded-lg border transition-transform hover:scale-105',
+                    'w-full h-7 rounded border transition-colors',
                     background.color.toLowerCase() === swatch.toLowerCase()
-                      ? 'border-violet-400 ring-2 ring-violet-500/40'
-                      : 'border-white/15'
+                      ? 'border-white ring-1 ring-white/50'
+                      : 'border-neutral-800 hover:border-neutral-600'
                   )}
                   style={{ backgroundColor: swatch }}
                 />
@@ -299,53 +437,55 @@ export function BackgroundTab({
 
       {/* Gradient Controls */}
       {background.mode === 'gradient' && (
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-2.5">
-            <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800 cursor-pointer">
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex items-center gap-2 p-2 rounded-md bg-neutral-900 border border-neutral-800 cursor-pointer">
               <input
                 type="color"
                 value={background.gradient.startColor}
                 onChange={(e) =>
                   onGradientChange({
-                    ...background.gradient,
                     startColor: e.target.value,
+                    endColor: background.gradient.endColor,
+                    angle: background.gradient.angle,
                   })
                 }
-                className="w-8 h-8 rounded-md border border-zinc-700 bg-transparent cursor-pointer"
+                className="w-6 h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
               />
               <div className="min-w-0">
-                <span className="block text-[10px] text-zinc-400">Start</span>
-                <span className="block text-xs font-mono text-zinc-200 uppercase">
+                <span className="block text-[10px] text-neutral-500">Start</span>
+                <span className="block text-xs font-mono text-neutral-200">
                   {background.gradient.startColor}
                 </span>
               </div>
             </label>
 
-            <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800 cursor-pointer">
+            <label className="flex items-center gap-2 p-2 rounded-md bg-neutral-900 border border-neutral-800 cursor-pointer">
               <input
                 type="color"
                 value={background.gradient.endColor}
                 onChange={(e) =>
                   onGradientChange({
-                    ...background.gradient,
+                    startColor: background.gradient.startColor,
                     endColor: e.target.value,
+                    angle: background.gradient.angle,
                   })
                 }
-                className="w-8 h-8 rounded-md border border-zinc-700 bg-transparent cursor-pointer"
+                className="w-6 h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
               />
               <div className="min-w-0">
-                <span className="block text-[10px] text-zinc-400">End</span>
-                <span className="block text-xs font-mono text-zinc-200 uppercase">
+                <span className="block text-[10px] text-neutral-500">End</span>
+                <span className="block text-xs font-mono text-neutral-200">
                   {background.gradient.endColor}
                 </span>
               </div>
             </label>
           </div>
 
-          <div className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
-            <div className="flex items-center justify-between text-xs mb-2">
-              <span className="text-zinc-400">Gradient Angle</span>
-              <span className="font-mono text-zinc-200">
+          <div>
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-neutral-400">Angle</span>
+              <span className="font-mono text-neutral-300">
                 {background.gradient.angle}°
               </span>
             </div>
@@ -360,12 +500,12 @@ export function BackgroundTab({
                   angle: Number(e.target.value),
                 })
               }
-              className="w-full accent-violet-500"
+              className="w-full"
             />
           </div>
 
           <div>
-            <p className="text-xs font-medium text-zinc-400 mb-2">
+            <p className="text-[11px] text-neutral-500 mb-1.5">
               Curated Gradients
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -374,9 +514,10 @@ export function BackgroundTab({
                   key={preset.name}
                   type="button"
                   onClick={() => onGradientChange(preset.gradient)}
-                  className="group relative h-12 rounded-xl border border-white/10 overflow-hidden transition-transform hover:scale-[1.03]"
+                  className="group relative h-12 rounded-md border border-white/10 overflow-hidden transition-transform hover:scale-[1.02]"
                   style={{
-                    background: `linear-gradient(${preset.gradient.angle}deg, ${preset.gradient.startColor}, ${preset.gradient.endColor})`,
+                    backgroundColor: preset.gradient.endColor,
+                    backgroundImage: buildGradientCssPreview(preset.gradient),
                   }}
                 >
                   <span className="absolute inset-x-0 bottom-0 py-0.5 bg-black/45 backdrop-blur-[2px] text-[10px] font-medium text-white">
@@ -391,7 +532,7 @@ export function BackgroundTab({
 
       {/* Background Image Controls */}
       {background.mode === 'image' && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -403,9 +544,9 @@ export function BackgroundTab({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors"
+            className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-md bg-neutral-100 hover:bg-white text-neutral-950 text-xs font-medium transition-colors"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-3.5 h-3.5" />
             <span>
               {background.image
                 ? 'Replace Background Image'
@@ -415,17 +556,17 @@ export function BackgroundTab({
 
           {background.image ? (
             <>
-              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+              <div className="grid grid-cols-2 gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
                 {(['cover', 'contain'] as const).map((fitMode) => (
                   <button
                     key={fitMode}
                     type="button"
                     onClick={() => onUpdateBgImageConfig({ fitMode })}
                     className={cn(
-                      'py-1.5 rounded-lg text-xs font-medium capitalize transition-colors',
+                      'py-1 rounded-[5px] text-xs font-medium transition-colors',
                       background.image?.fitMode === fitMode
-                        ? 'bg-zinc-800 text-white'
-                        : 'text-zinc-400 hover:text-zinc-200'
+                        ? 'bg-neutral-800 text-neutral-100'
+                        : 'text-neutral-500 hover:text-neutral-200'
                     )}
                   >
                     {fitMode === 'cover' ? 'Fill Frame' : 'Fit Whole'}
@@ -433,11 +574,11 @@ export function BackgroundTab({
                 ))}
               </div>
 
-              <div className="flex flex-col gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
+              <div className="flex flex-col gap-2.5 pt-2 border-t border-neutral-800/80">
                 <div>
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-zinc-400">Zoom Scale</span>
-                    <span className="font-mono text-zinc-200">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Zoom Scale</span>
+                    <span className="font-mono text-neutral-300">
                       {background.image.zoom.toFixed(2)}×
                     </span>
                   </div>
@@ -450,14 +591,14 @@ export function BackgroundTab({
                     onChange={(e) =>
                       onUpdateBgImageConfig({ zoom: Number(e.target.value) })
                     }
-                    className="w-full accent-violet-500"
+                    className="w-full"
                   />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-zinc-400">Pan X</span>
-                    <span className="font-mono text-zinc-200">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Pan X</span>
+                    <span className="font-mono text-neutral-300">
                       {Math.round(background.image.panX)}px
                     </span>
                   </div>
@@ -470,14 +611,14 @@ export function BackgroundTab({
                     onChange={(e) =>
                       onUpdateBgImageConfig({ panX: Number(e.target.value) })
                     }
-                    className="w-full accent-violet-500"
+                    className="w-full"
                   />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-zinc-400">Pan Y</span>
-                    <span className="font-mono text-zinc-200">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Pan Y</span>
+                    <span className="font-mono text-neutral-300">
                       {Math.round(background.image.panY)}px
                     </span>
                   </div>
@@ -490,41 +631,38 @@ export function BackgroundTab({
                     onChange={(e) =>
                       onUpdateBgImageConfig({ panY: Number(e.target.value) })
                     }
-                    className="w-full accent-violet-500"
+                    className="w-full"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
                   onClick={() =>
                     onUpdateBgImageConfig({ zoom: 1, panX: 0, panY: 0 })
                   }
-                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-medium text-zinc-200 transition-colors"
+                  className="flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-medium text-neutral-300 transition-colors"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3 h-3" />
                   <span>Reset View</span>
                 </button>
                 <button
                   type="button"
                   onClick={onRemoveBgImage}
-                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-xs font-medium text-rose-300 transition-colors"
+                  className="flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-medium text-neutral-400 hover:text-red-400 transition-colors"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3 h-3" />
                   <span>Remove</span>
                 </button>
               </div>
 
-              {/* Background Image Gradient Scrim / Overlay Controls */}
-              <div className="flex flex-col gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
+              {/* Background Image Gradient Overlay Controls */}
+              <div className="flex flex-col gap-2.5 pt-3 border-t border-neutral-800/80">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                    <span className="text-xs font-semibold text-zinc-200">
-                      Gradient Overlay
-                    </span>
-                  </div>
+                  <span className="text-xs font-medium text-neutral-300">
+                    Gradient Overlay
+                  </span>
                   <button
                     id="bg-overlay-gradient-toggle"
                     type="button"
@@ -535,10 +673,10 @@ export function BackgroundTab({
                       updateOverlayGradient({ enabled: !overlayGradient.enabled })
                     }
                     className={cn(
-                      'px-2.5 py-0.5 rounded-full text-[10px] font-semibold border transition-colors',
+                      'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
                       overlayGradient.enabled
-                        ? 'bg-violet-600 border-violet-400/50 text-white'
-                        : 'bg-zinc-950 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                        ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                        : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
                     )}
                   >
                     {overlayGradient.enabled ? 'On' : 'Off'}
@@ -546,26 +684,24 @@ export function BackgroundTab({
                 </div>
 
                 {overlayGradient.enabled && (
-                  <>
-                    {/* Quick Overlay Presets */}
-                    <div className="grid grid-cols-2 gap-1.5">
+                  <div className="flex flex-col gap-2.5">
+                    <div className="grid grid-cols-2 gap-1">
                       {OVERLAY_PRESETS.map((preset) => (
                         <button
                           key={preset.name}
                           type="button"
                           onClick={() => updateOverlayGradient(preset.patch)}
-                          className="py-1.5 px-2 rounded-lg bg-zinc-950/70 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-medium text-zinc-300 transition-colors text-center"
+                          className="py-1 px-2 rounded bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[11px] font-medium text-neutral-300 transition-colors text-center"
                         >
                           {preset.name}
                         </button>
                       ))}
                     </div>
 
-                    {/* Start & End Colors + Alpha */}
-                    <div className="flex flex-col gap-2.5 pt-1 border-t border-zinc-800/70">
+                    <div className="flex flex-col gap-2 pt-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-zinc-400">
-                          Gradient Stops
+                        <span className="text-[11px] text-neutral-400">
+                          Stops
                         </span>
                         <button
                           type="button"
@@ -578,16 +714,16 @@ export function BackgroundTab({
                             })
                           }
                           title="Swap start and end stops"
-                          className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-[10px] text-zinc-300 transition-colors"
+                          className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
                         >
                           <ArrowUpDown className="w-2.5 h-2.5" />
                           <span>Swap</span>
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-2 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div className="p-2 rounded-md bg-neutral-900 border border-neutral-800 flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5">
                             <input
                               type="color"
                               aria-label="Overlay start color"
@@ -597,13 +733,13 @@ export function BackgroundTab({
                                   startColor: e.target.value,
                                 })
                               }
-                              className="w-6 h-6 rounded border border-zinc-700 bg-transparent cursor-pointer shrink-0"
+                              className="w-5 h-5 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
                             />
-                            <div className="min-w-0 flex-1">
-                              <span className="block text-[10px] text-zinc-400">
+                            <div className="min-w-0 flex-1 flex items-center justify-between">
+                              <span className="text-[10px] text-neutral-400">
                                 Start
                               </span>
-                              <span className="block text-[10px] font-mono text-zinc-200">
+                              <span className="text-[10px] font-mono text-neutral-300">
                                 {overlayGradient.startAlpha}%
                               </span>
                             </div>
@@ -621,12 +757,12 @@ export function BackgroundTab({
                                 startAlpha: Number(e.target.value),
                               })
                             }
-                            className="w-full accent-violet-500"
+                            className="w-full"
                           />
                         </div>
 
-                        <div className="p-2 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-md bg-neutral-900 border border-neutral-800 flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5">
                             <input
                               type="color"
                               aria-label="Overlay end color"
@@ -634,13 +770,13 @@ export function BackgroundTab({
                               onChange={(e) =>
                                 updateOverlayGradient({ endColor: e.target.value })
                               }
-                              className="w-6 h-6 rounded border border-zinc-700 bg-transparent cursor-pointer shrink-0"
+                              className="w-5 h-5 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
                             />
-                            <div className="min-w-0 flex-1">
-                              <span className="block text-[10px] text-zinc-400">
+                            <div className="min-w-0 flex-1 flex items-center justify-between">
+                              <span className="text-[10px] text-neutral-400">
                                 End
                               </span>
-                              <span className="block text-[10px] font-mono text-zinc-200">
+                              <span className="text-[10px] font-mono text-neutral-300">
                                 {overlayGradient.endAlpha}%
                               </span>
                             </div>
@@ -658,22 +794,21 @@ export function BackgroundTab({
                                 endAlpha: Number(e.target.value),
                               })
                             }
-                            className="w-full accent-violet-500"
+                            className="w-full"
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Opacity */}
                     <div>
                       <div className="flex items-center justify-between text-xs mb-1">
                         <label
                           htmlFor="bg-overlay-opacity"
-                          className="text-zinc-400"
+                          className="text-neutral-400"
                         >
                           Gradient Opacity
                         </label>
-                        <span className="font-mono text-zinc-200">
+                        <span className="font-mono text-neutral-300">
                           {overlayGradient.opacity}%
                         </span>
                       </div>
@@ -690,20 +825,19 @@ export function BackgroundTab({
                             opacity: Number(e.target.value),
                           })
                         }
-                        className="w-full accent-violet-500"
+                        className="w-full"
                       />
                     </div>
 
-                    {/* Angle */}
                     <div>
                       <div className="flex items-center justify-between text-xs mb-1">
                         <label
                           htmlFor="bg-overlay-angle"
-                          className="text-zinc-400"
+                          className="text-neutral-400"
                         >
                           Gradient Angle
                         </label>
-                        <span className="font-mono text-zinc-200">
+                        <span className="font-mono text-neutral-300">
                           {overlayGradient.angle}°
                         </span>
                       </div>
@@ -718,9 +852,9 @@ export function BackgroundTab({
                         onChange={(e) =>
                           updateOverlayGradient({ angle: Number(e.target.value) })
                         }
-                        className="w-full accent-violet-500"
+                        className="w-full"
                       />
-                      <div className="grid grid-cols-4 gap-1 mt-1.5">
+                      <div className="grid grid-cols-4 gap-1 mt-1">
                         {OVERLAY_ANGLE_PRESETS.map((preset) => (
                           <button
                             key={preset.angle}
@@ -729,10 +863,10 @@ export function BackgroundTab({
                               updateOverlayGradient({ angle: preset.angle })
                             }
                             className={cn(
-                              'py-1 rounded-lg text-[10px] font-medium border transition-colors',
+                              'py-1 rounded text-[10px] font-medium border transition-colors',
                               overlayGradient.angle === preset.angle
-                                ? 'bg-violet-600/25 border-violet-500/60 text-violet-200'
-                                : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                                ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
                             )}
                           >
                             {preset.label}
@@ -741,16 +875,15 @@ export function BackgroundTab({
                       </div>
                     </div>
 
-                    {/* Gradient Height / Coverage */}
                     <div>
                       <div className="flex items-center justify-between text-xs mb-1">
                         <label
                           htmlFor="bg-overlay-coverage"
-                          className="text-zinc-400"
+                          className="text-neutral-400"
                         >
                           Gradient Height
                         </label>
-                        <span className="font-mono text-zinc-200">
+                        <span className="font-mono text-neutral-300">
                           {overlayGradient.coverage}%
                         </span>
                       </div>
@@ -767,20 +900,19 @@ export function BackgroundTab({
                             coverage: Number(e.target.value),
                           })
                         }
-                        className="w-full accent-violet-500"
+                        className="w-full"
                       />
                     </div>
 
-                    {/* Gradient Midpoint */}
                     <div>
                       <div className="flex items-center justify-between text-xs mb-1">
                         <label
                           htmlFor="bg-overlay-midpoint"
-                          className="text-zinc-400"
+                          className="text-neutral-400"
                         >
                           Start / Midpoint
                         </label>
-                        <span className="font-mono text-zinc-200">
+                        <span className="font-mono text-neutral-300">
                           {overlayGradient.midpoint}%
                         </span>
                       </div>
@@ -797,15 +929,14 @@ export function BackgroundTab({
                             midpoint: Number(e.target.value),
                           })
                         }
-                        className="w-full accent-violet-500"
+                        className="w-full"
                       />
                     </div>
 
-                    {/* Blend Mode */}
                     <div>
                       <label
                         htmlFor="bg-overlay-blend-mode"
-                        className="block text-xs text-zinc-400 mb-1"
+                        className="block text-xs text-neutral-400 mb-1"
                       >
                         Blend Mode
                       </label>
@@ -817,7 +948,7 @@ export function BackgroundTab({
                             blendMode: e.target.value as GradientBlendMode,
                           })
                         }
-                        className="w-full px-2.5 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 focus:outline-none focus:border-violet-500"
+                        className="w-full px-2.5 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-100 focus:outline-none focus:border-neutral-600"
                       >
                         {BLEND_MODES.map((m) => (
                           <option key={m.value} value={m.value}>
@@ -826,19 +957,16 @@ export function BackgroundTab({
                         ))}
                       </select>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
 
-              {/* Background Image Post-Process / Tone Adjustments */}
-              <div className="flex flex-col gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
+              {/* Background Image Tone Adjustments */}
+              <div className="flex flex-col gap-2.5 pt-3 border-t border-neutral-800/80">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-violet-400" />
-                    <span className="text-xs font-semibold text-zinc-200">
-                      Adjustments
-                    </span>
-                  </div>
+                  <span className="text-xs font-medium text-neutral-300">
+                    Adjustments
+                  </span>
                   <button
                     id="bg-adjust-reset"
                     type="button"
@@ -848,7 +976,7 @@ export function BackgroundTab({
                         adjustments: { ...DEFAULT_BG_ADJUSTMENTS },
                       })
                     }
-                    className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-zinc-700 text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                    className="px-2 py-0.5 rounded text-[11px] font-medium border border-neutral-800 text-neutral-300 hover:bg-neutral-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
                   >
                     Reset
                   </button>
@@ -859,10 +987,10 @@ export function BackgroundTab({
                   return (
                     <div key={ctrl.key}>
                       <div className="flex items-center justify-between text-xs mb-1">
-                        <label htmlFor={ctrl.id} className="text-zinc-400">
+                        <label htmlFor={ctrl.id} className="text-neutral-400">
                           {ctrl.label}
                         </label>
-                        <span className="font-mono text-zinc-200">
+                        <span className="font-mono text-neutral-300">
                           {val > 0 ? `+${val}` : val}
                         </span>
                       </div>
@@ -877,7 +1005,7 @@ export function BackgroundTab({
                         onChange={(e) =>
                           updateAdjustment(ctrl.key, Number(e.target.value))
                         }
-                        className="w-full accent-violet-500"
+                        className="w-full"
                       />
                     </div>
                   );
@@ -885,9 +1013,8 @@ export function BackgroundTab({
               </div>
             </>
           ) : (
-            <p className="text-xs text-zinc-500 text-center py-4 px-2 rounded-xl bg-zinc-900/40 border border-zinc-800/80">
-              Upload an image to set it as your full-bleed canvas backdrop with
-              zoom and pan controls.
+            <p className="text-xs text-neutral-500 text-center py-4 px-2 rounded-md bg-neutral-900/50 border border-neutral-800/80">
+              Upload an image to use as the canvas background.
             </p>
           )}
         </div>
@@ -895,4 +1022,3 @@ export function BackgroundTab({
     </div>
   );
 }
-

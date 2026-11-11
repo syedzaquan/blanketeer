@@ -564,12 +564,14 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
+    background-color: #0a0a0a;
+    color: #e5e5e5;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
-  /* Custom thin dark scrollbars for studio panels */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -577,29 +579,81 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(161, 161, 170, 0.25);
-    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(161, 161, 170, 0.45);
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    height: 18px;
+  }
+
+  input[type='range']::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 999px;
+    background: #262626;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: #f5f5f5;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    margin-top: -4.5px;
+    transition: transform 0.1s ease, background-color 0.1s ease;
+  }
+
+  input[type='range']::-webkit-slider-thumb:hover {
+    background: #ffffff;
+    transform: scale(1.1);
+  }
+
+  input[type='range']::-moz-range-track {
+    height: 3px;
+    border-radius: 999px;
+    background: #262626;
+  }
+
+  input[type='range']::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: #f5f5f5;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+  }
+
+  input[type='color'] {
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+
+  input[type='color']::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  input[type='color']::-webkit-color-swatch {
+    border: none;
+    border-radius: 4px;
   }
 }
 
 .studio-grid-bg {
-  background-color: #09090b;
-  background-image:
-    radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-color: #0d0d0d;
 }
 
 .checkerboard-bg {
-  background-color: #18181b;
-  background-image:
-    linear-gradient(45deg, #27272a 25%, transparent 25%),
-    linear-gradient(-45deg, #27272a 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #27272a 75%),
-    linear-gradient(-45deg, transparent 75%, #27272a 75%);
-  background-size: 24px 24px;
-  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+  background-color: #141414;
 }

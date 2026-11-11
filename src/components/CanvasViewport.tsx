@@ -761,7 +761,7 @@ export function CanvasViewport({
       {/* Scaled Canvas Frame */}
       <div
         ref={frameBoxRef}
-        className="relative touch-none shadow-[0_25px_70px_-15px_rgba(0,0,0,0.85)] ring-1 ring-white/10 rounded-[4px] overflow-hidden checkerboard-bg shrink-0"
+        className="relative touch-none shadow-[0_12px_40px_rgba(0,0,0,0.65)] ring-1 ring-neutral-800 overflow-hidden checkerboard-bg shrink-0"
         style={{
           width: `${scaledWidth}px`,
           height: `${scaledHeight}px`,
@@ -794,10 +794,10 @@ export function CanvasViewport({
         onClick={onToggleSafeArea}
         title="Toggle Instagram Safe Area Guides"
         className={cn(
-          'absolute top-2.5 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium backdrop-blur transition-colors',
+          'absolute top-2.5 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-medium transition-colors',
           showSafeArea
-            ? 'bg-sky-500/20 border-sky-400/50 text-sky-200'
-            : 'bg-zinc-900/80 border-zinc-800/80 text-zinc-400 hover:text-zinc-200'
+            ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+            : 'bg-[#141414] border-neutral-800 text-neutral-400 hover:text-neutral-200'
         )}
       >
         <Scan className="w-3.5 h-3.5" />
@@ -810,7 +810,7 @@ export function CanvasViewport({
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
-        className="absolute bottom-2 left-2.5 sm:left-3 lg:bottom-4 lg:left-4 z-10 flex items-center gap-1 px-1.5 py-1 rounded-full bg-zinc-900/90 border border-zinc-800/90 text-[10px] sm:text-[11px] font-mono text-zinc-300 backdrop-blur shadow-lg"
+        className="absolute bottom-2 left-2.5 sm:left-3 lg:bottom-3.5 lg:left-3.5 z-10 flex items-center gap-0.5 p-1 rounded-md bg-[#141414] border border-neutral-800 text-[11px] font-mono text-neutral-300"
       >
         <button
           type="button"
@@ -818,7 +818,7 @@ export function CanvasViewport({
           disabled={canvasScale <= MIN_CANVAS_SCALE + 0.001}
           aria-label="Zoom out canvas"
           title="Zoom out (Cmd/Ctrl -)"
-          className="p-1 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
+          className="p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
         >
           <Minus className="w-3 h-3" />
         </button>
@@ -828,7 +828,7 @@ export function CanvasViewport({
           onClick={resetViewport}
           aria-label="Reset canvas zoom"
           title={`Reset to 26% & center (${canvasWidth} × ${canvasHeight})`}
-          className="px-1.5 py-0.5 rounded-full hover:bg-zinc-800 text-zinc-200 font-semibold min-w-[2.5rem] text-center transition-colors"
+          className="px-1.5 py-0.5 rounded hover:bg-neutral-800 text-neutral-200 font-medium min-w-[2.5rem] text-center transition-colors"
         >
           {Math.round(canvasScale * 100)}%
         </button>
@@ -839,7 +839,7 @@ export function CanvasViewport({
           disabled={canvasScale >= MAX_CANVAS_SCALE - 0.001}
           aria-label="Zoom in canvas"
           title="Zoom in (Cmd/Ctrl +)"
-          className="p-1 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
+          className="p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
         >
           <Plus className="w-3 h-3" />
         </button>
@@ -850,10 +850,10 @@ export function CanvasViewport({
           aria-label="Reset canvas position and zoom"
           title="Reset to default position & 26% zoom (Cmd/Ctrl 0)"
           className={cn(
-            'flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-sans font-medium transition-colors',
+            'flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-sans font-medium transition-colors',
             isZoomedOrPanned
-              ? 'bg-violet-600/25 hover:bg-violet-600/40 text-violet-200'
-              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+              ? 'bg-neutral-800 text-neutral-100 hover:bg-neutral-700'
+              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800'
           )}
         >
           <RotateCcw className="w-2.5 h-2.5" />
@@ -863,15 +863,12 @@ export function CanvasViewport({
 
       {/* Drag & Drop Image Overlay */}
       {isDraggingFile && (
-        <div className="pointer-events-none absolute inset-4 rounded-2xl border-2 border-dashed border-violet-400 bg-violet-950/50 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-30">
-          <div className="w-14 h-14 rounded-2xl bg-violet-600/30 border border-violet-400/50 flex items-center justify-center text-violet-200">
-            <ImagePlus className="w-7 h-7" />
+        <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-neutral-500 bg-neutral-950/80 flex flex-col items-center justify-center gap-2 z-30">
+          <div className="w-10 h-10 rounded-md bg-neutral-900 border border-neutral-700 flex items-center justify-center text-neutral-200">
+            <ImagePlus className="w-5 h-5" />
           </div>
-          <p className="text-sm font-semibold text-white">
+          <p className="text-xs font-medium text-neutral-100">
             Drop image to add layer
-          </p>
-          <p className="text-xs text-violet-200/80">
-            Inserted at full resolution on your story canvas
           </p>
         </div>
       )}

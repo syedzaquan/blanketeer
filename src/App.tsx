@@ -156,7 +156,7 @@ export function App() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-[#0a0a0a] text-neutral-200 overflow-hidden">
       <Header
         aspectRatio={aspectRatio}
         onAspectRatioChange={(ratio) => void setAspectRatio(ratio)}
@@ -176,11 +176,11 @@ export function App() {
       />
 
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
-        {/* Desktop Left Navigation Rail + Tab Drawer */}
-        <div className="hidden lg:flex shrink-0 border-r border-zinc-800/80 bg-zinc-950 z-20">
+        {/* Desktop Left Sidebar */}
+        <div className="hidden lg:flex shrink-0 border-r border-neutral-800/80 bg-[#0f0f0f] z-20">
           <nav
             aria-label="Desktop editor tools"
-            className="w-16 shrink-0 border-r border-zinc-800/70 py-3 flex flex-col items-center gap-1.5"
+            className="w-14 shrink-0 border-r border-neutral-800/80 py-2.5 px-1.5 flex flex-col items-center gap-1"
           >
             {SIDEBAR_TABS.map((tab) => {
               const Icon = tab.icon;
@@ -191,25 +191,25 @@ export function App() {
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'w-12 py-2.5 rounded-xl flex flex-col items-center justify-center gap-1 transition-all',
+                    'w-full py-2 rounded-md flex flex-col items-center justify-center gap-1 transition-colors',
                     active
-                      ? 'bg-violet-600/20 text-violet-300 border border-violet-500/40'
-                      : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 border border-transparent'
+                      ? 'bg-neutral-800 text-neutral-100'
+                      : 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-900'
                   )}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 stroke-[1.75]" />
                   <span className="text-[10px] font-medium">{tab.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          <div className="w-72 p-4 overflow-y-auto bg-zinc-950/95">
+          <div className="w-64 p-3.5 overflow-y-auto bg-[#0f0f0f]">
             {renderTabContent()}
           </div>
         </div>
 
-        {/* Central Auto-Scaled Viewport */}
+        {/* Central Viewport */}
         <main className="relative flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
           <CanvasViewport
             canvasElRef={canvasElRef}
@@ -252,31 +252,31 @@ export function App() {
           </div>
         </main>
 
-        {/* Mobile / Tablet In-Flow Tool Sheet (keeps canvas preview visible above) */}
+        {/* Mobile / Tablet Tool Sheet */}
         {showMobileToolSheet && (
           <section
             aria-label={`${activeTabLabel} panel`}
-            className="lg:hidden w-full h-[38vh] max-h-[340px] shrink-0 border-t border-zinc-800/80 bg-zinc-950/95 flex flex-col overflow-hidden z-20"
+            className="lg:hidden w-full h-[38vh] max-h-[340px] shrink-0 border-t border-neutral-800 bg-[#0f0f0f] flex flex-col overflow-hidden z-20"
           >
-            <div className="h-10 px-4 border-b border-zinc-800/70 flex items-center justify-between shrink-0">
-              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <div className="h-9 px-3.5 border-b border-neutral-800/80 flex items-center justify-between shrink-0">
+              <span className="text-xs font-medium text-neutral-300">
                 {activeTabLabel}
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {selectedObject && (
                   <button
                     type="button"
                     onClick={() => setMobileSheet('inspector')}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-600/20 text-violet-300 border border-violet-500/40 text-xs font-medium"
+                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-neutral-800 text-neutral-100 text-xs font-medium"
                   >
                     <SlidersHorizontal className="w-3 h-3" />
-                    <span>Edit Style</span>
+                    <span>Properties</span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setMobileSheet('none')}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
                   aria-label="Close tool panel"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -288,7 +288,7 @@ export function App() {
           </section>
         )}
 
-        {/* Right Contextual Inspector (Desktop sidebar / Mobile bottom sheet) */}
+        {/* Right Contextual Inspector */}
         <Inspector
           selectedObject={selectedObject}
           availableFonts={availableFonts}
@@ -310,10 +310,10 @@ export function App() {
         />
       </div>
 
-      {/* Mobile / Tablet Bottom Navigation Dock (respects iOS safe-area-inset-bottom) */}
+      {/* Mobile / Tablet Bottom Navigation Dock */}
       <nav
         aria-label="Mobile editor tools"
-        className="lg:hidden shrink-0 border-t border-zinc-800/90 bg-zinc-950/95 backdrop-blur-md px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around gap-1 z-30"
+        className="lg:hidden shrink-0 border-t border-neutral-800 bg-[#0f0f0f] px-2 pt-1 pb-[max(0.4rem,env(safe-area-inset-bottom))] flex items-center justify-around gap-1 z-30"
       >
         {SIDEBAR_TABS.map((tab) => {
           const Icon = tab.icon;
@@ -331,13 +331,13 @@ export function App() {
                 }
               }}
               className={cn(
-                'flex-1 py-1.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all',
+                'flex-1 py-1.5 rounded-md flex flex-col items-center justify-center gap-0.5 transition-colors',
                 active
-                  ? 'bg-violet-600/20 text-violet-300 border border-violet-500/40'
-                  : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
+                  ? 'bg-neutral-800 text-neutral-100'
+                  : 'text-neutral-500 hover:text-neutral-200'
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4 stroke-[1.75]" />
               <span className="text-[10px] font-medium leading-tight">{tab.label}</span>
             </button>
           );
@@ -352,15 +352,15 @@ export function App() {
           }}
           title={selectedObject ? 'Edit selected layer properties' : 'Select a layer to edit'}
           className={cn(
-            'relative flex-1 py-1.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all border',
+            'relative flex-1 py-1.5 rounded-md flex flex-col items-center justify-center gap-0.5 transition-colors',
             !selectedObject
-              ? 'text-zinc-600 border-transparent opacity-50 cursor-not-allowed'
+              ? 'text-neutral-700 cursor-not-allowed'
               : showMobileInspector
-                ? 'bg-violet-600 text-white border-violet-400/50'
-                : 'text-violet-300 bg-violet-600/10 border-violet-500/30 hover:bg-violet-600/20'
+                ? 'bg-neutral-100 text-neutral-950'
+                : 'text-neutral-300 bg-neutral-900 hover:bg-neutral-800'
           )}
         >
-          <SlidersHorizontal className="w-4 h-4" />
+          <SlidersHorizontal className="w-4 h-4 stroke-[1.75]" />
           <span className="text-[10px] font-medium leading-tight">Edit</span>
         </button>
       </nav>

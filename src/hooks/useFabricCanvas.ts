@@ -31,6 +31,7 @@ import {
   prepareBackgroundImageDataURL,
   readFileAsDataURL,
   renderBackgroundOverlayGradient,
+  renderGradientHotspot,
   type FabricObjectWithMeta,
 } from '../utils/canvasHelpers';
 import { exportCanvasToPNG } from '../utils/exportCanvas';
@@ -159,9 +160,29 @@ const DEFAULT_BACKGROUND: BackgroundState = {
   mode: 'gradient',
   color: '#FE5925',
   gradient: {
-    startColor: '#2e1065',
-    endColor: '#c026d3',
-    angle: 145,
+    startColor: '#f6c5bd',
+    endColor: '#200714',
+    angle: 180,
+    stops: [
+      { offset: 0, color: '#f6c5bd' },
+      { offset: 0.18, color: '#f19692' },
+      { offset: 0.38, color: '#e2546e' },
+      { offset: 0.54, color: '#b82654' },
+      { offset: 0.72, color: '#6c1439' },
+      { offset: 0.88, color: '#360c20' },
+      { offset: 1, color: '#200714' },
+    ],
+    hotspot: {
+      cx: 0.82,
+      cy: 0.16,
+      rx: 0.65,
+      ry: 0.45,
+      stops: [
+        { offset: 0, color: 'rgba(255, 240, 235, 0.95)' },
+        { offset: 0.35, color: 'rgba(253, 206, 196, 0.6)' },
+        { offset: 0.7, color: 'rgba(240, 140, 148, 0)' },
+      ],
+    },
   },
   image: null,
 };
@@ -468,13 +489,12 @@ export function useFabricCanvas() {
     rawCanvas._renderBackground = (ctx: CanvasRenderingContext2D) => {
       origRenderBackground(ctx);
       const currentBg = backgroundRef.current;
-      if (currentBg.mode === 'image' && currentBg.image?.overlayGradient) {
-        renderBackgroundOverlayGradient(
-          ctx,
-          canvas.width || initialPreset.width,
-          canvas.height || initialPreset.height,
-          currentBg.image.overlayGradient
-        );
+      const w = canvas.width || initialPreset.width;
+      const h = canvas.height || initialPreset.height;
+      if (currentBg.mode === 'gradient' && currentBg.gradient.hotspot) {
+        renderGradientHotspot(ctx, w, h, currentBg.gradient);
+      } else if (currentBg.mode === 'image' && currentBg.image?.overlayGradient) {
+        renderBackgroundOverlayGradient(ctx, w, h, currentBg.image.overlayGradient);
       }
     };
 

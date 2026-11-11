@@ -52,10 +52,10 @@ const CUTOUT_OPTIONS: {
 
 const STROKE_SWATCHES = [
   '#ffffff',
-  '#09090b',
+  '#0a0a0a',
+  '#d4d4d4',
   '#fde68a',
   '#f472b6',
-  '#a78bfa',
   '#38bdf8',
   '#34d399',
   '#f97316',
@@ -69,10 +69,10 @@ const STROKE_STYLES: { id: ImageStrokeStyle; label: string }[] = [
 
 const SHADOW_SWATCHES = [
   '#000000',
-  '#18181b',
-  '#312e81',
-  '#581c87',
-  '#0f172a',
+  '#171717',
+  '#262626',
+  '#404040',
+  '#737373',
   '#ffffff',
 ];
 
@@ -116,7 +116,7 @@ function NumericField({
   return (
     <div
       className={cn(
-        'flex items-center rounded-lg bg-zinc-950 border border-zinc-800 px-2 py-1 focus-within:border-violet-500 transition-colors',
+        'flex items-center rounded-md bg-neutral-900 border border-neutral-800 px-2 py-1 focus-within:border-neutral-600 transition-colors',
         disabled && 'opacity-40 pointer-events-none'
       )}
     >
@@ -159,10 +159,10 @@ function NumericField({
             (e.target as HTMLInputElement).blur();
           }
         }}
-        className="w-full min-w-0 bg-transparent text-xs font-mono text-zinc-100 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-full min-w-0 bg-transparent text-xs font-mono text-neutral-100 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       {suffix && (
-        <span className="text-[10px] font-mono text-zinc-500 ml-1 shrink-0">
+        <span className="text-[10px] font-mono text-neutral-500 ml-1 shrink-0">
           {suffix}
         </span>
       )}
@@ -189,26 +189,26 @@ export function ImageStyleControls({
 
   return (
     <>
-      {/* Dimensions (Width, Lock Aspect Ratio, Height) */}
-      <div className="border-t border-zinc-800/80 pt-4">
-        <div className="flex items-center justify-between mb-2.5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      {/* Dimensions */}
+      <div className="border-t border-neutral-800/80 pt-3.5">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-medium text-neutral-300">
             Dimensions
           </h3>
           {selectedImage ? (
-            <span className="text-[10px] font-mono text-zinc-500">
+            <span className="text-[10px] font-mono text-neutral-500">
               Orig {selectedImage.naturalWidth}×{selectedImage.naturalHeight}
             </span>
           ) : (
-            <span className="text-[10px] text-zinc-500">Select an image</span>
+            <span className="text-[10px] text-neutral-500">Select an image</span>
           )}
         </div>
 
-        <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-1.5 p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-1.5">
           <div>
             <label
               htmlFor={`${idPrefix}-width`}
-              className="block text-[10px] text-zinc-400 mb-1"
+              className="block text-[11px] text-neutral-400 mb-1"
             >
               Width
             </label>
@@ -240,12 +240,12 @@ export function ImageStyleControls({
               onUpdateImageProps({ aspectLocked: !selectedImage.aspectLocked })
             }
             className={cn(
-              'h-[26px] w-7 mb-[1px] rounded-lg border flex items-center justify-center transition-colors',
+              'h-[26px] w-7 mb-[1px] rounded-md border flex items-center justify-center transition-colors',
               !selectedImage
-                ? 'opacity-40 cursor-not-allowed bg-zinc-950 border-zinc-800 text-zinc-500'
+                ? 'opacity-40 cursor-not-allowed bg-neutral-900 border-neutral-800 text-neutral-600'
                 : selectedImage.aspectLocked
-                  ? 'bg-violet-600/25 border-violet-500/60 text-violet-200'
-                  : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                  : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-neutral-200'
             )}
           >
             {selectedImage?.aspectLocked ?? true ? (
@@ -258,7 +258,7 @@ export function ImageStyleControls({
           <div>
             <label
               htmlFor={`${idPrefix}-height`}
-              className="block text-[10px] text-zinc-400 mb-1"
+              className="block text-[11px] text-neutral-400 mb-1"
             >
               Height
             </label>
@@ -276,18 +276,18 @@ export function ImageStyleControls({
         </div>
       </div>
 
-      {/* Shape Cutout & Mask + Squircle Border Radius */}
-      <div className="border-t border-zinc-800/80 pt-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Shape Cutout & Mask
+      {/* Shape Cutout & Mask */}
+      <div className="border-t border-neutral-800/80 pt-3.5">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-medium text-neutral-300">
+            Mask Shape
           </h3>
           {!selectedImage && (
-            <span className="text-[10px] text-zinc-500">Select an image</span>
+            <span className="text-[10px] text-neutral-500">Select an image</span>
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           {CUTOUT_OPTIONS.map((opt) => {
             const Icon = opt.icon;
             const active = selectedImage?.cutoutShape === opt.id;
@@ -298,18 +298,18 @@ export function ImageStyleControls({
                 disabled={!selectedImage}
                 onClick={() => onApplyCutout(opt.id)}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border text-[11px] font-medium transition-all',
+                  'flex flex-col items-center justify-center gap-1 py-2 px-1.5 rounded-md border text-[11px] font-medium transition-colors',
                   !selectedImage
-                    ? 'opacity-40 cursor-not-allowed bg-zinc-900/40 border-zinc-800 text-zinc-500'
+                    ? 'opacity-40 cursor-not-allowed bg-neutral-900/40 border-neutral-800 text-neutral-600'
                     : active
-                      ? 'bg-violet-600/20 border-violet-500 text-white'
-                      : 'bg-zinc-900/70 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-700'
+                      ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                      : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800/70 hover:text-neutral-200'
                 )}
               >
                 <Icon
                   className={cn(
-                    'w-4 h-4',
-                    opt.id === 'rounded' && 'rounded-[4px]'
+                    'w-3.5 h-3.5',
+                    opt.id === 'rounded' && 'rounded-[3px]'
                   )}
                 />
                 <span>{opt.label}</span>
@@ -319,11 +319,11 @@ export function ImageStyleControls({
         </div>
 
         {selectedImage?.cutoutShape === 'rounded' && (
-          <div className="mt-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800 flex flex-col gap-2">
+          <div className="mt-2.5 flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2 text-xs">
               <label
                 htmlFor={`${idPrefix}-squircle-radius`}
-                className="text-zinc-400"
+                className="text-neutral-400"
               >
                 Border Radius
               </label>
@@ -350,16 +350,16 @@ export function ImageStyleControls({
               onChange={(e) =>
                 onApplyCutout('rounded', Number(e.target.value))
               }
-              className="w-full accent-violet-500"
+              className="w-full"
             />
           </div>
         )}
       </div>
 
       {/* Stroke Options */}
-      <div className="border-t border-zinc-800/80 pt-4">
-        <div className="flex items-center justify-between mb-2.5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="border-t border-neutral-800/80 pt-3.5">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-medium text-neutral-300">
             Stroke
           </h3>
           {selectedImage && (
@@ -370,10 +370,10 @@ export function ImageStyleControls({
                 onUpdateImageProps({ strokeWidth: hasStroke ? 0 : 8 })
               }
               className={cn(
-                'px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors',
+                'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
                 hasStroke
-                  ? 'bg-violet-600 border-violet-400/50 text-white'
-                  : 'bg-zinc-950 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                  : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
               )}
             >
               {hasStroke ? 'On' : 'Off'}
@@ -383,16 +383,15 @@ export function ImageStyleControls({
 
         <div
           className={cn(
-            'flex flex-col gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800',
+            'flex flex-col gap-2.5',
             !selectedImage && 'opacity-40 pointer-events-none'
           )}
         >
-          {/* Stroke Width Slider + Numeric px Input */}
           <div>
-            <div className="flex items-center justify-between gap-2 text-xs mb-1.5">
+            <div className="flex items-center justify-between gap-2 text-xs mb-1">
               <label
                 htmlFor={`${idPrefix}-stroke-width`}
-                className="text-zinc-400"
+                className="text-neutral-400"
               >
                 Stroke Width
               </label>
@@ -421,15 +420,14 @@ export function ImageStyleControls({
               onChange={(e) =>
                 onUpdateImageProps({ strokeWidth: Number(e.target.value) })
               }
-              className="w-full accent-violet-500"
+              className="w-full"
             />
           </div>
 
-          {/* Stroke Color Picker + Swatches */}
           <div>
             <div className="flex items-center justify-between text-[11px] mb-1.5">
-              <span className="text-zinc-400">Stroke Color</span>
-              <span className="font-mono text-zinc-300 uppercase">
+              <span className="text-neutral-400">Stroke Color</span>
+              <span className="font-mono text-neutral-300">
                 {strokeColor}
               </span>
             </div>
@@ -446,7 +444,7 @@ export function ImageStyleControls({
                     ...(strokeWidth === 0 ? { strokeWidth: 8 } : {}),
                   })
                 }
-                className="w-7 h-7 rounded-lg border border-zinc-700 bg-transparent cursor-pointer shrink-0"
+                className="w-6 h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
               />
               {STROKE_SWATCHES.map((swatch) => (
                 <button
@@ -461,11 +459,11 @@ export function ImageStyleControls({
                     })
                   }
                   className={cn(
-                    'w-5 h-5 rounded-full border transition-transform hover:scale-110',
+                    'w-5 h-5 rounded border transition-colors',
                     strokeColor.toLowerCase() === swatch.toLowerCase() &&
                       hasStroke
-                      ? 'border-white ring-2 ring-violet-500/60'
-                      : 'border-zinc-700'
+                      ? 'border-white ring-1 ring-white/50'
+                      : 'border-neutral-700'
                   )}
                   style={{ backgroundColor: swatch }}
                 />
@@ -473,12 +471,11 @@ export function ImageStyleControls({
             </div>
           </div>
 
-          {/* Stroke Style */}
           <div>
-            <span className="block text-[11px] text-zinc-400 mb-1.5">
+            <span className="block text-[11px] text-neutral-400 mb-1">
               Stroke Style
             </span>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-1">
               {STROKE_STYLES.map((opt) => (
                 <button
                   key={opt.id}
@@ -492,10 +489,10 @@ export function ImageStyleControls({
                     })
                   }
                   className={cn(
-                    'py-1.5 rounded-lg text-[11px] font-medium border transition-colors',
+                    'py-1 rounded-md text-[11px] font-medium border transition-colors',
                     strokeStyle === opt.id
-                      ? 'bg-violet-600/25 border-violet-500 text-white'
-                      : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                      : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
                   )}
                 >
                   {opt.label}
@@ -507,9 +504,9 @@ export function ImageStyleControls({
       </div>
 
       {/* Drop Shadow */}
-      <div className="border-t border-zinc-800/80 pt-4">
-        <div className="flex items-center justify-between mb-2.5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="border-t border-neutral-800/80 pt-3.5">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-medium text-neutral-300">
             Drop Shadow
           </h3>
           {selectedImage && (
@@ -523,10 +520,10 @@ export function ImageStyleControls({
                 onUpdateImageProps({ shadowEnabled: !shadowEnabled })
               }
               className={cn(
-                'px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors',
+                'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
                 shadowEnabled
-                  ? 'bg-violet-600 border-violet-400/50 text-white'
-                  : 'bg-zinc-950 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                  : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
               )}
             >
               {shadowEnabled ? 'On' : 'Off'}
@@ -536,16 +533,15 @@ export function ImageStyleControls({
 
         <div
           className={cn(
-            'flex flex-col gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800',
+            'flex flex-col gap-2.5',
             !selectedImage && 'opacity-40 pointer-events-none'
           )}
         >
-          {/* Blur */}
           <div>
-            <div className="flex items-center justify-between gap-2 text-xs mb-1.5">
+            <div className="flex items-center justify-between gap-2 text-xs mb-1">
               <label
                 htmlFor={`${idPrefix}-shadow-blur`}
-                className="text-zinc-400"
+                className="text-neutral-400"
               >
                 Blur
               </label>
@@ -574,16 +570,15 @@ export function ImageStyleControls({
               onChange={(e) =>
                 onUpdateImageProps({ shadowBlur: Number(e.target.value) })
               }
-              className="w-full accent-violet-500"
+              className="w-full"
             />
           </div>
 
-          {/* Opacity */}
           <div>
-            <div className="flex items-center justify-between gap-2 text-xs mb-1.5">
+            <div className="flex items-center justify-between gap-2 text-xs mb-1">
               <label
                 htmlFor={`${idPrefix}-shadow-opacity`}
-                className="text-zinc-400"
+                className="text-neutral-400"
               >
                 Opacity
               </label>
@@ -612,21 +607,20 @@ export function ImageStyleControls({
               onChange={(e) =>
                 onUpdateImageProps({ shadowOpacity: Number(e.target.value) })
               }
-              className="w-full accent-violet-500"
+              className="w-full"
             />
           </div>
 
-          {/* Offset X & Offset Y */}
           <div className="grid grid-cols-2 gap-2">
             <div>
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <label
                   htmlFor={`${idPrefix}-shadow-x`}
-                  className="text-zinc-400"
+                  className="text-neutral-400"
                 >
                   Offset X
                 </label>
-                <span className="font-mono text-zinc-200">{shadowOffsetX}</span>
+                <span className="font-mono text-neutral-300">{shadowOffsetX}</span>
               </div>
               <input
                 id={`${idPrefix}-shadow-x`}
@@ -640,7 +634,7 @@ export function ImageStyleControls({
                 onChange={(e) =>
                   onUpdateImageProps({ shadowOffsetX: Number(e.target.value) })
                 }
-                className="w-full accent-violet-500"
+                className="w-full"
               />
             </div>
 
@@ -648,11 +642,11 @@ export function ImageStyleControls({
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <label
                   htmlFor={`${idPrefix}-shadow-y`}
-                  className="text-zinc-400"
+                  className="text-neutral-400"
                 >
                   Offset Y
                 </label>
-                <span className="font-mono text-zinc-200">{shadowOffsetY}</span>
+                <span className="font-mono text-neutral-300">{shadowOffsetY}</span>
               </div>
               <input
                 id={`${idPrefix}-shadow-y`}
@@ -666,16 +660,15 @@ export function ImageStyleControls({
                 onChange={(e) =>
                   onUpdateImageProps({ shadowOffsetY: Number(e.target.value) })
                 }
-                className="w-full accent-violet-500"
+                className="w-full"
               />
             </div>
           </div>
 
-          {/* Shadow Color */}
           <div>
             <div className="flex items-center justify-between text-[11px] mb-1.5">
-              <span className="text-zinc-400">Shadow Color</span>
-              <span className="font-mono text-zinc-300 uppercase">
+              <span className="text-neutral-400">Shadow Color</span>
+              <span className="font-mono text-neutral-300">
                 {shadowColor}
               </span>
             </div>
@@ -689,7 +682,7 @@ export function ImageStyleControls({
                 onChange={(e) =>
                   onUpdateImageProps({ shadowColor: e.target.value })
                 }
-                className="w-7 h-7 rounded-lg border border-zinc-700 bg-transparent cursor-pointer shrink-0"
+                className="w-6 h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
               />
               {SHADOW_SWATCHES.map((swatch) => (
                 <button
@@ -699,11 +692,11 @@ export function ImageStyleControls({
                   aria-label={`Shadow color ${swatch}`}
                   onClick={() => onUpdateImageProps({ shadowColor: swatch })}
                   className={cn(
-                    'w-5 h-5 rounded-full border transition-transform hover:scale-110',
+                    'w-5 h-5 rounded border transition-colors',
                     shadowColor.toLowerCase() === swatch.toLowerCase() &&
                       shadowEnabled
-                      ? 'border-white ring-2 ring-violet-500/60'
-                      : 'border-zinc-700'
+                      ? 'border-white ring-1 ring-white/50'
+                      : 'border-neutral-700'
                   )}
                   style={{ backgroundColor: swatch }}
                 />
@@ -715,4 +708,3 @@ export function ImageStyleControls({
     </>
   );
 }
-
