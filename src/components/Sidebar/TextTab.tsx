@@ -1,5 +1,5 @@
 import { useRef, type ChangeEvent } from 'react';
-import { Heading1, Sparkles, Type, Upload } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import type { SelectedObjectState } from '../../types/editor';
 import type { FontOption } from '../../utils/fonts';
 import { cn } from '../../utils/cn';
@@ -33,67 +33,6 @@ export function TextTab({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
-          Add Text Layer
-        </h2>
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => onAddText('headline')}
-            className="group flex items-center gap-3 w-full p-3 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-violet-500/40 text-left transition-all"
-          >
-            <div className="w-9 h-9 rounded-lg bg-violet-500/15 text-violet-400 flex items-center justify-center shrink-0">
-              <Heading1 className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-zinc-100 font-fedro">
-                Editorial Headline
-              </p>
-              <p className="text-[11px] text-zinc-400">
-                Fedro Bold • 84px display
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onAddText('pill')}
-            className="group flex items-center gap-3 w-full p-3 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-fuchsia-500/40 text-left transition-all"
-          >
-            <div className="w-9 h-9 rounded-lg bg-fuchsia-500/15 text-fuchsia-400 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <span className="inline-block px-2 py-0.5 rounded-full bg-white text-zinc-900 text-xs font-bold mb-0.5">
-                Pill Highlight
-              </span>
-              <p className="text-[11px] text-zinc-400">
-                Instagram rounded line backdrop
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onAddText('body')}
-            className="group flex items-center gap-3 w-full p-3 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-left transition-all"
-          >
-            <div className="w-9 h-9 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center shrink-0">
-              <Type className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-zinc-100 font-fedro">
-                Story Caption
-              </p>
-              <p className="text-[11px] text-zinc-400">
-                Fedro • Wrappable body box
-              </p>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      <div className="border-t border-zinc-800/80 pt-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Featured Fonts
@@ -105,8 +44,11 @@ export function TextTab({
 
         <div className="flex flex-col gap-1.5">
           {availableFonts.map((font) => {
+            const lowerFamily = font.family.toLowerCase();
             const isActive =
-              selectedText?.fontFamily.toLowerCase() === font.family.toLowerCase();
+              selectedText?.fontFamily.toLowerCase() === lowerFamily;
+            const isTallCondensed =
+              lowerFamily === 'humane' || lowerFamily === 'morganite';
             return (
               <button
                 key={font.family}
@@ -127,9 +69,12 @@ export function TextTab({
                 )}
               >
                 <span
-                  className="text-base truncate"
+                  className={cn(
+                    'truncate',
+                    isTallCondensed ? 'text-[26px] leading-none py-0.5' : 'text-base'
+                  )}
                   style={
-                    font.family.toLowerCase() === 'fraunces'
+                    lowerFamily === 'fraunces'
                       ? {
                           fontFamily: `"${font.family}", serif`,
                           fontWeight: 600,

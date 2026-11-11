@@ -827,15 +827,22 @@ export function Inspector({
 
             <div>
               <div className="flex items-center justify-between text-[11px] mb-1">
-                <span className="text-zinc-400">Line Height</span>
+                <label
+                  htmlFor="inspector-line-height"
+                  className="text-zinc-400"
+                >
+                  Line Height
+                </label>
                 <span className="font-mono text-zinc-200">
                   {selectedObject.lineHeight.toFixed(2)}
                 </span>
               </div>
               <input
+                id="inspector-line-height"
+                aria-label="Line Height"
                 type="range"
-                min={0.8}
-                max={2.4}
+                min={0.5}
+                max={3.0}
                 step={0.05}
                 value={selectedObject.lineHeight}
                 onChange={(e) =>
@@ -847,15 +854,22 @@ export function Inspector({
 
             <div>
               <div className="flex items-center justify-between text-[11px] mb-1">
-                <span className="text-zinc-400">Letter Spacing</span>
+                <label
+                  htmlFor="inspector-char-spacing"
+                  className="text-zinc-400"
+                >
+                  Letter Spacing
+                </label>
                 <span className="font-mono text-zinc-200">
                   {selectedObject.charSpacing}
                 </span>
               </div>
               <input
+                id="inspector-char-spacing"
+                aria-label="Letter Spacing"
                 type="range"
-                min={-80}
-                max={500}
+                min={-200}
+                max={1000}
                 step={10}
                 value={selectedObject.charSpacing}
                 onChange={(e) =>
