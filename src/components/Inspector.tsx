@@ -7,16 +7,12 @@ import {
   ArrowDownToLine,
   ArrowUp,
   ArrowUpToLine,
-  Circle,
   Copy,
   FlipHorizontal2,
   FlipVertical2,
-  Heart,
   Italic,
   Keyboard,
   RotateCcw,
-  Square,
-  Star,
   Strikethrough,
   Trash2,
   Underline,
@@ -32,6 +28,10 @@ import {
 } from '../types/editor';
 import { cn } from '../utils/cn';
 import { getFontWeightOptions, type FontOption } from '../utils/fonts';
+import {
+  ImageStyleControls,
+  type ImagePropsPatch,
+} from './ImageStyleControls';
 
 interface InspectorProps {
   selectedObject: SelectedObjectState | null;
@@ -65,6 +65,7 @@ interface InspectorProps {
     }>
   ) => void;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
+  onUpdateImageProps: (patch: ImagePropsPatch) => void;
   onUpdateCommon: (
     patch: Partial<{
       opacity: number;
@@ -114,15 +115,6 @@ const WEIGHT_PRESETS = [
   { value: 900, label: '900' },
 ];
 
-const CUTOUT_BUTTONS: { id: CutoutShape; label: string; icon: typeof Circle }[] = [
-  { id: 'none', label: 'None', icon: RotateCcw },
-  { id: 'circle', label: 'Circle', icon: Circle },
-  { id: 'square', label: 'Square', icon: Square },
-  { id: 'rounded', label: 'Squircle', icon: Square },
-  { id: 'star', label: 'Star', icon: Star },
-  { id: 'heart', label: 'Heart', icon: Heart },
-];
-
 export function Inspector({
   selectedObject,
   availableFonts,
@@ -133,6 +125,7 @@ export function Inspector({
   onCloseMobile,
   onUpdateText,
   onApplyCutout,
+  onUpdateImageProps,
   onUpdateCommon,
   onBringForward,
   onSendBackward,
@@ -884,60 +877,12 @@ export function Inspector({
 
       {/* IMAGE INSPECTOR */}
       {selectedObject.kind === 'image' && (
-        <div className="border-t border-zinc-800/80 pt-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Shape Cutout
-            </h3>
-            <span className="text-[10px] font-mono text-zinc-500">
-              {selectedObject.naturalWidth} × {selectedObject.naturalHeight}px
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-1.5">
-            {CUTOUT_BUTTONS.map((btn) => {
-              const Icon = btn.icon;
-              const active = selectedObject.cutoutShape === btn.id;
-              return (
-                <button
-                  key={btn.id}
-                  type="button"
-                  onClick={() => onApplyCutout(btn.id)}
-                  className={cn(
-                    'flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-xl border text-[11px] font-medium transition-all',
-                    active
-                      ? 'bg-violet-600/20 border-violet-500 text-white'
-                      : 'bg-zinc-900/70 border-zinc-800 text-zinc-300 hover:bg-zinc-800'
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{btn.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {selectedObject.cutoutShape === 'rounded' && (
-            <div className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
-              <div className="flex items-center justify-between text-[11px] mb-1">
-                <span className="text-zinc-400">Corner Radius</span>
-                <span className="font-mono text-zinc-200">
-                  {selectedObject.cutoutRadius}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min={2}
-                max={48}
-                value={selectedObject.cutoutRadius}
-                onChange={(e) =>
-                  onApplyCutout('rounded', Number(e.target.value))
-                }
-                className="w-full accent-violet-500"
-              />
-            </div>
-          )}
-        </div>
+        <ImageStyleControls
+          selectedImage={selectedObject}
+          idPrefix="inspector-image"
+          onApplyCutout={onApplyCutout}
+          onUpdateImageProps={onUpdateImageProps}
+        />
       )}
 
       {/* COMMON TRANSFORM & LAYER ORDER */}

@@ -22,6 +22,16 @@ export const CUSTOM_SERIALIZED_PROPS = [
   'pillPaddingY',
   'cutoutShape',
   'cutoutRadius',
+  'aspectLocked',
+  'imageStrokeColor',
+  'imageStrokeWidth',
+  'imageStrokeStyle',
+  'imageShadowEnabled',
+  'imageShadowColor',
+  'imageShadowOpacity',
+  'imageShadowBlur',
+  'imageShadowOffsetX',
+  'imageShadowOffsetY',
   'locked',
 ];
 
@@ -267,14 +277,30 @@ export function extractSelectedState(
 
   if (obj instanceof fabric.FabricImage) {
     const imgMeta = obj as ImageWithCutoutMeta;
+    const natW = imgMeta.width || 0;
+    const natH = imgMeta.height || 0;
+    const sx = Math.abs(imgMeta.scaleX ?? 1);
+    const sy = Math.abs(imgMeta.scaleY ?? 1);
     return {
       kind: 'image',
       id: meta.editorId!,
       name: meta.editorName!,
       cutoutShape: imgMeta.cutoutShape || 'none',
       cutoutRadius: imgMeta.cutoutRadius ?? 16,
-      naturalWidth: imgMeta.width || 0,
-      naturalHeight: imgMeta.height || 0,
+      naturalWidth: natW,
+      naturalHeight: natH,
+      width: Math.max(1, Math.round(natW * sx)),
+      height: Math.max(1, Math.round(natH * sy)),
+      aspectLocked: imgMeta.aspectLocked ?? true,
+      strokeColor: imgMeta.imageStrokeColor || '#ffffff',
+      strokeWidth: Math.round(imgMeta.imageStrokeWidth ?? 0),
+      strokeStyle: imgMeta.imageStrokeStyle || 'solid',
+      shadowEnabled: Boolean(imgMeta.imageShadowEnabled ?? imgMeta.shadow),
+      shadowColor: imgMeta.imageShadowColor || '#000000',
+      shadowOpacity: Math.round(imgMeta.imageShadowOpacity ?? 45),
+      shadowBlur: Math.round(imgMeta.imageShadowBlur ?? 24),
+      shadowOffsetX: Math.round(imgMeta.imageShadowOffsetX ?? 0),
+      shadowOffsetY: Math.round(imgMeta.imageShadowOffsetY ?? 12),
       opacity: Number((imgMeta.opacity ?? 1).toFixed(2)),
       angle: Math.round(imgMeta.angle || 0),
       scaleX: Number((imgMeta.scaleX ?? 1).toFixed(2)),

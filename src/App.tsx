@@ -54,6 +54,7 @@ export function App() {
     uploadCustomFont,
     addImageFromFile,
     applyImageCutout,
+    updateImageProps,
     setBackgroundMode,
     setBackgroundColor,
     setBackgroundGradient,
@@ -125,6 +126,7 @@ export function App() {
           selectedObject={selectedObject}
           onAddImageFile={(file) => void addImageFromFile(file)}
           onApplyCutout={applyImageCutout}
+          onUpdateImageProps={updateImageProps}
         />
       );
     }
@@ -297,6 +299,7 @@ export function App() {
           onCloseMobile={() => setMobileSheet('none')}
           onUpdateText={(patch) => void updateTextProps(patch)}
           onApplyCutout={applyImageCutout}
+          onUpdateImageProps={updateImageProps}
           onUpdateCommon={updateActiveCommonProps}
           onBringForward={bringForward}
           onSendBackward={sendBackward}

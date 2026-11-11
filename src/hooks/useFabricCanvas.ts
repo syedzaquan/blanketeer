@@ -8,6 +8,7 @@ import {
   type BackgroundState,
   type CutoutShape,
   type GradientConfig,
+  type ImageStrokeStyle,
   type LayerItem,
   type SelectedObjectState,
   type TextBackgroundStyle,
@@ -50,6 +51,7 @@ import {
   type ActiveRotationSnap,
   type ActiveSnapGuides,
 } from '../utils/snapGuides';
+import { StoryImage, buildImageShadow } from '../utils/storyImage';
 import { StoryTextbox } from '../utils/storyTextbox';
 
 interface HistorySnapshot {
@@ -1023,7 +1025,7 @@ export function useFabricCanvas() {
       if (!canvas) return;
 
       const src = await readFileAsDataURL(file);
-      const img = await fabric.FabricImage.fromURL(src, {
+      const img = await StoryImage.fromURL(src, {
         crossOrigin: 'anonymous',
       });
 
@@ -1039,10 +1041,30 @@ export function useFabricCanvas() {
       const meta = ensureObjectMeta(img) as FabricObjectWithMeta & {
         cutoutShape?: CutoutShape;
         cutoutRadius?: number;
+        aspectLocked?: boolean;
+        imageStrokeColor?: string;
+        imageStrokeWidth?: number;
+        imageStrokeStyle?: ImageStrokeStyle;
+        imageShadowEnabled?: boolean;
+        imageShadowColor?: string;
+        imageShadowOpacity?: number;
+        imageShadowBlur?: number;
+        imageShadowOffsetX?: number;
+        imageShadowOffsetY?: number;
       };
       meta.editorName = file.name.replace(/\.[^/.]+$/, '').slice(0, 24) || 'Image';
       meta.cutoutShape = 'none';
       meta.cutoutRadius = 16;
+      meta.aspectLocked = true;
+      meta.imageStrokeColor = '#ffffff';
+      meta.imageStrokeWidth = 0;
+      meta.imageStrokeStyle = 'solid';
+      meta.imageShadowEnabled = false;
+      meta.imageShadowColor = '#000000';
+      meta.imageShadowOpacity = 45;
+      meta.imageShadowBlur = 24;
+      meta.imageShadowOffsetX = 0;
+      meta.imageShadowOffsetY = 12;
 
       img.set({
         left: width / 2,
@@ -1074,6 +1096,137 @@ export function useFabricCanvas() {
         ((active as { cutoutRadius?: number }).cutoutRadius ?? 16);
 
       applyCutoutMask(active, shape, currentRadius);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      scheduleHistoryCommit(200);
+    },
+    [scheduleHistoryCommit, syncSelectionAndLayers]
+  );
+
+  const updateImageProps = useCallback(
+    (
+      patch: Partial<{
+        width: number;
+        height: number;
+        aspectLocked: boolean;
+        strokeColor: string;
+        strokeWidth: number;
+        strokeStyle: ImageStrokeStyle;
+        shadowEnabled: boolean;
+        shadowColor: string;
+        shadowOpacity: number;
+        shadowBlur: number;
+        shadowOffsetX: number;
+        shadowOffsetY: number;
+      }>
+    ) => {
+      const canvas = canvasRef.current;
+      const active = canvas?.getActiveObject();
+      if (!canvas || !(active instanceof fabric.FabricImage)) return;
+
+      const storyImg = active as StoryImage;
+      const natW = Math.max(1, storyImg.width || 1);
+      const natH = Math.max(1, storyImg.height || 1);
+      const currentAspectLocked =
+        patch.aspectLocked !== undefined
+          ? patch.aspectLocked
+          : (storyImg.aspectLocked ?? true);
+
+      if (patch.aspectLocked !== undefined) {
+        storyImg.aspectLocked = patch.aspectLocked;
+      }
+
+      const curRenderW = Math.max(1, natW * Math.abs(storyImg.scaleX ?? 1));
+      const curRenderH = Math.max(1, natH * Math.abs(storyImg.scaleY ?? 1));
+
+      if (patch.width !== undefined && Number.isFinite(patch.width)) {
+        const nextW = Math.max(20, Math.min(4000, Math.round(patch.width)));
+        const nextScaleX = nextW / natW;
+        if (currentAspectLocked) {
+          const ratio = curRenderH / curRenderW;
+          const nextH = Math.max(20, Math.min(4000, Math.round(nextW * ratio)));
+          storyImg.set({ scaleX: nextScaleX, scaleY: nextH / natH });
+        } else {
+          storyImg.set({ scaleX: nextScaleX });
+        }
+      } else if (patch.height !== undefined && Number.isFinite(patch.height)) {
+        const nextH = Math.max(20, Math.min(4000, Math.round(patch.height)));
+        const nextScaleY = nextH / natH;
+        if (currentAspectLocked) {
+          const ratio = curRenderW / curRenderH;
+          const nextW = Math.max(20, Math.min(4000, Math.round(nextH * ratio)));
+          storyImg.set({ scaleX: nextW / natW, scaleY: nextScaleY });
+        } else {
+          storyImg.set({ scaleY: nextScaleY });
+        }
+      }
+
+      if (patch.strokeColor !== undefined) {
+        storyImg.set('imageStrokeColor', patch.strokeColor);
+      }
+      if (patch.strokeWidth !== undefined && Number.isFinite(patch.strokeWidth)) {
+        storyImg.set(
+          'imageStrokeWidth',
+          Math.max(0, Math.min(40, Math.round(patch.strokeWidth)))
+        );
+      }
+      if (patch.strokeStyle !== undefined) {
+        storyImg.set('imageStrokeStyle', patch.strokeStyle);
+      }
+
+      const hasShadowPatch =
+        patch.shadowEnabled !== undefined ||
+        patch.shadowColor !== undefined ||
+        patch.shadowOpacity !== undefined ||
+        patch.shadowBlur !== undefined ||
+        patch.shadowOffsetX !== undefined ||
+        patch.shadowOffsetY !== undefined;
+
+      if (hasShadowPatch) {
+        const nextEnabled =
+          patch.shadowEnabled !== undefined
+            ? patch.shadowEnabled
+            : true;
+        const nextColor =
+          patch.shadowColor ?? storyImg.imageShadowColor ?? '#000000';
+        const nextOpacity =
+          patch.shadowOpacity !== undefined && Number.isFinite(patch.shadowOpacity)
+            ? Math.max(0, Math.min(100, Math.round(patch.shadowOpacity)))
+            : (storyImg.imageShadowOpacity ?? 45);
+        const nextBlur =
+          patch.shadowBlur !== undefined && Number.isFinite(patch.shadowBlur)
+            ? Math.max(0, Math.min(80, Math.round(patch.shadowBlur)))
+            : (storyImg.imageShadowBlur ?? 24);
+        const nextOffsetX =
+          patch.shadowOffsetX !== undefined && Number.isFinite(patch.shadowOffsetX)
+            ? Math.max(-60, Math.min(60, Math.round(patch.shadowOffsetX)))
+            : (storyImg.imageShadowOffsetX ?? 0);
+        const nextOffsetY =
+          patch.shadowOffsetY !== undefined && Number.isFinite(patch.shadowOffsetY)
+            ? Math.max(-60, Math.min(60, Math.round(patch.shadowOffsetY)))
+            : (storyImg.imageShadowOffsetY ?? 12);
+
+        storyImg.imageShadowEnabled = nextEnabled;
+        storyImg.imageShadowColor = nextColor;
+        storyImg.imageShadowOpacity = nextOpacity;
+        storyImg.imageShadowBlur = nextBlur;
+        storyImg.imageShadowOffsetX = nextOffsetX;
+        storyImg.imageShadowOffsetY = nextOffsetY;
+        storyImg.set(
+          'shadow',
+          buildImageShadow(
+            nextEnabled,
+            nextColor,
+            nextOpacity,
+            nextBlur,
+            nextOffsetX,
+            nextOffsetY
+          )
+        );
+      }
+
+      storyImg.set('dirty', true);
+      storyImg.setCoords();
       canvas.requestRenderAll();
       syncSelectionAndLayers();
       scheduleHistoryCommit(200);
@@ -1628,6 +1781,7 @@ export function useFabricCanvas() {
     uploadCustomFont,
     addImageFromFile,
     applyImageCutout,
+    updateImageProps,
     setBackgroundMode,
     setBackgroundColor,
     setBackgroundGradient,

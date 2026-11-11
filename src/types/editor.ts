@@ -92,6 +92,8 @@ export type TextBackgroundStyle = 'none' | 'solid' | 'pill';
 
 export type CutoutShape = 'none' | 'circle' | 'square' | 'rounded' | 'star' | 'heart';
 
+export type ImageStrokeStyle = 'solid' | 'dashed' | 'dotted';
+
 export interface SelectedTextProps {
   kind: 'text';
   id: string;
@@ -130,6 +132,18 @@ export interface SelectedImageProps {
   cutoutRadius: number;
   naturalWidth: number;
   naturalHeight: number;
+  width: number;
+  height: number;
+  aspectLocked: boolean;
+  strokeColor: string;
+  strokeWidth: number;
+  strokeStyle: ImageStrokeStyle;
+  shadowEnabled: boolean;
+  shadowColor: string;
+  shadowOpacity: number;
+  shadowBlur: number;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
   opacity: number;
   angle: number;
   scaleX: number;

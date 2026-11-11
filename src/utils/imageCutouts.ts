@@ -1,11 +1,21 @@
 import * as fabric from 'fabric';
-import type { CutoutShape } from '../types/editor';
+import type { CutoutShape, ImageStrokeStyle } from '../types/editor';
 
 export interface ImageWithCutoutMeta extends fabric.FabricImage {
   editorId?: string;
   editorName?: string;
   cutoutShape?: CutoutShape;
   cutoutRadius?: number;
+  aspectLocked?: boolean;
+  imageStrokeColor?: string;
+  imageStrokeWidth?: number;
+  imageStrokeStyle?: ImageStrokeStyle;
+  imageShadowEnabled?: boolean;
+  imageShadowColor?: string;
+  imageShadowOpacity?: number;
+  imageShadowBlur?: number;
+  imageShadowOffsetX?: number;
+  imageShadowOffsetY?: number;
   locked?: boolean;
 }
 
@@ -41,7 +51,10 @@ export const applyRoundedRectMask = (
   cornerPercent = 16
 ): void => {
   const minDim = Math.min(image.width, image.height);
-  const radius = Math.min((minDim * cornerPercent) / 100, minDim / 2);
+  const radius =
+    cornerPercent <= 0
+      ? 0
+      : Math.min((minDim * cornerPercent) / 100, minDim / 2);
   const rect = new fabric.Rect({
     width: image.width,
     height: image.height,

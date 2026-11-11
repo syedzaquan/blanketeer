@@ -1,39 +1,24 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
-import {
-  Circle,
-  Heart,
-  ImagePlus,
-  RotateCcw,
-  Square,
-  Star,
-  Upload,
-} from 'lucide-react';
+import { ImagePlus, Upload } from 'lucide-react';
 import type { CutoutShape, SelectedObjectState } from '../../types/editor';
 import { cn } from '../../utils/cn';
+import {
+  ImageStyleControls,
+  type ImagePropsPatch,
+} from '../ImageStyleControls';
 
 interface ImageTabProps {
   selectedObject: SelectedObjectState | null;
   onAddImageFile: (file: File) => void;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
+  onUpdateImageProps: (patch: ImagePropsPatch) => void;
 }
-
-const CUTOUT_OPTIONS: {
-  id: CutoutShape;
-  label: string;
-  icon: typeof Circle;
-}[] = [
-  { id: 'none', label: 'Original', icon: RotateCcw },
-  { id: 'circle', label: 'Circle', icon: Circle },
-  { id: 'square', label: 'Square', icon: Square },
-  { id: 'rounded', label: 'Squircle', icon: Square },
-  { id: 'star', label: 'Star', icon: Star },
-  { id: 'heart', label: 'Heart', icon: Heart },
-];
 
 export function ImageTab({
   selectedObject,
   onAddImageFile,
   onApplyCutout,
+  onUpdateImageProps,
 }: ImageTabProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -114,68 +99,12 @@ export function ImageTab({
         </div>
       </div>
 
-      <div className="border-t border-zinc-800/80 pt-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Shape Cutout & Mask
-          </h2>
-          {!selectedImage && (
-            <span className="text-[10px] text-zinc-500">Select an image</span>
-          )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          {CUTOUT_OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const active = selectedImage?.cutoutShape === opt.id;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                disabled={!selectedImage}
-                onClick={() => onApplyCutout(opt.id)}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-xl border text-[11px] font-medium transition-all',
-                  !selectedImage
-                    ? 'opacity-40 cursor-not-allowed bg-zinc-900/40 border-zinc-800 text-zinc-500'
-                    : active
-                      ? 'bg-violet-600/20 border-violet-500 text-white'
-                      : 'bg-zinc-900/70 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-700'
-                )}
-              >
-                <Icon
-                  className={cn(
-                    'w-4 h-4',
-                    opt.id === 'rounded' && 'rounded-[4px]'
-                  )}
-                />
-                <span>{opt.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {selectedImage?.cutoutShape === 'rounded' && (
-          <div className="mt-4 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
-            <div className="flex items-center justify-between text-xs mb-2">
-              <span className="text-zinc-400">Corner Radius</span>
-              <span className="font-mono text-zinc-200">
-                {selectedImage.cutoutRadius}%
-              </span>
-            </div>
-            <input
-              type="range"
-              min={2}
-              max={48}
-              value={selectedImage.cutoutRadius}
-              onChange={(e) =>
-                onApplyCutout('rounded', Number(e.target.value))
-              }
-              className="w-full accent-violet-500"
-            />
-          </div>
-        )}
-      </div>
+      <ImageStyleControls
+        selectedImage={selectedImage}
+        idPrefix="image-tab"
+        onApplyCutout={onApplyCutout}
+        onUpdateImageProps={onUpdateImageProps}
+      />
     </div>
   );
 }
