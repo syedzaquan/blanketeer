@@ -1,0 +1,209 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Local Variable Font: Fraunces (calibrated opsz=9..144 def 72, wght=100..900 def 400) */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('./assets/fonts/fraunces/Fraunces-Variable-Roman.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  src: url('./assets/fonts/fraunces/Fraunces-Variable-Italic.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Local Font Family: Fedro (300–900, Normal & Italic) */
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-Light.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-LightItalic.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-LightItalic.woff') format('woff');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-Regular.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-RegularItalic.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-RegularItalic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-Medium.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-MediumItalic.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-MediumItalic.woff') format('woff');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-SemiBold.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-SemiBoldItalic.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-SemiBoldItalic.woff') format('woff');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-Bold.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-BoldItalic.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-BoldItalic.woff') format('woff');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-ExtraBold.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-ExtraBold.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-ExtraBoldItalic.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-ExtraBoldItalic.woff') format('woff');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-Black.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-Black.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fedro';
+  src:
+    url('./assets/fonts/fedro/Fedro-BlackItalic.woff2') format('woff2'),
+    url('./assets/fonts/fedro/Fedro-BlackItalic.woff') format('woff');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* Custom thin dark scrollbars for studio panels */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(161, 161, 170, 0.25);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(161, 161, 170, 0.45);
+  }
+}
+
+.studio-grid-bg {
+  background-color: #09090b;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.checkerboard-bg {
+  background-color: #18181b;
+  background-image:
+    linear-gradient(45deg, #27272a 25%, transparent 25%),
+    linear-gradient(-45deg, #27272a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #27272a 75%),
+    linear-gradient(-45deg, transparent 75%, #27272a 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+}
