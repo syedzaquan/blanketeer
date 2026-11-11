@@ -1,4 +1,4 @@
-import { Download, Redo2, Undo2 } from 'lucide-react';
+import { Download, Redo2, RotateCcw, Undo2 } from 'lucide-react';
 import {
   ASPECT_RATIO_PRESETS,
   type AspectRatioKey,
@@ -12,6 +12,7 @@ interface HeaderProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  onResetProject: () => void;
   onExportPNG: () => void;
 }
 
@@ -22,6 +23,7 @@ export function Header({
   canRedo,
   onUndo,
   onRedo,
+  onResetProject,
   onExportPNG,
 }: HeaderProps) {
   const currentPreset = ASPECT_RATIO_PRESETS[aspectRatio];
@@ -74,7 +76,7 @@ export function Header({
         })}
       </div>
 
-      {/* Right Actions: Undo/Redo + Export */}
+      {/* Right Actions: Undo/Redo + Reset + Export */}
       <div className="flex items-center gap-1.5 shrink-0">
         <div className="flex items-center gap-0.5 border-r border-neutral-800 pr-1.5">
           <button
@@ -106,6 +108,17 @@ export function Header({
             <Redo2 className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        <button
+          id="header-reset-project"
+          type="button"
+          onClick={onResetProject}
+          title="Reset canvas & clear saved draft"
+          className="flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-800 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium transition-colors"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Reset</span>
+        </button>
 
         <button
           type="button"

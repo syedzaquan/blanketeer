@@ -35,6 +35,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('text');
   const [mobileSheet, setMobileSheet] = useState<MobileSheetState>('none');
   const [exportPreview, setExportPreview] = useState<ExportPreviewPayload | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const quickImageInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
@@ -53,6 +54,7 @@ export function App() {
     canRedo,
     undo,
     redo,
+    resetProject,
     addText,
     updateTextProps,
     uploadCustomFont,
@@ -189,6 +191,7 @@ export function App() {
         canRedo={canRedo}
         onUndo={() => void undo()}
         onRedo={() => void redo()}
+        onResetProject={() => setShowResetConfirm(true)}
         onExportPNG={() => void handleExportPNG()}
       />
 
@@ -454,6 +457,51 @@ export function App() {
                 <Download className="w-3.5 h-3.5" />
                 <span>Download</span>
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Project Confirmation Modal */}
+      {showResetConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Reset canvas confirmation"
+          onClick={() => setShowResetConfirm(false)}
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xs rounded-lg bg-[#141414] border border-neutral-800 p-4 flex flex-col gap-3"
+          >
+            <div>
+              <h2 className="text-sm font-medium text-neutral-100">
+                Reset canvas?
+              </h2>
+              <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+                This restores the starter template and clears your saved draft from this browser.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                className="py-1.5 px-3 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-medium text-neutral-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                id="confirm-reset-project"
+                type="button"
+                onClick={() => {
+                  setShowResetConfirm(false);
+                  void resetProject();
+                }}
+                className="py-1.5 px-3 rounded-md bg-red-600 hover:bg-red-500 text-xs font-medium text-white transition-colors"
+              >
+                Reset
+              </button>
             </div>
           </div>
         </div>

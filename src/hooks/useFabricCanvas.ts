@@ -45,10 +45,17 @@ import {
   loadFont,
   preloadAllFonts,
   registerCustomFontFile,
+  registerCustomFontFromDataUrl,
   snapToSupportedWeight,
   type FontOption,
 } from '../utils/fonts';
 import { applyCutoutMask } from '../utils/imageCutouts';
+import {
+  clearSavedProject,
+  loadProjectFromBrowser,
+  saveProjectToBrowser,
+  type SavedCustomFont,
+} from '../utils/projectStorage';
 import {
   renderGuidesOnTopContext,
   snapObjectToGuides,
@@ -193,6 +200,26 @@ const DEFAULT_BACKGROUND: BackgroundState = {
 
 const MAX_HISTORY = 40;
 
+function createStarterTextbox(canvasWidth: number, canvasHeight: number): StoryTextbox {
+  return new StoryTextbox('Tap to craft\nyour story', {
+    left: canvasWidth / 2,
+    top: canvasHeight * 0.44,
+    width: 780,
+    originX: 'center',
+    originY: 'center',
+    fontFamily: 'Fedro',
+    fontSize: 96,
+    fontWeight: 700,
+    fontSoft: 100,
+    fill: '#ffffff',
+    textAlign: 'center',
+    lineHeight: 0.85,
+    bgStyle: 'none',
+    textBgColor: '#ffffff',
+    editorName: 'Headline',
+  });
+}
+
 function applyControlStyling(): void {
   Object.assign(fabric.InteractiveFabricObject.ownDefaults, {
     cornerColor: '#ffffff',
@@ -255,6 +282,9 @@ export function useFabricCanvas() {
   const historyRef = useRef<HistorySnapshot[]>([]);
   const historyIndexRef = useRef<number>(-1);
   const isRestoringRef = useRef<boolean>(false);
+  const hasHydratedRef = useRef<boolean>(false);
+  const hasUserEditedRef = useRef<boolean>(false);
+  const customFontsRef = useRef<SavedCustomFont[]>([]);
   const historyTimerRef = useRef<number | null>(null);
   const bgUpdateRafRef = useRef<number | null>(null);
   const bgFullResTimerRef = useRef<number | null>(null);
@@ -278,45 +308,65 @@ export function useFabricCanvas() {
     );
   }, []);
 
-  const commitHistoryNow = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || isRestoringRef.current) return;
+  const persistSnapshot = useCallback((snapshot: HistorySnapshot) => {
+    void saveProjectToBrowser({
+      version: 1,
+      savedAt: Date.now(),
+      aspectRatio: snapshot.aspectRatio,
+      background: snapshot.background,
+      canvasJson: snapshot.canvasJson,
+      customFonts: customFontsRef.current,
+    });
+  }, []);
 
-    if (historyTimerRef.current !== null) {
-      window.clearTimeout(historyTimerRef.current);
-      historyTimerRef.current = null;
-    }
+  const commitHistoryNow = useCallback(
+    (persist = true) => {
+      const canvas = canvasRef.current;
+      if (!canvas || isRestoringRef.current) return;
 
-    const canvasJson = canvas.toObject(CUSTOM_SERIALIZED_PROPS) as Record<
-      string,
-      unknown
-    >;
+      if (historyTimerRef.current !== null) {
+        window.clearTimeout(historyTimerRef.current);
+        historyTimerRef.current = null;
+      }
 
-    const snapshot: HistorySnapshot = {
-      aspectRatio: aspectRatioRef.current,
-      background: structuredClone(backgroundRef.current),
-      canvasJson,
-    };
+      const canvasJson = canvas.toObject(CUSTOM_SERIALIZED_PROPS) as Record<
+        string,
+        unknown
+      >;
 
-    const nextHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
-    nextHistory.push(snapshot);
-    if (nextHistory.length > MAX_HISTORY) {
-      nextHistory.shift();
-    }
-    historyRef.current = nextHistory;
-    historyIndexRef.current = nextHistory.length - 1;
-    updateUndoRedoFlags();
-  }, [updateUndoRedoFlags]);
+      const snapshot: HistorySnapshot = {
+        aspectRatio: aspectRatioRef.current,
+        background: structuredClone(backgroundRef.current),
+        canvasJson,
+      };
+
+      const nextHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
+      nextHistory.push(snapshot);
+      if (nextHistory.length > MAX_HISTORY) {
+        nextHistory.shift();
+      }
+      historyRef.current = nextHistory;
+      historyIndexRef.current = nextHistory.length - 1;
+      updateUndoRedoFlags();
+
+      if (persist) {
+        hasUserEditedRef.current = true;
+        persistSnapshot(snapshot);
+      }
+    },
+    [persistSnapshot, updateUndoRedoFlags]
+  );
 
   const scheduleHistoryCommit = useCallback(
     (delay = 280) => {
       if (isRestoringRef.current) return;
+      hasUserEditedRef.current = true;
       if (historyTimerRef.current !== null) {
         window.clearTimeout(historyTimerRef.current);
       }
       historyTimerRef.current = window.setTimeout(() => {
         historyTimerRef.current = null;
-        commitHistoryNow();
+        commitHistoryNow(true);
       }, delay);
     },
     [commitHistoryNow]
@@ -334,7 +384,7 @@ export function useFabricCanvas() {
   }, []);
 
   const restoreSnapshot = useCallback(
-    async (snapshot: HistorySnapshot) => {
+    async (snapshot: HistorySnapshot, persistAfter = false) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -382,29 +432,42 @@ export function useFabricCanvas() {
             canvas.backgroundImage,
             snapshot.background.image.adjustments
           );
+        } else if (snapshot.background.mode === 'gradient') {
+          canvas.backgroundImage = undefined;
+          canvas.backgroundColor = createLinearGradient(
+            targetPreset.width,
+            targetPreset.height,
+            snapshot.background.gradient
+          );
+        } else if (snapshot.background.mode === 'color') {
+          canvas.backgroundImage = undefined;
+          canvas.backgroundColor = snapshot.background.color;
         }
         canvas.requestRenderAll();
         syncSelectionAndLayers();
+        if (persistAfter) {
+          persistSnapshot(snapshot);
+        }
       } finally {
         isRestoringRef.current = false;
         updateUndoRedoFlags();
       }
     },
-    [cancelPendingBgWork, syncSelectionAndLayers, updateUndoRedoFlags]
+    [cancelPendingBgWork, persistSnapshot, syncSelectionAndLayers, updateUndoRedoFlags]
   );
 
   const undo = useCallback(async () => {
     if (historyIndexRef.current <= 0) return;
     historyIndexRef.current -= 1;
     const snapshot = historyRef.current[historyIndexRef.current];
-    await restoreSnapshot(snapshot);
+    await restoreSnapshot(snapshot, true);
   }, [restoreSnapshot]);
 
   const redo = useCallback(async () => {
     if (historyIndexRef.current >= historyRef.current.length - 1) return;
     historyIndexRef.current += 1;
     const snapshot = historyRef.current[historyIndexRef.current];
-    await restoreSnapshot(snapshot);
+    await restoreSnapshot(snapshot, true);
   }, [restoreSnapshot]);
 
   const applyCanvasBackground = useCallback(
@@ -513,45 +576,91 @@ export function useFabricCanvas() {
     );
 
     // Seed an editorial starter text layer so the canvas feels alive immediately
-    const starterTitle = new StoryTextbox('Tap to craft\nyour story', {
-      left: initialPreset.width / 2,
-      top: initialPreset.height * 0.44,
-      width: 780,
-      originX: 'center',
-      originY: 'center',
-      fontFamily: 'Fedro',
-      fontSize: 96,
-      fontWeight: 700,
-      fontSoft: 100,
-      fill: '#ffffff',
-      textAlign: 'center',
-      lineHeight: 0.85,
-      bgStyle: 'none',
-      textBgColor: '#ffffff',
-      editorName: 'Headline',
-    });
+    const starterTitle = createStarterTextbox(
+      initialPreset.width,
+      initialPreset.height
+    );
 
     canvas.add(starterTitle);
     canvas.setActiveObject(starterTitle);
     canvas.requestRenderAll();
 
-    // Sync initial React state & seed history[0]
+    // Sync initial React state & seed history[0] without overwriting browser storage
     syncSelectionAndLayers();
-    commitHistoryNow();
+    commitHistoryNow(false);
 
-    // Preload Fedro, Fraunces, Inter, Montserrat and re-measure when ready
-    void preloadAllFonts().then(() => {
-      if (!canvasRef.current) return;
+    let disposed = false;
+
+    const remeasureAllTextboxes = () => {
+      const currentCanvas = canvasRef.current;
+      if (!currentCanvas) return;
       fontsRef.current.forEach((f) => fabric.cache.clearFontCache(f.family));
-      canvasRef.current.getObjects().forEach((obj) => {
+      currentCanvas.getObjects().forEach((obj) => {
         if (obj instanceof fabric.Textbox) {
           obj.dirty = true;
           obj.initDimensions();
           obj.setCoords();
         }
       });
-      canvasRef.current.requestRenderAll();
+      currentCanvas.requestRenderAll();
+      syncSelectionAndLayers();
+    };
+
+    const fontsReadyPromise = preloadAllFonts().then(() => {
+      if (!disposed) {
+        remeasureAllTextboxes();
+      }
     });
+
+    // Hydrate saved project from browser storage if present and user hasn't edited yet
+    void (async () => {
+      const saved = await loadProjectFromBrowser();
+      hasHydratedRef.current = true;
+      if (disposed || hasUserEditedRef.current || !saved) return;
+
+      if (saved.customFonts?.length) {
+        const restoredFonts: FontOption[] = [];
+        for (const cf of saved.customFonts) {
+          try {
+            const opt = await registerCustomFontFromDataUrl(cf.family, cf.dataUrl);
+            restoredFonts.push(opt);
+            if (!customFontsRef.current.some((f) => f.family === cf.family)) {
+              customFontsRef.current.push(cf);
+            }
+          } catch {
+            // Skip unreadable saved font entry
+          }
+        }
+        if (!disposed && restoredFonts.length > 0) {
+          setAvailableFonts((prev) => {
+            const filtered = prev.filter(
+              (p) => !restoredFonts.some((r) => r.family.toLowerCase() === p.family.toLowerCase())
+            );
+            const next = [...restoredFonts, ...filtered];
+            fontsRef.current = next;
+            return next;
+          });
+        }
+      }
+
+      if (disposed || hasUserEditedRef.current) return;
+      const snapshot: HistorySnapshot = {
+        aspectRatio: saved.aspectRatio,
+        background: saved.background,
+        canvasJson: saved.canvasJson,
+      };
+      await restoreSnapshot(snapshot, false);
+      if (disposed || hasUserEditedRef.current) return;
+
+      historyRef.current = [snapshot];
+      historyIndexRef.current = 0;
+      updateUndoRedoFlags();
+
+      await fontsReadyPromise;
+      if (!disposed) {
+        remeasureAllTextboxes();
+      }
+    })();
 
     const handleSelection = () => {
       syncSelectionAndLayers();
@@ -653,7 +762,23 @@ export function useFabricCanvas() {
     canvas.on('object:removed', handleStackChange);
     canvas.on('after:render', handleAfterRender);
 
+    const flushPendingSave = () => {
+      if (historyTimerRef.current !== null) {
+        commitHistoryNow(true);
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushPendingSave();
+      }
+    };
+    window.addEventListener('pagehide', flushPendingSave);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
+      disposed = true;
+      window.removeEventListener('pagehide', flushPendingSave);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (historyTimerRef.current !== null) {
         window.clearTimeout(historyTimerRef.current);
       }
@@ -661,7 +786,14 @@ export function useFabricCanvas() {
       canvas.dispose();
       canvasRef.current = null;
     };
-  }, [cancelPendingBgWork, commitHistoryNow, scheduleHistoryCommit, syncSelectionAndLayers]);
+  }, [
+    cancelPendingBgWork,
+    commitHistoryNow,
+    restoreSnapshot,
+    scheduleHistoryCommit,
+    syncSelectionAndLayers,
+    updateUndoRedoFlags,
+  ]);
 
   const setAspectRatio = useCallback(
     async (nextRatio: AspectRatioKey) => {
@@ -1021,30 +1153,44 @@ export function useFabricCanvas() {
     [scheduleHistoryCommit, syncSelectionAndLayers]
   );
 
-  const uploadCustomFont = useCallback(async (file: File) => {
-    const newFont = await registerCustomFontFile(file);
-    setAvailableFonts((prev) => {
-      const exists = prev.some(
-        (f) => f.family.toLowerCase() === newFont.family.toLowerCase()
-      );
-      const next = exists ? prev : [newFont, ...prev];
-      fontsRef.current = next;
-      return next;
-    });
+  const uploadCustomFont = useCallback(
+    async (file: File) => {
+      const [newFont, dataUrl] = await Promise.all([
+        registerCustomFontFile(file),
+        readFileAsDataURL(file),
+      ]);
+      customFontsRef.current = [
+        ...customFontsRef.current.filter(
+          (f) => f.family.toLowerCase() !== newFont.family.toLowerCase()
+        ),
+        { family: newFont.family, dataUrl },
+      ];
+      setAvailableFonts((prev) => {
+        const exists = prev.some(
+          (f) => f.family.toLowerCase() === newFont.family.toLowerCase()
+        );
+        const next = exists ? prev : [newFont, ...prev];
+        fontsRef.current = next;
+        return next;
+      });
 
-    const canvas = canvasRef.current;
-    const active = canvas?.getActiveObject();
-    if (canvas && (active instanceof StoryTextbox || active instanceof fabric.Textbox)) {
-      fabric.cache.clearFontCache(newFont.family);
-      active.set({ fontFamily: newFont.family });
-      active.initDimensions();
-      active.setCoords();
-      canvas.requestRenderAll();
-      syncSelectionAndLayers();
-      commitHistoryNow();
-    }
-    return newFont;
-  }, [commitHistoryNow, syncSelectionAndLayers]);
+      const canvas = canvasRef.current;
+      const active = canvas?.getActiveObject();
+      if (canvas && (active instanceof StoryTextbox || active instanceof fabric.Textbox)) {
+        fabric.cache.clearFontCache(newFont.family);
+        active.set({ fontFamily: newFont.family });
+        active.initDimensions();
+        active.setCoords();
+        canvas.requestRenderAll();
+        syncSelectionAndLayers();
+        commitHistoryNow(true);
+      } else if (canvas && historyRef.current[historyIndexRef.current]) {
+        persistSnapshot(historyRef.current[historyIndexRef.current]);
+      }
+      return newFont;
+    },
+    [commitHistoryNow, persistSnapshot, syncSelectionAndLayers]
+  );
 
   const addImageFromFile = useCallback(
     async (file: File) => {
@@ -1702,6 +1848,76 @@ export function useFabricCanvas() {
     return preview;
   }, [cancelPendingBgWork, syncSelectionAndLayers]);
 
+  const resetProject = useCallback(async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    cancelPendingBgWork();
+    if (historyTimerRef.current !== null) {
+      window.clearTimeout(historyTimerRef.current);
+      historyTimerRef.current = null;
+    }
+
+    isRestoringRef.current = true;
+    try {
+      const defaultRatio: AspectRatioKey = '4:5';
+      const defaultPreset = ASPECT_RATIO_PRESETS[defaultRatio];
+      const defaultBg = structuredClone(DEFAULT_BACKGROUND);
+
+      aspectRatioRef.current = defaultRatio;
+      setAspectRatioState(defaultRatio);
+
+      backgroundRef.current = defaultBg;
+      setBackgroundState(defaultBg);
+
+      if (
+        canvas.width !== defaultPreset.width ||
+        canvas.height !== defaultPreset.height
+      ) {
+        canvas.setDimensions({
+          width: defaultPreset.width,
+          height: defaultPreset.height,
+        });
+      }
+
+      canvas.clear();
+      canvas.backgroundImage = undefined;
+      canvas.backgroundColor = createLinearGradient(
+        defaultPreset.width,
+        defaultPreset.height,
+        defaultBg.gradient
+      );
+
+      const starterTitle = createStarterTextbox(
+        defaultPreset.width,
+        defaultPreset.height
+      );
+      canvas.add(starterTitle);
+      canvas.setActiveObject(starterTitle);
+      canvas.requestRenderAll();
+
+      const canvasJson = canvas.toObject(CUSTOM_SERIALIZED_PROPS) as Record<
+        string,
+        unknown
+      >;
+      historyRef.current = [
+        {
+          aspectRatio: defaultRatio,
+          background: structuredClone(defaultBg),
+          canvasJson,
+        },
+      ];
+      historyIndexRef.current = 0;
+      hasUserEditedRef.current = true;
+
+      await clearSavedProject();
+      syncSelectionAndLayers();
+    } finally {
+      isRestoringRef.current = false;
+      updateUndoRedoFlags();
+    }
+  }, [cancelPendingBgWork, syncSelectionAndLayers, updateUndoRedoFlags]);
+
   // Global keyboard shortcuts (Delete, Undo, Redo, Duplicate, Nudge, Escape)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1838,6 +2054,7 @@ export function useFabricCanvas() {
     showSafeArea,
     toggleSafeArea,
     exportPNG,
+    resetProject,
   };
 }
 

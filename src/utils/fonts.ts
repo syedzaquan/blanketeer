@@ -254,18 +254,19 @@ export const preloadAllFonts = async (): Promise<void> => {
   ]);
 };
 
-export const registerCustomFontFile = async (file: File): Promise<FontOption> => {
-  const buffer = await file.arrayBuffer();
-  const baseName = file.name.replace(/\.[^/.]+$/, '').trim() || 'Custom Font';
-  const fontFace = new FontFace(baseName, buffer);
+async function registerCustomFontBuffer(
+  familyName: string,
+  buffer: ArrayBuffer
+): Promise<FontOption> {
+  const fontFace = new FontFace(familyName, buffer);
   const loadedFace = await fontFace.load();
   document.fonts.add(loadedFace);
-  loadedFontFamilies.add(baseName);
+  loadedFontFamilies.add(familyName);
 
   const isVariableRange = /\s+\d+/.test(loadedFace.weight);
   return {
-    name: baseName,
-    family: baseName,
+    name: familyName,
+    family: familyName,
     source: 'custom',
     categoryLabel: 'Local Font',
     isVariableWeight: isVariableRange,
@@ -276,4 +277,19 @@ export const registerCustomFontFile = async (file: File): Promise<FontOption> =>
           { value: 700, label: 'Bold' },
         ],
   };
+}
+
+export const registerCustomFontFile = async (file: File): Promise<FontOption> => {
+  const buffer = await file.arrayBuffer();
+  const baseName = file.name.replace(/\.[^/.]+$/, '').trim() || 'Custom Font';
+  return registerCustomFontBuffer(baseName, buffer);
+};
+
+export const registerCustomFontFromDataUrl = async (
+  family: string,
+  dataUrl: string
+): Promise<FontOption> => {
+  const res = await fetch(dataUrl);
+  const buffer = await res.arrayBuffer();
+  return registerCustomFontBuffer(family, buffer);
 };
