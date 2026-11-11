@@ -79,16 +79,16 @@ export function MobileFontSizeSlider({
     >
       <div
         className={cn(
-          'px-1.5 py-0.5 rounded-md text-[10px] font-mono font-medium border transition-colors min-w-[2.1rem] text-center',
+          'px-2 py-1 rounded-md text-xs font-mono font-medium border transition-colors min-w-[2.5rem] text-center',
           isDragging
             ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
-            : 'bg-[#141414] border-neutral-800 text-neutral-200'
+            : 'bg-[#1c1c1e] border-neutral-700/80 text-neutral-100'
         )}
       >
         {Math.round(fontSize)}
       </div>
 
-      <div className="px-1.5 py-2.5 rounded-lg bg-[#141414] border border-neutral-800">
+      <div className="px-2 py-3 rounded-xl bg-[#1c1c1e] border border-neutral-700/80">
         <div
           ref={trackRef}
           role="slider"
@@ -103,9 +103,9 @@ export function MobileFontSizeSlider({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onKeyDown={handleKeyDown}
-          className="relative w-5 h-36 sm:h-44 flex items-center justify-center touch-none cursor-ns-resize outline-none"
+          className="relative w-7 h-40 sm:h-48 flex items-center justify-center touch-none cursor-ns-resize outline-none"
         >
-          <div className="relative w-1 h-full rounded-full bg-neutral-800 overflow-hidden">
+          <div className="relative w-1.5 h-full rounded-full bg-neutral-800 overflow-hidden">
             <div
               className="absolute bottom-0 left-0 right-0 rounded-full bg-neutral-200"
               style={{ height: `${percent}%` }}
@@ -114,10 +114,10 @@ export function MobileFontSizeSlider({
 
           <div
             className={cn(
-              'pointer-events-none absolute w-3.5 h-3.5 rounded-full bg-white border border-neutral-900 transition-transform',
+              'pointer-events-none absolute w-5 h-5 rounded-full bg-white border border-neutral-900 transition-transform',
               isDragging ? 'scale-110' : 'scale-100'
             )}
-            style={{ bottom: `calc(${percent}% - 7px)` }}
+            style={{ bottom: `calc(${percent}% - 10px)` }}
           />
         </div>
       </div>

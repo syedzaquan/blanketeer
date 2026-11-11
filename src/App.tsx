@@ -208,7 +208,7 @@ export function App() {
         <div className="hidden lg:flex shrink-0 border-r border-neutral-800/80 bg-[#0f0f0f] z-20">
           <nav
             aria-label="Desktop editor tools"
-            className="w-14 shrink-0 border-r border-neutral-800/80 py-2.5 px-1.5 flex flex-col items-center gap-1"
+            className="w-12 shrink-0 border-r border-neutral-800/80 py-2.5 px-1.5 flex flex-col items-center gap-1.5"
           >
             {SIDEBAR_TABS.map((tab) => {
               const Icon = tab.icon;
@@ -218,15 +218,16 @@ export function App() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
+                  aria-label={tab.label}
+                  title={tab.label}
                   className={cn(
-                    'w-full py-2 rounded-md flex flex-col items-center justify-center gap-1 transition-colors',
+                    'w-full py-2.5 rounded-md flex items-center justify-center transition-colors',
                     active
-                      ? 'bg-neutral-800 text-neutral-100'
-                      : 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-900'
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/80'
                   )}
                 >
-                  <Icon className="w-4 h-4 stroke-[1.75]" />
-                  <span className="text-[10px] font-medium">{tab.label}</span>
+                  <Icon className="w-[18px] h-[18px] stroke-[1.75]" />
                 </button>
               );
             })}
@@ -284,10 +285,10 @@ export function App() {
         {showMobileToolSheet && (
           <section
             aria-label={`${activeTabLabel} panel`}
-            className="lg:hidden w-full h-[38vh] max-h-[340px] shrink-0 border-t border-neutral-800 bg-[#0f0f0f] flex flex-col overflow-hidden z-20"
+            className="lg:hidden w-full h-[44vh] max-h-[420px] shrink-0 border-t border-neutral-800 bg-[#0f0f0f] flex flex-col overflow-hidden z-20"
           >
-            <div className="h-9 px-3.5 border-b border-neutral-800/80 flex items-center justify-between shrink-0">
-              <span className="text-xs font-medium text-neutral-300">
+            <div className="h-11 px-4 border-b border-neutral-800/80 flex items-center justify-between shrink-0">
+              <span className="text-sm font-medium text-neutral-200">
                 {activeTabLabel}
               </span>
               <div className="flex items-center gap-1.5">
@@ -295,24 +296,25 @@ export function App() {
                   <button
                     type="button"
                     onClick={() => setMobileSheet('inspector')}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-neutral-800 text-neutral-100 text-xs font-medium"
+                    aria-label="Layer properties"
+                    title="Layer properties"
+                    className="p-2 rounded-lg bg-neutral-800 text-neutral-100"
                   >
-                    <SlidersHorizontal className="w-3 h-3" />
-                    <span>Properties</span>
+                    <SlidersHorizontal className="w-4 h-4" />
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setMobileSheet('none')}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                  className="p-2 rounded-lg text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
                   aria-label="Close tool panel"
+                  title="Close"
                 >
-                  <X className="w-3.5 h-3.5" />
-                  <span>Done</span>
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto p-3.5">{renderTabContent()}</div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-4">{renderTabContent()}</div>
           </section>
         )}
 
@@ -341,7 +343,7 @@ export function App() {
       {/* Mobile / Tablet Bottom Navigation Dock */}
       <nav
         aria-label="Mobile editor tools"
-        className="lg:hidden shrink-0 border-t border-neutral-800 bg-[#0f0f0f] px-2 pt-1 pb-[max(0.4rem,env(safe-area-inset-bottom))] flex items-center justify-around gap-1 z-30"
+        className="lg:hidden shrink-0 border-t border-neutral-800 bg-[#0f0f0f] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around gap-1.5 z-30"
       >
         {SIDEBAR_TABS.map((tab) => {
           const Icon = tab.icon;
@@ -358,15 +360,16 @@ export function App() {
                   setMobileSheet('tool');
                 }
               }}
+              aria-label={tab.label}
+              title={tab.label}
               className={cn(
-                'flex-1 py-1.5 rounded-md flex flex-col items-center justify-center gap-0.5 transition-colors',
+                'flex-1 min-h-[48px] py-2 rounded-lg flex items-center justify-center transition-colors',
                 active
-                  ? 'bg-neutral-800 text-neutral-100'
-                  : 'text-neutral-500 hover:text-neutral-200'
+                  ? 'bg-neutral-700 text-white'
+                  : 'text-neutral-400 hover:text-neutral-100'
               )}
             >
-              <Icon className="w-4 h-4 stroke-[1.75]" />
-              <span className="text-[10px] font-medium leading-tight">{tab.label}</span>
+              <Icon className="w-5 h-5 stroke-[1.75]" />
             </button>
           );
         })}
@@ -378,18 +381,18 @@ export function App() {
             if (!selectedObject) return;
             setMobileSheet((prev) => (prev === 'inspector' ? 'none' : 'inspector'));
           }}
+          aria-label="Edit selected layer properties"
           title={selectedObject ? 'Edit selected layer properties' : 'Select a layer to edit'}
           className={cn(
-            'relative flex-1 py-1.5 rounded-md flex flex-col items-center justify-center gap-0.5 transition-colors',
+            'relative flex-1 min-h-[48px] py-2 rounded-lg flex items-center justify-center transition-colors',
             !selectedObject
               ? 'text-neutral-700 cursor-not-allowed'
               : showMobileInspector
                 ? 'bg-neutral-100 text-neutral-950'
-                : 'text-neutral-300 bg-neutral-900 hover:bg-neutral-800'
+                : 'text-neutral-200 bg-neutral-800/80 hover:bg-neutral-700'
           )}
         >
-          <SlidersHorizontal className="w-4 h-4 stroke-[1.75]" />
-          <span className="text-[10px] font-medium leading-tight">Edit</span>
+          <SlidersHorizontal className="w-5 h-5 stroke-[1.75]" />
         </button>
       </nav>
 

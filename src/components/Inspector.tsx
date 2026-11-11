@@ -25,6 +25,7 @@ import {
   type SelectedObjectState,
   type TextBackgroundStyle,
 } from '../types/editor';
+import { PRESET_COLOR_SWATCHES } from '../utils/canvasHelpers';
 import { cn } from '../utils/cn';
 import { getFontWeightOptions, type FontOption } from '../utils/fonts';
 import {
@@ -81,19 +82,6 @@ interface InspectorProps {
   onDuplicate: () => void;
   onDelete: () => void;
 }
-
-const TEXT_COLOR_SWATCHES = [
-  '#ffffff',
-  '#0a0a0a',
-  '#d4d4d4',
-  '#fde68a',
-  '#f472b6',
-  '#38bdf8',
-  '#34d399',
-  '#fb7185',
-  '#f97316',
-  '#a3a3a3',
-];
 
 const HIGHLIGHT_SWATCHES = [
   '#ffffff',
@@ -196,9 +184,9 @@ export function Inspector({
   return (
     <aside
       className={cn(
-        'border-neutral-800/80 bg-[#0f0f0f] p-3.5 overflow-y-auto flex-col gap-3.5 shrink-0',
+        'border-neutral-800/80 bg-[#0f0f0f] p-4 lg:p-3.5 overflow-y-auto flex-col gap-4 lg:gap-3.5 shrink-0',
         mobileOpen
-          ? 'flex w-full h-[38vh] max-h-[340px] border-t lg:w-72 lg:h-auto lg:max-h-none lg:border-t-0 lg:border-l'
+          ? 'flex w-full h-[44vh] max-h-[420px] border-t lg:w-72 lg:h-auto lg:max-h-none lg:border-t-0 lg:border-l'
           : 'hidden lg:flex lg:w-72 lg:border-l'
       )}
     >
@@ -212,36 +200,38 @@ export function Inspector({
                 ? 'Image Layer'
                 : 'Layer'}
           </span>
-          <h2 className="text-xs font-medium text-neutral-100 truncate max-w-[165px]">
+          <h2 className="text-sm lg:text-xs font-medium text-neutral-100 truncate max-w-[165px]">
             {selectedObject.name}
           </h2>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 lg:gap-1">
           <button
             type="button"
             onClick={onDuplicate}
+            aria-label="Duplicate"
             title="Duplicate"
-            className="p-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 transition-colors"
+            className="p-2.5 lg:p-1.5 rounded-lg lg:rounded-md bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 transition-colors"
           >
-            <Copy className="w-3.5 h-3.5" />
+            <Copy className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
           <button
             type="button"
             onClick={onDelete}
+            aria-label="Delete"
             title="Delete"
-            className="p-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-red-400 transition-colors"
+            className="p-2.5 lg:p-1.5 rounded-lg lg:rounded-md bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 hover:text-red-400 transition-colors"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
           <button
             type="button"
             onClick={onCloseMobile}
+            aria-label="Done"
             title="Done"
-            className="lg:hidden flex items-center gap-1 px-2 py-1 rounded-md bg-neutral-100 text-xs font-medium text-neutral-950 transition-colors"
+            className="lg:hidden p-2.5 rounded-lg bg-neutral-100 text-neutral-950 transition-colors"
           >
-            <X className="w-3.5 h-3.5" />
-            <span>Done</span>
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -250,14 +240,14 @@ export function Inspector({
       {selectedObject.kind === 'text' && (
         <>
           <div>
-            <label className="block text-[11px] text-neutral-400 mb-1">
+            <label className="block text-xs lg:text-[11px] text-neutral-400 mb-1.5 lg:mb-1">
               Content
             </label>
             <textarea
               rows={2}
               value={selectedObject.text}
               onChange={(e) => onUpdateText({ text: e.target.value })}
-              className="w-full px-2.5 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600 resize-y"
+              className="w-full px-3 py-2 lg:px-2.5 lg:py-1.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500 resize-y"
               placeholder="Enter text..."
             />
           </div>
@@ -269,13 +259,13 @@ export function Inspector({
             </h3>
 
             <div>
-              <label className="block text-[11px] text-neutral-400 mb-1">
+              <label className="block text-xs lg:text-[11px] text-neutral-400 mb-1.5 lg:mb-1">
                 Font
               </label>
               <select
                 value={selectedObject.fontFamily}
                 onChange={(e) => onUpdateText({ fontFamily: e.target.value })}
-                className="w-full px-2.5 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-100 focus:outline-none focus:border-neutral-600"
+                className="w-full px-3 py-2.5 lg:px-2.5 lg:py-1.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 focus:outline-none focus:border-neutral-500"
               >
                 {availableFonts.map((font) => (
                   <option key={font.family} value={font.family}>
@@ -287,7 +277,7 @@ export function Inspector({
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] text-neutral-400">
+                <label className="text-xs lg:text-[11px] text-neutral-400">
                   Size
                 </label>
                 <div className="flex items-center gap-1">
@@ -302,9 +292,9 @@ export function Inspector({
                         onUpdateText({ fontSize: Math.min(400, val) });
                       }
                     }}
-                    className="w-14 px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-xs font-mono text-right text-neutral-100 focus:outline-none focus:border-neutral-600"
+                    className="w-16 lg:w-14 px-2 py-1.5 lg:px-1.5 lg:py-0.5 rounded-md lg:rounded bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-right text-neutral-100 focus:outline-none focus:border-neutral-500"
                   />
-                  <span className="text-[10px] text-neutral-500">px</span>
+                  <span className="text-xs lg:text-[10px] text-neutral-500">px</span>
                 </div>
               </div>
               <input
@@ -346,17 +336,17 @@ export function Inspector({
                   }
                   className="w-full"
                 />
-                <div className="grid grid-cols-5 gap-1 mt-1 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
+                <div className="grid grid-cols-5 gap-1 mt-1 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
                   {WEIGHT_PRESETS.map((w) => (
                     <button
                       key={w.value}
                       type="button"
                       onClick={() => onUpdateText({ fontWeight: w.value })}
                       className={cn(
-                        'py-1 rounded text-[11px] font-medium transition-colors',
+                        'py-2 lg:py-1 rounded text-xs lg:text-[11px] font-medium transition-colors',
                         selectedObject.fontWeight === w.value
-                          ? 'bg-neutral-800 text-neutral-100'
-                          : 'text-neutral-500 hover:text-neutral-200'
+                          ? 'bg-neutral-700 text-white'
+                          : 'text-neutral-400 hover:text-neutral-100'
                       )}
                     >
                       {w.label}
@@ -390,7 +380,7 @@ export function Inspector({
                     </div>
                     <div
                       className={cn(
-                        'grid gap-1 p-0.5 rounded-md bg-neutral-900 border border-neutral-800',
+                        'grid gap-1 p-0.5 rounded-md bg-neutral-800/80 border border-neutral-700',
                         colsClass
                       )}
                       role="group"
@@ -402,16 +392,16 @@ export function Inspector({
                           type="button"
                           onClick={() => onUpdateText({ fontWeight: w.value })}
                           className={cn(
-                            'py-1 px-1 rounded flex flex-col items-center justify-center leading-tight transition-colors',
+                            'py-2 px-1 lg:py-1 rounded flex flex-col items-center justify-center leading-tight transition-colors',
                             selectedObject.fontWeight === w.value
-                              ? 'bg-neutral-800 text-neutral-100'
-                              : 'text-neutral-500 hover:text-neutral-200'
+                              ? 'bg-neutral-700 text-white'
+                              : 'text-neutral-400 hover:text-neutral-100'
                           )}
                         >
-                          <span className="text-[11px] font-medium">
+                          <span className="text-xs lg:text-[11px] font-medium">
                             {w.value}
                           </span>
-                          <span className="text-[9px] text-neutral-500 truncate max-w-full">
+                          <span className="text-[10px] lg:text-[9px] text-neutral-400 truncate max-w-full">
                             {w.label}
                           </span>
                         </button>
@@ -424,7 +414,7 @@ export function Inspector({
 
             {/* Fraunces Variable Axes */}
             {selectedObject.fontFamily.toLowerCase() === 'fraunces' && (
-              <div className="p-2.5 rounded-md bg-neutral-900 border border-neutral-800 flex flex-col gap-2.5">
+              <div className="p-2.5 rounded-md bg-neutral-800/60 border border-neutral-700/80 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-medium text-neutral-300">
                     Variable Axes
@@ -532,10 +522,11 @@ export function Inspector({
             )}
 
             {/* Style & Alignment */}
-            <div className="grid grid-cols-2 gap-1.5">
-              <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
+            <div className="grid grid-cols-2 gap-2 lg:gap-1.5">
+              <div className="flex items-center gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
                 <button
                   type="button"
+                  aria-label="Italic"
                   title="Italic"
                   onClick={() =>
                     onUpdateText({
@@ -546,47 +537,49 @@ export function Inspector({
                     })
                   }
                   className={cn(
-                    'flex-1 py-1.5 rounded flex items-center justify-center transition-colors',
+                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
                     selectedObject.fontStyle === 'italic'
-                      ? 'bg-neutral-800 text-neutral-100'
-                      : 'text-neutral-500 hover:text-neutral-200'
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
                   )}
                 >
-                  <Italic className="w-3.5 h-3.5" />
+                  <Italic className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
                 </button>
                 <button
                   type="button"
+                  aria-label="Underline"
                   title="Underline"
                   onClick={() =>
                     onUpdateText({ underline: !selectedObject.underline })
                   }
                   className={cn(
-                    'flex-1 py-1.5 rounded flex items-center justify-center transition-colors',
+                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
                     selectedObject.underline
-                      ? 'bg-neutral-800 text-neutral-100'
-                      : 'text-neutral-500 hover:text-neutral-200'
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
                   )}
                 >
-                  <Underline className="w-3.5 h-3.5" />
+                  <Underline className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
                 </button>
                 <button
                   type="button"
+                  aria-label="Strikethrough"
                   title="Strikethrough"
                   onClick={() =>
                     onUpdateText({ linethrough: !selectedObject.linethrough })
                   }
                   className={cn(
-                    'flex-1 py-1.5 rounded flex items-center justify-center transition-colors',
+                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
                     selectedObject.linethrough
-                      ? 'bg-neutral-800 text-neutral-100'
-                      : 'text-neutral-500 hover:text-neutral-200'
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
                   )}
                 >
-                  <Strikethrough className="w-3.5 h-3.5" />
+                  <Strikethrough className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
                 </button>
               </div>
 
-              <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
+              <div className="flex items-center gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
                 {(
                   [
                     { id: 'left', icon: AlignLeft },
@@ -600,16 +593,17 @@ export function Inspector({
                     <button
                       key={align.id}
                       type="button"
+                      aria-label={`Align ${align.id}`}
                       title={`Align ${align.id}`}
                       onClick={() => onUpdateText({ textAlign: align.id })}
                       className={cn(
-                        'flex-1 py-1.5 rounded flex items-center justify-center transition-colors',
+                        'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
                         selectedObject.textAlign === align.id
-                          ? 'bg-neutral-800 text-neutral-100'
-                          : 'text-neutral-500 hover:text-neutral-200'
+                          ? 'bg-neutral-700 text-white'
+                          : 'text-neutral-400 hover:text-neutral-100'
                       )}
                     >
-                      <Icon className="w-3.5 h-3.5" />
+                      <Icon className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
                     </button>
                   );
                 })}
@@ -628,27 +622,27 @@ export function Inspector({
                 value={selectedObject.fill}
                 onChange={(e) => onUpdateText({ fill: e.target.value })}
                 aria-label="Text fill color"
-                className="w-7 h-7 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
+                className="w-9 h-9 lg:w-7 lg:h-7 rounded border border-neutral-600 bg-transparent cursor-pointer shrink-0"
               />
               <input
                 type="text"
                 value={selectedObject.fill}
                 onChange={(e) => onUpdateText({ fill: e.target.value })}
-                className="flex-1 px-2.5 py-1 rounded-md bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-600"
+                className="flex-1 px-3 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-500"
               />
             </div>
-            <div className="grid grid-cols-5 gap-1.5">
-              {TEXT_COLOR_SWATCHES.map((swatch) => (
+            <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
+              {PRESET_COLOR_SWATCHES.map((swatch) => (
                 <button
                   key={swatch}
                   type="button"
                   onClick={() => onUpdateText({ fill: swatch })}
                   aria-label={`Set text color ${swatch}`}
                   className={cn(
-                    'h-6 rounded border transition-colors',
+                    'h-8 lg:h-6 rounded-md lg:rounded border transition-colors',
                     selectedObject.fill.toLowerCase() === swatch.toLowerCase()
                       ? 'border-white ring-1 ring-white/50'
-                      : 'border-neutral-800 hover:border-neutral-600'
+                      : 'border-neutral-700 hover:border-neutral-500'
                   )}
                   style={{ backgroundColor: swatch }}
                 />
@@ -662,7 +656,7 @@ export function Inspector({
               Highlight
             </h3>
 
-            <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
+            <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
               {(
                 [
                   { id: 'none', label: 'None' },
@@ -675,10 +669,10 @@ export function Inspector({
                   type="button"
                   onClick={() => onUpdateText({ bgStyle: mode.id })}
                   className={cn(
-                    'py-1 rounded-[5px] text-xs font-medium transition-colors',
+                    'py-2 lg:py-1 rounded-md lg:rounded-[5px] text-xs font-medium transition-colors',
                     selectedObject.bgStyle === mode.id
-                      ? 'bg-neutral-800 text-neutral-100'
-                      : 'text-neutral-500 hover:text-neutral-200'
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
                   )}
                 >
                   {mode.label}
@@ -696,7 +690,7 @@ export function Inspector({
                       onUpdateText({ textBgColor: e.target.value })
                     }
                     aria-label="Highlight background color"
-                    className="w-7 h-7 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
+                    className="w-9 h-9 lg:w-7 lg:h-7 rounded border border-neutral-600 bg-transparent cursor-pointer shrink-0"
                   />
                   <input
                     type="text"
@@ -704,11 +698,11 @@ export function Inspector({
                     onChange={(e) =>
                       onUpdateText({ textBgColor: e.target.value })
                     }
-                    className="flex-1 px-2.5 py-1 rounded-md bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-600"
+                    className="flex-1 px-3 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-500"
                   />
                 </div>
 
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-4 gap-2 lg:gap-1.5">
                   {HIGHLIGHT_SWATCHES.map((swatch) => (
                     <button
                       key={swatch}
@@ -716,7 +710,7 @@ export function Inspector({
                       onClick={() => onUpdateText({ textBgColor: swatch })}
                       aria-label={`Set highlight color ${swatch}`}
                       className={cn(
-                        'h-6 rounded border transition-colors',
+                        'h-8 lg:h-6 rounded-md lg:rounded border transition-colors',
                         selectedObject.textBgColor.toLowerCase() ===
                           swatch.toLowerCase()
                           ? 'border-white ring-1 ring-white/50'
@@ -877,39 +871,42 @@ export function Inspector({
           <button
             type="button"
             onClick={() => onUpdateCommon({ resetTransform: true })}
-            className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-neutral-200 transition-colors"
+            aria-label="Reset transform"
+            title="Reset transform"
+            className="p-2 lg:p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/70 transition-colors"
           >
-            <RotateCcw className="w-3 h-3" />
-            <span>Reset</span>
+            <RotateCcw className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-2 lg:gap-1.5">
           <button
             type="button"
             onClick={() => onUpdateCommon({ flipX: !selectedObject.flipX })}
+            aria-label="Flip horizontal"
+            title="Flip horizontal"
             className={cn(
-              'flex items-center justify-center gap-1.5 py-1.5 rounded-md border text-xs font-medium transition-colors',
+              'flex items-center justify-center py-2.5 lg:py-1.5 rounded-lg lg:rounded-md border transition-colors',
               selectedObject.flipX
-                ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
-                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800/70 hover:text-neutral-200'
+                ? 'bg-neutral-700 border-neutral-500 text-white'
+                : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-700/70 hover:text-white'
             )}
           >
-            <FlipHorizontal2 className="w-3.5 h-3.5" />
-            <span>Flip H</span>
+            <FlipHorizontal2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
           <button
             type="button"
             onClick={() => onUpdateCommon({ flipY: !selectedObject.flipY })}
+            aria-label="Flip vertical"
+            title="Flip vertical"
             className={cn(
-              'flex items-center justify-center gap-1.5 py-1.5 rounded-md border text-xs font-medium transition-colors',
+              'flex items-center justify-center py-2.5 lg:py-1.5 rounded-lg lg:rounded-md border transition-colors',
               selectedObject.flipY
-                ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
-                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800/70 hover:text-neutral-200'
+                ? 'bg-neutral-700 border-neutral-500 text-white'
+                : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-700/70 hover:text-white'
             )}
           >
-            <FlipVertical2 className="w-3.5 h-3.5" />
-            <span>Flip V</span>
+            <FlipVertical2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
         </div>
 
@@ -961,42 +958,42 @@ export function Inspector({
         <h3 className="text-xs font-medium text-neutral-300 mb-2">
           Arrange
         </h3>
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-4 gap-1.5 lg:gap-1">
           <button
             type="button"
             onClick={onBringToFront}
+            aria-label="Bring to Front"
             title="Bring to Front"
-            className="flex flex-col items-center gap-1 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
+            className="flex items-center justify-center py-2.5 lg:py-2 rounded-lg lg:rounded-md bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 transition-colors"
           >
-            <ArrowUpToLine className="w-3.5 h-3.5" />
-            <span>Front</span>
+            <ArrowUpToLine className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
           <button
             type="button"
             onClick={onBringForward}
+            aria-label="Bring Forward"
             title="Bring Forward"
-            className="flex flex-col items-center gap-1 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
+            className="flex items-center justify-center py-2.5 lg:py-2 rounded-lg lg:rounded-md bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 transition-colors"
           >
-            <ArrowUp className="w-3.5 h-3.5" />
-            <span>Forward</span>
+            <ArrowUp className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
           <button
             type="button"
             onClick={onSendBackward}
+            aria-label="Send Backward"
             title="Send Backward"
-            className="flex flex-col items-center gap-1 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
+            className="flex items-center justify-center py-2.5 lg:py-2 rounded-lg lg:rounded-md bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 transition-colors"
           >
-            <ArrowDown className="w-3.5 h-3.5" />
-            <span>Back</span>
+            <ArrowDown className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
           <button
             type="button"
             onClick={onSendToBack}
+            aria-label="Send to Back"
             title="Send to Back"
-            className="flex flex-col items-center gap-1 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
+            className="flex items-center justify-center py-2.5 lg:py-2 rounded-lg lg:rounded-md bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 transition-colors"
           >
-            <ArrowDownToLine className="w-3.5 h-3.5" />
-            <span>Bottom</span>
+            <ArrowDownToLine className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
         </div>
       </div>

@@ -116,7 +116,7 @@ function NumericField({
   return (
     <div
       className={cn(
-        'flex items-center rounded-md bg-neutral-900 border border-neutral-800 px-2 py-1 focus-within:border-neutral-600 transition-colors',
+        'flex items-center rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 px-2.5 py-2 lg:px-2 lg:py-1 focus-within:border-neutral-500 transition-colors',
         disabled && 'opacity-40 pointer-events-none'
       )}
     >
@@ -159,7 +159,7 @@ function NumericField({
             (e.target as HTMLInputElement).blur();
           }
         }}
-        className="w-full min-w-0 bg-transparent text-xs font-mono text-neutral-100 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-full min-w-0 bg-transparent text-sm lg:text-xs font-mono text-neutral-100 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       {suffix && (
         <span className="text-[10px] font-mono text-neutral-500 ml-1 shrink-0">
@@ -240,18 +240,18 @@ export function ImageStyleControls({
               onUpdateImageProps({ aspectLocked: !selectedImage.aspectLocked })
             }
             className={cn(
-              'h-[26px] w-7 mb-[1px] rounded-md border flex items-center justify-center transition-colors',
+              'h-9 w-9 lg:h-[26px] lg:w-7 mb-[1px] rounded-lg lg:rounded-md border flex items-center justify-center transition-colors',
               !selectedImage
-                ? 'opacity-40 cursor-not-allowed bg-neutral-900 border-neutral-800 text-neutral-600'
+                ? 'opacity-40 cursor-not-allowed bg-neutral-800/50 border-neutral-800 text-neutral-600'
                 : selectedImage.aspectLocked
-                  ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
-                  : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-neutral-200'
+                  ? 'bg-neutral-700 border-neutral-500 text-white'
+                  : 'bg-neutral-800/80 border-neutral-700 text-neutral-400 hover:text-neutral-100'
             )}
           >
             {selectedImage?.aspectLocked ?? true ? (
-              <Link2 className="w-3.5 h-3.5" />
+              <Link2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
             ) : (
-              <Link2Off className="w-3.5 h-3.5" />
+              <Link2Off className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
             )}
           </button>
 
@@ -298,17 +298,17 @@ export function ImageStyleControls({
                 disabled={!selectedImage}
                 onClick={() => onApplyCutout(opt.id)}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 py-2 px-1.5 rounded-md border text-[11px] font-medium transition-colors',
+                  'flex flex-col items-center justify-center gap-1 py-2.5 px-2 lg:py-2 lg:px-1.5 rounded-lg lg:rounded-md border text-xs lg:text-[11px] font-medium transition-colors',
                   !selectedImage
-                    ? 'opacity-40 cursor-not-allowed bg-neutral-900/40 border-neutral-800 text-neutral-600'
+                    ? 'opacity-40 cursor-not-allowed bg-neutral-800/40 border-neutral-800 text-neutral-600'
                     : active
-                      ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
-                      : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800/70 hover:text-neutral-200'
+                      ? 'bg-neutral-700 border-neutral-500 text-white'
+                      : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-700/70 hover:text-white'
                 )}
               >
                 <Icon
                   className={cn(
-                    'w-3.5 h-3.5',
+                    'w-4 h-4 lg:w-3.5 lg:h-3.5',
                     opt.id === 'rounded' && 'rounded-[3px]'
                   )}
                 />
@@ -370,7 +370,7 @@ export function ImageStyleControls({
                 onUpdateImageProps({ strokeWidth: hasStroke ? 0 : 8 })
               }
               className={cn(
-                'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
+                'px-3 py-1.5 lg:px-2 lg:py-0.5 rounded-md lg:rounded text-xs lg:text-[11px] font-medium border transition-colors',
                 hasStroke
                   ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
                   : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
@@ -444,7 +444,7 @@ export function ImageStyleControls({
                     ...(strokeWidth === 0 ? { strokeWidth: 8 } : {}),
                   })
                 }
-                className="w-6 h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
+                className="w-8 h-8 lg:w-6 lg:h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
               />
               {STROKE_SWATCHES.map((swatch) => (
                 <button
@@ -459,7 +459,7 @@ export function ImageStyleControls({
                     })
                   }
                   className={cn(
-                    'w-5 h-5 rounded border transition-colors',
+                    'w-7 h-7 lg:w-5 lg:h-5 rounded-md lg:rounded border transition-colors',
                     strokeColor.toLowerCase() === swatch.toLowerCase() &&
                       hasStroke
                       ? 'border-white ring-1 ring-white/50'
@@ -475,7 +475,7 @@ export function ImageStyleControls({
             <span className="block text-[11px] text-neutral-400 mb-1">
               Stroke Style
             </span>
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-3 gap-1.5 lg:gap-1">
               {STROKE_STYLES.map((opt) => (
                 <button
                   key={opt.id}
@@ -489,10 +489,10 @@ export function ImageStyleControls({
                     })
                   }
                   className={cn(
-                    'py-1 rounded-md text-[11px] font-medium border transition-colors',
+                    'py-2 lg:py-1 rounded-lg lg:rounded-md text-xs lg:text-[11px] font-medium border transition-colors',
                     strokeStyle === opt.id
-                      ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
-                      : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                      ? 'bg-neutral-700 border-neutral-500 text-white'
+                      : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:text-white'
                   )}
                 >
                   {opt.label}
@@ -520,7 +520,7 @@ export function ImageStyleControls({
                 onUpdateImageProps({ shadowEnabled: !shadowEnabled })
               }
               className={cn(
-                'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
+                'px-3 py-1.5 lg:px-2 lg:py-0.5 rounded-md lg:rounded text-xs lg:text-[11px] font-medium border transition-colors',
                 shadowEnabled
                   ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
                   : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
@@ -682,7 +682,7 @@ export function ImageStyleControls({
                 onChange={(e) =>
                   onUpdateImageProps({ shadowColor: e.target.value })
                 }
-                className="w-6 h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
+                className="w-8 h-8 lg:w-6 lg:h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
               />
               {SHADOW_SWATCHES.map((swatch) => (
                 <button
@@ -692,7 +692,7 @@ export function ImageStyleControls({
                   aria-label={`Shadow color ${swatch}`}
                   onClick={() => onUpdateImageProps({ shadowColor: swatch })}
                   className={cn(
-                    'w-5 h-5 rounded border transition-colors',
+                    'w-7 h-7 lg:w-5 lg:h-5 rounded-md lg:rounded border transition-colors',
                     shadowColor.toLowerCase() === swatch.toLowerCase() &&
                       shadowEnabled
                       ? 'border-white ring-1 ring-white/50'

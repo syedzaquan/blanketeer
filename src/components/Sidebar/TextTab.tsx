@@ -62,10 +62,10 @@ export function TextTab({
                   }
                 }}
                 className={cn(
-                  'flex items-center justify-between px-2.5 py-2 rounded-md border text-left transition-colors',
+                  'flex items-center justify-between px-3 py-2.5 lg:px-2.5 lg:py-2 rounded-lg lg:rounded-md border text-left transition-colors',
                   isActive
-                    ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
-                    : 'bg-neutral-900/60 border-neutral-800/80 text-neutral-300 hover:bg-neutral-800/60 hover:border-neutral-700'
+                    ? 'bg-neutral-700 border-neutral-500 text-white'
+                    : 'bg-neutral-800/70 border-neutral-700/80 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-600'
                 )}
               >
                 <span
@@ -104,9 +104,9 @@ export function TextTab({
         <button
           type="button"
           onClick={() => fontInputRef.current?.click()}
-          className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border border-neutral-800 hover:border-neutral-700 bg-neutral-900 hover:bg-neutral-800/80 text-xs font-medium text-neutral-300 transition-colors"
+          className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-2.5 lg:py-1.5 rounded-lg lg:rounded-md border border-neutral-800 hover:border-neutral-700 bg-neutral-900 hover:bg-neutral-800/80 text-sm lg:text-xs font-medium text-neutral-300 transition-colors"
         >
-          <Upload className="w-3.5 h-3.5 text-neutral-400" />
+          <Upload className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-neutral-400" />
           <span>Upload Font (.ttf, .otf, .woff2)</span>
         </button>
       </div>

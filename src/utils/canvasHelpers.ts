@@ -76,6 +76,19 @@ export function ensureObjectMeta(obj: fabric.FabricObject): FabricObjectWithMeta
   return meta;
 }
 
+export const PRESET_COLOR_SWATCHES = [
+  '#FE5925',
+  '#2A9F47',
+  '#F02D3B',
+  '#F6BE01',
+  '#6DB4E2',
+  '#F79A00',
+  '#FC848B',
+  '#FFFFFF',
+  '#D5D5D5',
+  '#000000',
+] as const;
+
 export const DEFAULT_OVERLAY_GRADIENT: BackgroundOverlayGradient = {
   enabled: true,
   startColor: '#000000',

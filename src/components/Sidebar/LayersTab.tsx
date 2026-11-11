@@ -72,26 +72,26 @@ export function LayersTab({
                   }
                 }}
                 className={cn(
-                  'group flex items-center gap-2 px-2 py-1.5 rounded-md border transition-colors cursor-pointer',
+                  'group flex items-center gap-2 px-2.5 py-2 lg:px-2 lg:py-1.5 rounded-lg lg:rounded-md border transition-colors cursor-pointer',
                   layer.isSelected
-                    ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
-                    : 'bg-neutral-900/50 border-neutral-800/80 text-neutral-300 hover:bg-neutral-800/60'
+                    ? 'bg-neutral-700 border-neutral-500 text-white'
+                    : 'bg-neutral-800/70 border-neutral-700/80 text-neutral-200 hover:bg-neutral-800'
                 )}
               >
                 <div
                   className={cn(
-                    'w-6 h-6 rounded flex items-center justify-center shrink-0',
+                    'w-7 h-7 lg:w-6 lg:h-6 rounded flex items-center justify-center shrink-0',
                     layer.isSelected
                       ? 'bg-neutral-700 text-neutral-100'
                       : 'bg-neutral-800/80 text-neutral-500'
                   )}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
                 </div>
 
                 <span
                   className={cn(
-                    'flex-1 min-w-0 truncate text-xs font-medium',
+                    'flex-1 min-w-0 truncate text-sm lg:text-xs font-medium',
                     !layer.visible && 'opacity-40 line-through'
                   )}
                 >
@@ -106,61 +106,66 @@ export function LayersTab({
                     type="button"
                     disabled={displayIdx === 0}
                     onClick={() => onMoveLayer(layer.id, 'up')}
+                    aria-label="Move Up"
                     title="Move Up"
                     className={cn(
-                      'p-1 rounded transition-colors',
+                      'p-2 lg:p-1 rounded transition-colors',
                       displayIdx === 0
                         ? 'text-neutral-700 cursor-not-allowed'
                         : 'text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60'
                     )}
                   >
-                    <ArrowUp className="w-3 h-3" />
+                    <ArrowUp className="w-4 h-4 lg:w-3 lg:h-3" />
                   </button>
                   <button
                     type="button"
                     disabled={displayIdx === layers.length - 1}
                     onClick={() => onMoveLayer(layer.id, 'down')}
+                    aria-label="Move Down"
                     title="Move Down"
                     className={cn(
-                      'p-1 rounded transition-colors',
+                      'p-2 lg:p-1 rounded transition-colors',
                       displayIdx === layers.length - 1
                         ? 'text-neutral-700 cursor-not-allowed'
                         : 'text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60'
                     )}
                   >
-                    <ArrowDown className="w-3 h-3" />
+                    <ArrowDown className="w-4 h-4 lg:w-3 lg:h-3" />
                   </button>
                   <button
                     type="button"
                     onClick={() => onToggleVisibility(layer.id)}
+                    aria-label={layer.visible ? 'Hide Layer' : 'Show Layer'}
                     title={layer.visible ? 'Hide Layer' : 'Show Layer'}
-                    className="p-1 rounded text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60 transition-colors"
+                    className="p-2 lg:p-1 rounded text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60 transition-colors"
                   >
                     {layer.visible ? (
-                      <Eye className="w-3 h-3" />
+                      <Eye className="w-4 h-4 lg:w-3 lg:h-3" />
                     ) : (
-                      <EyeOff className="w-3 h-3 text-neutral-600" />
+                      <EyeOff className="w-4 h-4 lg:w-3 lg:h-3 text-neutral-600" />
                     )}
                   </button>
                   <button
                     type="button"
                     onClick={() => onToggleLock(layer.id)}
+                    aria-label={layer.locked ? 'Unlock Layer' : 'Lock Layer'}
                     title={layer.locked ? 'Unlock Layer' : 'Lock Layer'}
-                    className="p-1 rounded text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60 transition-colors"
+                    className="p-2 lg:p-1 rounded text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700/60 transition-colors"
                   >
                     {layer.locked ? (
-                      <Lock className="w-3 h-3 text-neutral-200" />
+                      <Lock className="w-4 h-4 lg:w-3 lg:h-3 text-neutral-200" />
                     ) : (
-                      <Unlock className="w-3 h-3" />
+                      <Unlock className="w-4 h-4 lg:w-3 lg:h-3" />
                     )}
                   </button>
                   <button
                     type="button"
                     onClick={() => onDeleteLayer(layer.id)}
+                    aria-label="Delete Layer"
                     title="Delete Layer"
-                    className="p-1 rounded text-neutral-500 hover:text-red-400 hover:bg-neutral-700/60 transition-colors"
+                    className="p-2 lg:p-1 rounded text-neutral-500 hover:text-red-400 hover:bg-neutral-700/60 transition-colors"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-4 h-4 lg:w-3 lg:h-3" />
                   </button>
                 </div>
               </div>

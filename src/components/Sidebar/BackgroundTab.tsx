@@ -20,6 +20,7 @@ import {
 } from '../../utils/backgroundFilters';
 import {
   DEFAULT_OVERLAY_GRADIENT,
+  PRESET_COLOR_SWATCHES,
   buildGradientCssPreview,
 } from '../../utils/canvasHelpers';
 import { cn } from '../../utils/cn';
@@ -33,19 +34,6 @@ interface BackgroundTabProps {
   onUpdateBgImageConfig: (patch: Partial<BackgroundImageConfig>) => void;
   onRemoveBgImage: () => void;
 }
-
-const SOLID_SWATCHES = [
-  '#FE5925',
-  '#2A9F47',
-  '#F02D3B',
-  '#F6BE01',
-  '#6DB4E2',
-  '#12A437',
-  '#D5D5D5',
-  '#F79A00',
-  '#FB3704',
-  '#FC848B',
-];
 
 const GRADIENT_PRESETS: { name: string; gradient: GradientConfig }[] = [
   {
@@ -317,7 +305,7 @@ export function BackgroundTab({
         <h2 className="text-xs font-medium text-neutral-300 mb-2">
           Background
         </h2>
-        <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
+        <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
           {(
             [
               { id: 'color', label: 'Solid' },
@@ -332,10 +320,10 @@ export function BackgroundTab({
                 type="button"
                 onClick={() => onModeChange(item.id)}
                 className={cn(
-                  'py-1.5 rounded-[5px] text-xs font-medium transition-colors',
+                  'py-2 lg:py-1.5 rounded-md lg:rounded-[5px] text-xs font-medium transition-colors',
                   active
-                    ? 'bg-neutral-800 text-neutral-100'
-                    : 'text-neutral-500 hover:text-neutral-200'
+                    ? 'bg-neutral-700 text-white'
+                    : 'text-neutral-400 hover:text-neutral-100'
                 )}
               >
                 {item.label}
@@ -354,13 +342,13 @@ export function BackgroundTab({
               value={background.color}
               onChange={(e) => onColorChange(e.target.value)}
               aria-label="Solid background color"
-              className="w-7 h-7 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
+              className="w-9 h-9 lg:w-7 lg:h-7 rounded border border-neutral-600 bg-transparent cursor-pointer shrink-0"
             />
             <input
               type="text"
               value={background.color}
               onChange={(e) => onColorChange(e.target.value)}
-              className="flex-1 px-2.5 py-1 rounded-md bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-200 focus:outline-none focus:border-neutral-600"
+              className="flex-1 px-3 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-500"
             />
           </div>
 
@@ -368,18 +356,18 @@ export function BackgroundTab({
             <p className="text-[11px] text-neutral-500 mb-1.5">
               Presets
             </p>
-            <div className="grid grid-cols-5 gap-1.5">
-              {SOLID_SWATCHES.map((swatch) => (
+            <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
+              {PRESET_COLOR_SWATCHES.map((swatch) => (
                 <button
                   key={swatch}
                   type="button"
                   onClick={() => onColorChange(swatch)}
                   aria-label={`Set background ${swatch}`}
                   className={cn(
-                    'w-full h-7 rounded border transition-colors',
+                    'w-full h-9 lg:h-7 rounded-md lg:rounded border transition-colors',
                     background.color.toLowerCase() === swatch.toLowerCase()
                       ? 'border-white ring-1 ring-white/50'
-                      : 'border-neutral-800 hover:border-neutral-600'
+                      : 'border-neutral-700 hover:border-neutral-500'
                   )}
                   style={{ backgroundColor: swatch }}
                 />
@@ -393,7 +381,7 @@ export function BackgroundTab({
       {background.mode === 'gradient' && (
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-2">
-            <label className="flex items-center gap-2 p-2 rounded-md bg-neutral-900 border border-neutral-800 cursor-pointer">
+            <label className="flex items-center gap-2.5 lg:gap-2 p-2.5 lg:p-2 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 cursor-pointer">
               <input
                 type="color"
                 value={background.gradient.startColor}
@@ -404,17 +392,17 @@ export function BackgroundTab({
                     angle: background.gradient.angle,
                   })
                 }
-                className="w-6 h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
+                className="w-8 h-8 lg:w-6 lg:h-6 rounded border border-neutral-600 bg-transparent cursor-pointer shrink-0"
               />
               <div className="min-w-0">
-                <span className="block text-[10px] text-neutral-500">Start</span>
-                <span className="block text-xs font-mono text-neutral-200">
+                <span className="block text-[10px] text-neutral-400">Start</span>
+                <span className="block text-xs font-mono text-neutral-100">
                   {background.gradient.startColor}
                 </span>
               </div>
             </label>
 
-            <label className="flex items-center gap-2 p-2 rounded-md bg-neutral-900 border border-neutral-800 cursor-pointer">
+            <label className="flex items-center gap-2.5 lg:gap-2 p-2.5 lg:p-2 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 cursor-pointer">
               <input
                 type="color"
                 value={background.gradient.endColor}
@@ -425,11 +413,11 @@ export function BackgroundTab({
                     angle: background.gradient.angle,
                   })
                 }
-                className="w-6 h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
+                className="w-8 h-8 lg:w-6 lg:h-6 rounded border border-neutral-600 bg-transparent cursor-pointer shrink-0"
               />
               <div className="min-w-0">
-                <span className="block text-[10px] text-neutral-500">End</span>
-                <span className="block text-xs font-mono text-neutral-200">
+                <span className="block text-[10px] text-neutral-400">End</span>
+                <span className="block text-xs font-mono text-neutral-100">
                   {background.gradient.endColor}
                 </span>
               </div>
@@ -487,8 +475,10 @@ export function BackgroundTab({
                     key={preset.name}
                     type="button"
                     onClick={() => onGradientChange(preset.gradient)}
+                    aria-label={preset.name}
+                    title={preset.name}
                     className={cn(
-                      'group relative h-12 rounded-md border overflow-hidden transition-transform hover:scale-[1.02]',
+                      'group relative h-14 lg:h-12 rounded-lg lg:rounded-md border overflow-hidden transition-transform hover:scale-[1.02]',
                       isActive
                         ? 'border-white ring-1 ring-white/50'
                         : 'border-white/10'
@@ -497,11 +487,7 @@ export function BackgroundTab({
                       backgroundColor: preset.gradient.endColor,
                       backgroundImage: buildGradientCssPreview(preset.gradient),
                     }}
-                  >
-                    <span className="absolute inset-x-0 bottom-0 py-0.5 bg-black/45 backdrop-blur-[2px] text-[10px] font-medium text-white">
-                      {preset.name}
-                    </span>
-                  </button>
+                  />
                 );
               })}
             </div>
@@ -535,17 +521,17 @@ export function BackgroundTab({
 
           {background.image ? (
             <>
-              <div className="grid grid-cols-2 gap-0.5 p-0.5 rounded-md bg-neutral-900 border border-neutral-800">
+              <div className="grid grid-cols-2 gap-0.5 p-0.5 rounded-md bg-neutral-800/80 border border-neutral-700">
                 {(['cover', 'contain'] as const).map((fitMode) => (
                   <button
                     key={fitMode}
                     type="button"
                     onClick={() => onUpdateBgImageConfig({ fitMode })}
                     className={cn(
-                      'py-1 rounded-[5px] text-xs font-medium transition-colors',
+                      'py-2 lg:py-1 rounded-[5px] text-xs font-medium transition-colors',
                       background.image?.fitMode === fitMode
-                        ? 'bg-neutral-800 text-neutral-100'
-                        : 'text-neutral-500 hover:text-neutral-200'
+                        ? 'bg-neutral-700 text-white'
+                        : 'text-neutral-400 hover:text-neutral-100'
                     )}
                   >
                     {fitMode === 'cover' ? 'Fill Frame' : 'Fit Whole'}
@@ -615,24 +601,26 @@ export function BackgroundTab({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-2 lg:gap-1.5">
                 <button
                   type="button"
                   onClick={() =>
                     onUpdateBgImageConfig({ zoom: 1, panX: 0, panY: 0 })
                   }
-                  className="flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-medium text-neutral-300 transition-colors"
+                  aria-label="Reset view"
+                  title="Reset view"
+                  className="flex items-center justify-center py-2.5 lg:py-1.5 rounded-lg lg:rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 transition-colors"
                 >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset View</span>
+                  <RotateCcw className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
                 </button>
                 <button
                   type="button"
                   onClick={onRemoveBgImage}
-                  className="flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-medium text-neutral-400 hover:text-red-400 transition-colors"
+                  aria-label="Remove background image"
+                  title="Remove background image"
+                  className="flex items-center justify-center py-2.5 lg:py-1.5 rounded-lg lg:rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-red-400 transition-colors"
                 >
-                  <Trash2 className="w-3 h-3" />
-                  <span>Remove</span>
+                  <Trash2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
                 </button>
               </div>
 
@@ -652,7 +640,7 @@ export function BackgroundTab({
                       updateOverlayGradient({ enabled: !overlayGradient.enabled })
                     }
                     className={cn(
-                      'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
+                      'px-3 py-1.5 lg:px-2 lg:py-0.5 rounded-md lg:rounded text-xs lg:text-[11px] font-medium border transition-colors',
                       overlayGradient.enabled
                         ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
                         : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
@@ -664,13 +652,13 @@ export function BackgroundTab({
 
                 {overlayGradient.enabled && (
                   <div className="flex flex-col gap-2.5">
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-2 gap-1.5 lg:gap-1">
                       {OVERLAY_PRESETS.map((preset) => (
                         <button
                           key={preset.name}
                           type="button"
                           onClick={() => updateOverlayGradient(preset.patch)}
-                          className="py-1 px-2 rounded bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[11px] font-medium text-neutral-300 transition-colors text-center"
+                          className="py-2 lg:py-1 px-2 rounded-md lg:rounded bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs lg:text-[11px] font-medium text-neutral-300 transition-colors text-center"
                         >
                           {preset.name}
                         </button>
@@ -692,11 +680,11 @@ export function BackgroundTab({
                               endAlpha: overlayGradient.startAlpha,
                             })
                           }
+                          aria-label="Swap start and end stops"
                           title="Swap start and end stops"
-                          className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] text-neutral-300 transition-colors"
+                          className="p-2 lg:p-1 rounded-md lg:rounded bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 transition-colors"
                         >
-                          <ArrowUpDown className="w-2.5 h-2.5" />
-                          <span>Swap</span>
+                          <ArrowUpDown className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
                         </button>
                       </div>
 
@@ -927,7 +915,7 @@ export function BackgroundTab({
                             blendMode: e.target.value as GradientBlendMode,
                           })
                         }
-                        className="w-full px-2.5 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-100 focus:outline-none focus:border-neutral-600"
+                        className="w-full px-3 py-2.5 lg:px-2.5 lg:py-1.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 focus:outline-none focus:border-neutral-500"
                       >
                         {BLEND_MODES.map((m) => (
                           <option key={m.value} value={m.value}>
