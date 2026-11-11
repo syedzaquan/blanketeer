@@ -13,6 +13,12 @@ import {
   type TextBackgroundStyle,
 } from '../types/editor';
 import {
+  DEFAULT_BG_ADJUSTMENTS,
+  applyBackgroundImageAdjustments,
+  isNeutralAdjustments,
+  type AdjustmentQuality,
+} from '../utils/backgroundFilters';
+import {
   CUSTOM_SERIALIZED_PROPS,
   DEFAULT_OVERLAY_GRADIENT,
   createEditorId,
@@ -21,6 +27,7 @@ import {
   extractLayersList,
   extractSelectedState,
   positionBackgroundImage,
+  prepareBackgroundImageDataURL,
   readFileAsDataURL,
   renderBackgroundOverlayGradient,
   type FabricObjectWithMeta,
@@ -222,6 +229,8 @@ export function useFabricCanvas() {
   const historyIndexRef = useRef<number>(-1);
   const isRestoringRef = useRef<boolean>(false);
   const historyTimerRef = useRef<number | null>(null);
+  const bgUpdateRafRef = useRef<number | null>(null);
+  const bgFullResTimerRef = useRef<number | null>(null);
   const objectPinchRef = useRef<ObjectPinchSession | null>(null);
 
   const preset = ASPECT_RATIO_PRESETS[aspectRatio];
@@ -286,11 +295,23 @@ export function useFabricCanvas() {
     [commitHistoryNow]
   );
 
+  const cancelPendingBgWork = useCallback(() => {
+    if (bgUpdateRafRef.current !== null) {
+      window.cancelAnimationFrame(bgUpdateRafRef.current);
+      bgUpdateRafRef.current = null;
+    }
+    if (bgFullResTimerRef.current !== null) {
+      window.clearTimeout(bgFullResTimerRef.current);
+      bgFullResTimerRef.current = null;
+    }
+  }, []);
+
   const restoreSnapshot = useCallback(
     async (snapshot: HistorySnapshot) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
+      cancelPendingBgWork();
       isRestoringRef.current = true;
       try {
         const targetPreset = ASPECT_RATIO_PRESETS[snapshot.aspectRatio];
@@ -325,6 +346,16 @@ export function useFabricCanvas() {
         });
 
         canvas.discardActiveObject();
+        if (
+          snapshot.background.mode === 'image' &&
+          snapshot.background.image &&
+          canvas.backgroundImage instanceof fabric.FabricImage
+        ) {
+          applyBackgroundImageAdjustments(
+            canvas.backgroundImage,
+            snapshot.background.image.adjustments
+          );
+        }
         canvas.requestRenderAll();
         syncSelectionAndLayers();
       } finally {
@@ -332,7 +363,7 @@ export function useFabricCanvas() {
         updateUndoRedoFlags();
       }
     },
-    [syncSelectionAndLayers, updateUndoRedoFlags]
+    [cancelPendingBgWork, syncSelectionAndLayers, updateUndoRedoFlags]
   );
 
   const undo = useCallback(async () => {
@@ -350,7 +381,12 @@ export function useFabricCanvas() {
   }, [restoreSnapshot]);
 
   const applyCanvasBackground = useCallback(
-    async (nextBg: BackgroundState, targetWidth: number, targetHeight: number) => {
+    async (
+      nextBg: BackgroundState,
+      targetWidth: number,
+      targetHeight: number,
+      adjustmentQuality: AdjustmentQuality = 'full'
+    ) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -386,6 +422,11 @@ export function useFabricCanvas() {
           existingBg.getSrc() === nextBg.image.src
         ) {
           positionBackgroundImage(existingBg, targetWidth, targetHeight, nextBg.image);
+          applyBackgroundImageAdjustments(
+            existingBg,
+            nextBg.image.adjustments,
+            adjustmentQuality
+          );
           canvas.requestRenderAll();
           return;
         }
@@ -394,6 +435,7 @@ export function useFabricCanvas() {
           crossOrigin: 'anonymous',
         });
         positionBackgroundImage(img, targetWidth, targetHeight, nextBg.image);
+        applyBackgroundImageAdjustments(img, nextBg.image.adjustments, 'full');
         canvas.backgroundImage = img;
         canvas.requestRenderAll();
       }
@@ -586,16 +628,18 @@ export function useFabricCanvas() {
       if (historyTimerRef.current !== null) {
         window.clearTimeout(historyTimerRef.current);
       }
+      cancelPendingBgWork();
       canvas.dispose();
       canvasRef.current = null;
     };
-  }, [commitHistoryNow, scheduleHistoryCommit, syncSelectionAndLayers]);
+  }, [cancelPendingBgWork, commitHistoryNow, scheduleHistoryCommit, syncSelectionAndLayers]);
 
   const setAspectRatio = useCallback(
     async (nextRatio: AspectRatioKey) => {
       const canvas = canvasRef.current;
       if (!canvas || nextRatio === aspectRatioRef.current) return;
 
+      cancelPendingBgWork();
       const prevPreset = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
       const nextPreset = ASPECT_RATIO_PRESETS[nextRatio];
 
@@ -629,7 +673,7 @@ export function useFabricCanvas() {
       syncSelectionAndLayers();
       commitHistoryNow();
     },
-    [applyCanvasBackground, commitHistoryNow, syncSelectionAndLayers]
+    [applyCanvasBackground, cancelPendingBgWork, commitHistoryNow, syncSelectionAndLayers]
   );
 
   const setBackgroundMode = useCallback(
@@ -678,7 +722,8 @@ export function useFabricCanvas() {
 
   const setBackgroundImageFromFile = useCallback(
     async (file: File) => {
-      const src = await readFileAsDataURL(file);
+      cancelPendingBgWork();
+      const src = await prepareBackgroundImageDataURL(file);
       const next: BackgroundState = {
         ...backgroundRef.current,
         mode: 'image',
@@ -689,15 +734,16 @@ export function useFabricCanvas() {
           panY: 0,
           fitMode: 'cover',
           overlayGradient: { ...DEFAULT_OVERLAY_GRADIENT },
+          adjustments: { ...DEFAULT_BG_ADJUSTMENTS },
         },
       };
       backgroundRef.current = next;
       setBackgroundState(next);
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-      await applyCanvasBackground(next, width, height);
+      await applyCanvasBackground(next, width, height, 'full');
       commitHistoryNow();
     },
-    [applyCanvasBackground, commitHistoryNow]
+    [applyCanvasBackground, cancelPendingBgWork, commitHistoryNow]
   );
 
   const updateBackgroundImageConfig = useCallback(
@@ -712,14 +758,49 @@ export function useFabricCanvas() {
       };
       backgroundRef.current = next;
       setBackgroundState(next);
-      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-      await applyCanvasBackground(next, width, height);
+
+      const hasAdjustmentPatch = patch.adjustments !== undefined;
+      const usePreview =
+        hasAdjustmentPatch && !isNeutralAdjustments(next.image?.adjustments);
+
+      if (bgUpdateRafRef.current !== null) {
+        window.cancelAnimationFrame(bgUpdateRafRef.current);
+      }
+      bgUpdateRafRef.current = window.requestAnimationFrame(() => {
+        bgUpdateRafRef.current = null;
+        const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+        void applyCanvasBackground(
+          backgroundRef.current,
+          width,
+          height,
+          usePreview ? 'preview' : 'full'
+        );
+      });
+
+      if (bgFullResTimerRef.current !== null) {
+        window.clearTimeout(bgFullResTimerRef.current);
+        bgFullResTimerRef.current = null;
+      }
+      if (usePreview) {
+        bgFullResTimerRef.current = window.setTimeout(() => {
+          bgFullResTimerRef.current = null;
+          const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+          void applyCanvasBackground(
+            backgroundRef.current,
+            width,
+            height,
+            'full'
+          );
+        }, 120);
+      }
+
       scheduleHistoryCommit(250);
     },
     [applyCanvasBackground, scheduleHistoryCommit]
   );
 
   const removeBackgroundImage = useCallback(async () => {
+    cancelPendingBgWork();
     const next: BackgroundState = {
       ...backgroundRef.current,
       mode: 'color',
@@ -728,9 +809,9 @@ export function useFabricCanvas() {
     backgroundRef.current = next;
     setBackgroundState(next);
     const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-    await applyCanvasBackground(next, width, height);
+    await applyCanvasBackground(next, width, height, 'full');
     commitHistoryNow();
-  }, [applyCanvasBackground, commitHistoryNow]);
+  }, [applyCanvasBackground, cancelPendingBgWork, commitHistoryNow]);
 
   const addText = useCallback(
     async (presetType: 'headline' | 'pill' | 'body' = 'headline') => {
@@ -1404,9 +1485,22 @@ export function useFabricCanvas() {
   const exportPNG = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    cancelPendingBgWork();
+    const currentBg = backgroundRef.current;
+    if (
+      currentBg.mode === 'image' &&
+      currentBg.image &&
+      canvas.backgroundImage instanceof fabric.FabricImage
+    ) {
+      applyBackgroundImageAdjustments(
+        canvas.backgroundImage,
+        currentBg.image.adjustments,
+        'full'
+      );
+    }
     await exportCanvasToPNG(canvas, `story-${Date.now()}.png`);
     syncSelectionAndLayers();
-  }, [syncSelectionAndLayers]);
+  }, [cancelPendingBgWork, syncSelectionAndLayers]);
 
   // Global keyboard shortcuts (Delete, Undo, Redo, Duplicate, Nudge, Escape)
   useEffect(() => {

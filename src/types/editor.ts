@@ -62,6 +62,15 @@ export interface BackgroundOverlayGradient {
   blendMode: GradientBlendMode;
 }
 
+export interface BackgroundImageAdjustments {
+  brightness: number;
+  contrast: number;
+  shadows: number;
+  highlights: number;
+  dehaze: number;
+  blackPoint: number;
+}
+
 export interface BackgroundImageConfig {
   src: string;
   zoom: number;
@@ -69,6 +78,7 @@ export interface BackgroundImageConfig {
   panY: number;
   fitMode: 'cover' | 'contain';
   overlayGradient?: BackgroundOverlayGradient;
+  adjustments?: BackgroundImageAdjustments;
 }
 
 export interface BackgroundState {

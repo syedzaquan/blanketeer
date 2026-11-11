@@ -343,3 +343,52 @@ export function readFileAsDataURL(file: File): Promise<string> {
   });
 }
 
+/**
+ * Downscales oversized camera photos (e.g., 12–48 MP) on upload so they stay
+ * within WebGL texture limits (<= 4096px), keep Undo snapshots lightweight,
+ * and still exceed 2x the 1080px story export width.
+ */
+export async function prepareBackgroundImageDataURL(
+  file: File,
+  maxDimension = 2400
+): Promise<string> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.decoding = 'async';
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Failed to decode background image'));
+      img.src = objectUrl;
+    });
+
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    const maxSide = Math.max(w, h);
+    if (!maxSide || maxSide <= maxDimension) {
+      return await readFileAsDataURL(file);
+    }
+
+    const scale = maxDimension / maxSide;
+    const targetW = Math.max(1, Math.round(w * scale));
+    const targetH = Math.max(1, Math.round(h * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return await readFileAsDataURL(file);
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+
+    const preserveAlpha =
+      file.type === 'image/png' || file.type === 'image/webp';
+    const mime = preserveAlpha ? file.type : 'image/jpeg';
+    return canvas.toDataURL(mime, preserveAlpha ? undefined : 0.92);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+

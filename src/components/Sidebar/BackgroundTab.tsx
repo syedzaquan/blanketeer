@@ -4,11 +4,13 @@ import {
   Image as ImageIcon,
   Palette,
   RotateCcw,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   Upload,
 } from 'lucide-react';
 import type {
+  BackgroundImageAdjustments,
   BackgroundImageConfig,
   BackgroundMode,
   BackgroundOverlayGradient,
@@ -16,6 +18,10 @@ import type {
   GradientBlendMode,
   GradientConfig,
 } from '../../types/editor';
+import {
+  DEFAULT_BG_ADJUSTMENTS,
+  isNeutralAdjustments,
+} from '../../utils/backgroundFilters';
 import { DEFAULT_OVERLAY_GRADIENT } from '../../utils/canvasHelpers';
 import { cn } from '../../utils/cn';
 
@@ -179,6 +185,33 @@ export function BackgroundTab({
       overlayGradient: { ...overlayGradient, ...patch },
     });
   };
+
+  const adjustments: BackgroundImageAdjustments =
+    background.image?.adjustments ?? DEFAULT_BG_ADJUSTMENTS;
+
+  const updateAdjustment = (
+    key: keyof BackgroundImageAdjustments,
+    value: number
+  ) => {
+    onUpdateBgImageConfig({
+      adjustments: { ...adjustments, [key]: value },
+    });
+  };
+
+  const hasCustomAdjustments = !isNeutralAdjustments(adjustments);
+
+  const ADJUSTMENT_CONTROLS: {
+    key: keyof BackgroundImageAdjustments;
+    id: string;
+    label: string;
+  }[] = [
+    { key: 'brightness', id: 'bg-adjust-brightness', label: 'Brightness' },
+    { key: 'contrast', id: 'bg-adjust-contrast', label: 'Contrast' },
+    { key: 'shadows', id: 'bg-adjust-shadows', label: 'Shadows' },
+    { key: 'highlights', id: 'bg-adjust-highlights', label: 'Highlights' },
+    { key: 'dehaze', id: 'bg-adjust-dehaze', label: 'Dehaze' },
+    { key: 'blackPoint', id: 'bg-adjust-black-point', label: 'Black Point' },
+  ];
 
   return (
     <div className="flex flex-col gap-5">
@@ -795,6 +828,60 @@ export function BackgroundTab({
                     </div>
                   </>
                 )}
+              </div>
+
+              {/* Background Image Post-Process / Tone Adjustments */}
+              <div className="flex flex-col gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-violet-400" />
+                    <span className="text-xs font-semibold text-zinc-200">
+                      Adjustments
+                    </span>
+                  </div>
+                  <button
+                    id="bg-adjust-reset"
+                    type="button"
+                    disabled={!hasCustomAdjustments}
+                    onClick={() =>
+                      onUpdateBgImageConfig({
+                        adjustments: { ...DEFAULT_BG_ADJUSTMENTS },
+                      })
+                    }
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-zinc-700 text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                {ADJUSTMENT_CONTROLS.map((ctrl) => {
+                  const val = adjustments[ctrl.key];
+                  return (
+                    <div key={ctrl.key}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <label htmlFor={ctrl.id} className="text-zinc-400">
+                          {ctrl.label}
+                        </label>
+                        <span className="font-mono text-zinc-200">
+                          {val > 0 ? `+${val}` : val}
+                        </span>
+                      </div>
+                      <input
+                        id={ctrl.id}
+                        aria-label={`Background ${ctrl.label}`}
+                        type="range"
+                        min={-100}
+                        max={100}
+                        step={1}
+                        value={val}
+                        onChange={(e) =>
+                          updateAdjustment(ctrl.key, Number(e.target.value))
+                        }
+                        className="w-full accent-violet-500"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </>
           ) : (
