@@ -1,6 +1,7 @@
 import * as fabric from 'fabric';
 import type {
   BackgroundImageConfig,
+  BackgroundOverlayGradient,
   GradientConfig,
   LayerItem,
   SelectedObjectState,
@@ -63,6 +64,97 @@ export function ensureObjectMeta(obj: fabric.FabricObject): FabricObjectWithMeta
     meta.locked = false;
   }
   return meta;
+}
+
+export const DEFAULT_OVERLAY_GRADIENT: BackgroundOverlayGradient = {
+  enabled: true,
+  startColor: '#000000',
+  startAlpha: 100,
+  endColor: '#000000',
+  endAlpha: 0,
+  opacity: 80,
+  angle: 0,
+  coverage: 65,
+  midpoint: 50,
+  blendMode: 'source-over',
+};
+
+function parseHexRgb(hex: string): { r: number; g: number; b: number } {
+  const cleaned = hex.replace('#', '').trim();
+  const full =
+    cleaned.length === 3
+      ? cleaned
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : cleaned;
+  const parsed = parseInt(full, 16);
+  if (!Number.isFinite(parsed) || full.length !== 6) {
+    return { r: 0, g: 0, b: 0 };
+  }
+  return {
+    r: (parsed >> 16) & 255,
+    g: (parsed >> 8) & 255,
+    b: parsed & 255,
+  };
+}
+
+function toRgba(r: number, g: number, b: number, alpha01: number): string {
+  const a = Math.max(0, Math.min(1, alpha01));
+  return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${Number(a.toFixed(4))})`;
+}
+
+export function renderBackgroundOverlayGradient(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  overlay: BackgroundOverlayGradient | undefined
+): void {
+  if (!overlay || !overlay.enabled) return;
+
+  const overallOpacity = Math.max(0, Math.min(1, overlay.opacity / 100));
+  if (overallOpacity <= 0) return;
+
+  const rad = ((overlay.angle - 90) * Math.PI) / 180;
+  const cx = width / 2;
+  const cy = height / 2;
+  const halfLen =
+    (Math.abs(width * Math.cos(rad)) + Math.abs(height * Math.sin(rad))) / 2;
+  const dx = Math.cos(rad) * halfLen;
+  const dy = Math.sin(rad) * halfLen;
+
+  const span = Math.max(0.1, Math.min(1, overlay.coverage / 100));
+  const midRatio = Math.max(0.05, Math.min(0.95, overlay.midpoint / 100));
+  const midStop = Math.min(span, Math.max(0, span * midRatio));
+
+  const startRgb = parseHexRgb(overlay.startColor);
+  const endRgb = parseHexRgb(overlay.endColor);
+  const a0 = Math.max(0, Math.min(1, overlay.startAlpha / 100));
+  const a1 = Math.max(0, Math.min(1, overlay.endAlpha / 100));
+
+  const grad = ctx.createLinearGradient(cx - dx, cy - dy, cx + dx, cy + dy);
+  grad.addColorStop(0, toRgba(startRgb.r, startRgb.g, startRgb.b, a0));
+  grad.addColorStop(
+    midStop,
+    toRgba(
+      (startRgb.r + endRgb.r) / 2,
+      (startRgb.g + endRgb.g) / 2,
+      (startRgb.b + endRgb.b) / 2,
+      (a0 + a1) / 2
+    )
+  );
+  const endColorRgba = toRgba(endRgb.r, endRgb.g, endRgb.b, a1);
+  grad.addColorStop(span, endColorRgba);
+  if (span < 1) {
+    grad.addColorStop(1, endColorRgba);
+  }
+
+  ctx.save();
+  ctx.globalAlpha = overallOpacity;
+  ctx.globalCompositeOperation = overlay.blendMode || 'source-over';
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
 }
 
 export function createLinearGradient(

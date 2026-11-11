@@ -1,5 +1,6 @@
 import { useRef, type ChangeEvent } from 'react';
 import {
+  ArrowUpDown,
   Image as ImageIcon,
   Palette,
   RotateCcw,
@@ -10,9 +11,12 @@ import {
 import type {
   BackgroundImageConfig,
   BackgroundMode,
+  BackgroundOverlayGradient,
   BackgroundState,
+  GradientBlendMode,
   GradientConfig,
 } from '../../types/editor';
+import { DEFAULT_OVERLAY_GRADIENT } from '../../utils/canvasHelpers';
 import { cn } from '../../utils/cn';
 
 interface BackgroundTabProps {
@@ -65,6 +69,89 @@ const GRADIENT_PRESETS: { name: string; gradient: GradientConfig }[] = [
   },
 ];
 
+const OVERLAY_PRESETS: {
+  name: string;
+  patch: Partial<BackgroundOverlayGradient>;
+}[] = [
+  {
+    name: 'Bottom Dark',
+    patch: {
+      enabled: true,
+      startColor: '#000000',
+      startAlpha: 100,
+      endColor: '#000000',
+      endAlpha: 0,
+      opacity: 80,
+      angle: 0,
+      coverage: 65,
+      midpoint: 50,
+      blendMode: 'source-over',
+    },
+  },
+  {
+    name: 'Top Dark',
+    patch: {
+      enabled: true,
+      startColor: '#000000',
+      startAlpha: 100,
+      endColor: '#000000',
+      endAlpha: 0,
+      opacity: 80,
+      angle: 180,
+      coverage: 60,
+      midpoint: 50,
+      blendMode: 'source-over',
+    },
+  },
+  {
+    name: 'Full Fade',
+    patch: {
+      enabled: true,
+      startColor: '#000000',
+      startAlpha: 90,
+      endColor: '#000000',
+      endAlpha: 30,
+      opacity: 75,
+      angle: 0,
+      coverage: 100,
+      midpoint: 50,
+      blendMode: 'multiply',
+    },
+  },
+  {
+    name: 'Warm Scrim',
+    patch: {
+      enabled: true,
+      startColor: '#09090b',
+      startAlpha: 95,
+      endColor: '#f97316',
+      endAlpha: 15,
+      opacity: 70,
+      angle: 20,
+      coverage: 80,
+      midpoint: 45,
+      blendMode: 'overlay',
+    },
+  },
+];
+
+const BLEND_MODES: { value: GradientBlendMode; label: string }[] = [
+  { value: 'source-over', label: 'Normal' },
+  { value: 'multiply', label: 'Multiply' },
+  { value: 'overlay', label: 'Overlay' },
+  { value: 'soft-light', label: 'Soft Light' },
+  { value: 'screen', label: 'Screen' },
+  { value: 'darken', label: 'Darken' },
+  { value: 'lighten', label: 'Lighten' },
+];
+
+const OVERLAY_ANGLE_PRESETS = [
+  { angle: 0, label: '0° ↑' },
+  { angle: 90, label: '90° →' },
+  { angle: 180, label: '180° ↓' },
+  { angle: 270, label: '270° ←' },
+];
+
 export function BackgroundTab({
   background,
   onModeChange,
@@ -82,6 +169,15 @@ export function BackgroundTab({
       onUploadBgImage(file);
     }
     e.target.value = '';
+  };
+
+  const overlayGradient: BackgroundOverlayGradient =
+    background.image?.overlayGradient ?? DEFAULT_OVERLAY_GRADIENT;
+
+  const updateOverlayGradient = (patch: Partial<BackgroundOverlayGradient>) => {
+    onUpdateBgImageConfig({
+      overlayGradient: { ...overlayGradient, ...patch },
+    });
   };
 
   return (
@@ -385,6 +481,320 @@ export function BackgroundTab({
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Remove</span>
                 </button>
+              </div>
+
+              {/* Background Image Gradient Scrim / Overlay Controls */}
+              <div className="flex flex-col gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                    <span className="text-xs font-semibold text-zinc-200">
+                      Gradient Overlay
+                    </span>
+                  </div>
+                  <button
+                    id="bg-overlay-gradient-toggle"
+                    type="button"
+                    role="switch"
+                    aria-checked={overlayGradient.enabled}
+                    aria-label="Toggle Background Gradient Overlay"
+                    onClick={() =>
+                      updateOverlayGradient({ enabled: !overlayGradient.enabled })
+                    }
+                    className={cn(
+                      'px-2.5 py-0.5 rounded-full text-[10px] font-semibold border transition-colors',
+                      overlayGradient.enabled
+                        ? 'bg-violet-600 border-violet-400/50 text-white'
+                        : 'bg-zinc-950 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                    )}
+                  >
+                    {overlayGradient.enabled ? 'On' : 'Off'}
+                  </button>
+                </div>
+
+                {overlayGradient.enabled && (
+                  <>
+                    {/* Quick Overlay Presets */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {OVERLAY_PRESETS.map((preset) => (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => updateOverlayGradient(preset.patch)}
+                          className="py-1.5 px-2 rounded-lg bg-zinc-950/70 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-medium text-zinc-300 transition-colors text-center"
+                        >
+                          {preset.name}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Start & End Colors + Alpha */}
+                    <div className="flex flex-col gap-2.5 pt-1 border-t border-zinc-800/70">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-zinc-400">
+                          Gradient Stops
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateOverlayGradient({
+                              startColor: overlayGradient.endColor,
+                              startAlpha: overlayGradient.endAlpha,
+                              endColor: overlayGradient.startColor,
+                              endAlpha: overlayGradient.startAlpha,
+                            })
+                          }
+                          title="Swap start and end stops"
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-[10px] text-zinc-300 transition-colors"
+                        >
+                          <ArrowUpDown className="w-2.5 h-2.5" />
+                          <span>Swap</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-2 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              aria-label="Overlay start color"
+                              value={overlayGradient.startColor}
+                              onChange={(e) =>
+                                updateOverlayGradient({
+                                  startColor: e.target.value,
+                                })
+                              }
+                              className="w-6 h-6 rounded border border-zinc-700 bg-transparent cursor-pointer shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[10px] text-zinc-400">
+                                Start
+                              </span>
+                              <span className="block text-[10px] font-mono text-zinc-200">
+                                {overlayGradient.startAlpha}%
+                              </span>
+                            </div>
+                          </div>
+                          <input
+                            id="bg-overlay-start-alpha"
+                            aria-label="Overlay start color alpha"
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={overlayGradient.startAlpha}
+                            onChange={(e) =>
+                              updateOverlayGradient({
+                                startAlpha: Number(e.target.value),
+                              })
+                            }
+                            className="w-full accent-violet-500"
+                          />
+                        </div>
+
+                        <div className="p-2 rounded-lg bg-zinc-950/70 border border-zinc-800/80 flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              aria-label="Overlay end color"
+                              value={overlayGradient.endColor}
+                              onChange={(e) =>
+                                updateOverlayGradient({ endColor: e.target.value })
+                              }
+                              className="w-6 h-6 rounded border border-zinc-700 bg-transparent cursor-pointer shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[10px] text-zinc-400">
+                                End
+                              </span>
+                              <span className="block text-[10px] font-mono text-zinc-200">
+                                {overlayGradient.endAlpha}%
+                              </span>
+                            </div>
+                          </div>
+                          <input
+                            id="bg-overlay-end-alpha"
+                            aria-label="Overlay end color alpha"
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={overlayGradient.endAlpha}
+                            onChange={(e) =>
+                              updateOverlayGradient({
+                                endAlpha: Number(e.target.value),
+                              })
+                            }
+                            className="w-full accent-violet-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Opacity */}
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <label
+                          htmlFor="bg-overlay-opacity"
+                          className="text-zinc-400"
+                        >
+                          Gradient Opacity
+                        </label>
+                        <span className="font-mono text-zinc-200">
+                          {overlayGradient.opacity}%
+                        </span>
+                      </div>
+                      <input
+                        id="bg-overlay-opacity"
+                        aria-label="Background Gradient Opacity"
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={overlayGradient.opacity}
+                        onChange={(e) =>
+                          updateOverlayGradient({
+                            opacity: Number(e.target.value),
+                          })
+                        }
+                        className="w-full accent-violet-500"
+                      />
+                    </div>
+
+                    {/* Angle */}
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <label
+                          htmlFor="bg-overlay-angle"
+                          className="text-zinc-400"
+                        >
+                          Gradient Angle
+                        </label>
+                        <span className="font-mono text-zinc-200">
+                          {overlayGradient.angle}°
+                        </span>
+                      </div>
+                      <input
+                        id="bg-overlay-angle"
+                        aria-label="Background Gradient Angle"
+                        type="range"
+                        min={0}
+                        max={360}
+                        step={1}
+                        value={overlayGradient.angle}
+                        onChange={(e) =>
+                          updateOverlayGradient({ angle: Number(e.target.value) })
+                        }
+                        className="w-full accent-violet-500"
+                      />
+                      <div className="grid grid-cols-4 gap-1 mt-1.5">
+                        {OVERLAY_ANGLE_PRESETS.map((preset) => (
+                          <button
+                            key={preset.angle}
+                            type="button"
+                            onClick={() =>
+                              updateOverlayGradient({ angle: preset.angle })
+                            }
+                            className={cn(
+                              'py-1 rounded-lg text-[10px] font-medium border transition-colors',
+                              overlayGradient.angle === preset.angle
+                                ? 'bg-violet-600/25 border-violet-500/60 text-violet-200'
+                                : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                            )}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Gradient Height / Coverage */}
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <label
+                          htmlFor="bg-overlay-coverage"
+                          className="text-zinc-400"
+                        >
+                          Gradient Height
+                        </label>
+                        <span className="font-mono text-zinc-200">
+                          {overlayGradient.coverage}%
+                        </span>
+                      </div>
+                      <input
+                        id="bg-overlay-coverage"
+                        aria-label="Background Gradient Height"
+                        type="range"
+                        min={10}
+                        max={100}
+                        step={1}
+                        value={overlayGradient.coverage}
+                        onChange={(e) =>
+                          updateOverlayGradient({
+                            coverage: Number(e.target.value),
+                          })
+                        }
+                        className="w-full accent-violet-500"
+                      />
+                    </div>
+
+                    {/* Gradient Midpoint */}
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <label
+                          htmlFor="bg-overlay-midpoint"
+                          className="text-zinc-400"
+                        >
+                          Start / Midpoint
+                        </label>
+                        <span className="font-mono text-zinc-200">
+                          {overlayGradient.midpoint}%
+                        </span>
+                      </div>
+                      <input
+                        id="bg-overlay-midpoint"
+                        aria-label="Background Gradient Midpoint"
+                        type="range"
+                        min={5}
+                        max={95}
+                        step={1}
+                        value={overlayGradient.midpoint}
+                        onChange={(e) =>
+                          updateOverlayGradient({
+                            midpoint: Number(e.target.value),
+                          })
+                        }
+                        className="w-full accent-violet-500"
+                      />
+                    </div>
+
+                    {/* Blend Mode */}
+                    <div>
+                      <label
+                        htmlFor="bg-overlay-blend-mode"
+                        className="block text-xs text-zinc-400 mb-1"
+                      >
+                        Blend Mode
+                      </label>
+                      <select
+                        id="bg-overlay-blend-mode"
+                        value={overlayGradient.blendMode}
+                        onChange={(e) =>
+                          updateOverlayGradient({
+                            blendMode: e.target.value as GradientBlendMode,
+                          })
+                        }
+                        className="w-full px-2.5 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 focus:outline-none focus:border-violet-500"
+                      >
+                        {BLEND_MODES.map((m) => (
+                          <option key={m.value} value={m.value}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
             </>
           ) : (

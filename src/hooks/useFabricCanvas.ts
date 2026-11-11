@@ -14,6 +14,7 @@ import {
 } from '../types/editor';
 import {
   CUSTOM_SERIALIZED_PROPS,
+  DEFAULT_OVERLAY_GRADIENT,
   createEditorId,
   createLinearGradient,
   ensureObjectMeta,
@@ -21,6 +22,7 @@ import {
   extractSelectedState,
   positionBackgroundImage,
   readFileAsDataURL,
+  renderBackgroundOverlayGradient,
   type FabricObjectWithMeta,
 } from '../utils/canvasHelpers';
 import { exportCanvasToPNG } from '../utils/exportCanvas';
@@ -415,6 +417,23 @@ export function useFabricCanvas() {
       backgroundColor: '#18181b',
     });
 
+    const rawCanvas = canvas as unknown as {
+      _renderBackground: (ctx: CanvasRenderingContext2D) => void;
+    };
+    const origRenderBackground = rawCanvas._renderBackground.bind(canvas);
+    rawCanvas._renderBackground = (ctx: CanvasRenderingContext2D) => {
+      origRenderBackground(ctx);
+      const currentBg = backgroundRef.current;
+      if (currentBg.mode === 'image' && currentBg.image?.overlayGradient) {
+        renderBackgroundOverlayGradient(
+          ctx,
+          canvas.width || initialPreset.width,
+          canvas.height || initialPreset.height,
+          currentBg.image.overlayGradient
+        );
+      }
+    };
+
     canvasRef.current = canvas;
     canvas.backgroundColor = createLinearGradient(
       initialPreset.width,
@@ -669,6 +688,7 @@ export function useFabricCanvas() {
           panX: 0,
           panY: 0,
           fitMode: 'cover',
+          overlayGradient: { ...DEFAULT_OVERLAY_GRADIENT },
         },
       };
       backgroundRef.current = next;

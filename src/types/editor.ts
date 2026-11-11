@@ -40,12 +40,35 @@ export interface GradientConfig {
   angle: number;
 }
 
+export type GradientBlendMode =
+  | 'source-over'
+  | 'multiply'
+  | 'overlay'
+  | 'soft-light'
+  | 'screen'
+  | 'darken'
+  | 'lighten';
+
+export interface BackgroundOverlayGradient {
+  enabled: boolean;
+  startColor: string;
+  startAlpha: number;
+  endColor: string;
+  endAlpha: number;
+  opacity: number;
+  angle: number;
+  coverage: number;
+  midpoint: number;
+  blendMode: GradientBlendMode;
+}
+
 export interface BackgroundImageConfig {
   src: string;
   zoom: number;
   panX: number;
   panY: number;
   fitMode: 'cover' | 'contain';
+  overlayGradient?: BackgroundOverlayGradient;
 }
 
 export interface BackgroundState {
