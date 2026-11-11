@@ -1,3 +1,10 @@
+import { ensureFrauncesFontData } from './frauncesSvg';
+
+export interface FontWeightOption {
+  value: number;
+  label: string;
+}
+
 export interface FontOption {
   name: string;
   family: string;
@@ -5,7 +12,33 @@ export interface FontOption {
   url?: string;
   previewText?: string;
   categoryLabel: string;
+  availableWeights: FontWeightOption[];
+  isVariableWeight?: boolean;
 }
+
+const STANDARD_WEIGHTS_300_TO_900: FontWeightOption[] = [
+  { value: 300, label: 'Light' },
+  { value: 400, label: 'Regular' },
+  { value: 500, label: 'Medium' },
+  { value: 600, label: 'SemiBold' },
+  { value: 700, label: 'Bold' },
+  { value: 800, label: 'ExBold' },
+  { value: 900, label: 'Black' },
+];
+
+const STANDARD_WEIGHTS_100_TO_900: FontWeightOption[] = [
+  { value: 100, label: 'Thin' },
+  { value: 200, label: 'ExLight' },
+  ...STANDARD_WEIGHTS_300_TO_900,
+];
+
+const FRAUNCES_PRESET_WEIGHTS: FontWeightOption[] = [
+  { value: 300, label: 'Light' },
+  { value: 400, label: 'Regular' },
+  { value: 600, label: 'SemiBold' },
+  { value: 700, label: 'Bold' },
+  { value: 900, label: 'Black' },
+];
 
 export const SUPPORTED_FONTS: FontOption[] = [
   {
@@ -13,28 +46,63 @@ export const SUPPORTED_FONTS: FontOption[] = [
     family: 'Fedro',
     source: 'custom',
     categoryLabel: 'Display Serif',
+    availableWeights: STANDARD_WEIGHTS_300_TO_900,
   },
   {
     name: 'Fraunces',
     family: 'Fraunces',
     source: 'custom',
+    url: 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&display=swap',
     categoryLabel: 'Variable Serif',
+    availableWeights: FRAUNCES_PRESET_WEIGHTS,
+    isVariableWeight: true,
   },
   {
     name: 'Inter',
     family: 'Inter',
     source: 'google',
-    url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap',
+    url: 'https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap',
     categoryLabel: 'Modern Sans',
+    availableWeights: STANDARD_WEIGHTS_100_TO_900,
   },
   {
     name: 'Montserrat',
     family: 'Montserrat',
     source: 'google',
-    url: 'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&display=swap',
+    url: 'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
     categoryLabel: 'Geometric Sans',
+    availableWeights: STANDARD_WEIGHTS_100_TO_900,
   },
 ];
+
+export function getFontWeightOptions(
+  fontFamily: string,
+  fonts: FontOption[] = SUPPORTED_FONTS
+): FontWeightOption[] {
+  const match = fonts.find(
+    (f) => f.family.toLowerCase() === fontFamily.replace(/['"]/g, '').trim().toLowerCase()
+  );
+  return match?.availableWeights ?? [
+    { value: 400, label: 'Regular' },
+    { value: 700, label: 'Bold' },
+  ];
+}
+
+export function snapToSupportedWeight(
+  weight: number,
+  fontFamily: string,
+  fonts: FontOption[] = SUPPORTED_FONTS
+): number {
+  const options = getFontWeightOptions(fontFamily, fonts);
+  if (options.some((o) => o.value === weight)) {
+    return weight;
+  }
+  return options.reduce((closest, candidate) =>
+    Math.abs(candidate.value - weight) < Math.abs(closest.value - weight)
+      ? candidate
+      : closest
+  ).value;
+}
 
 const loadedFontFamilies = new Set<string>();
 
@@ -92,16 +160,17 @@ export const loadFont = async (
 export const preloadAllFonts = async (): Promise<void> => {
   await Promise.allSettled([
     ...SUPPORTED_FONTS.map((font) => loadFont(font, 400, 'normal')),
-    loadFont(SUPPORTED_FONTS[0], 600, 'normal'),
-    loadFont(SUPPORTED_FONTS[0], 700, 'normal'),
-    loadFont(SUPPORTED_FONTS[0], 900, 'normal'),
-    loadFont(SUPPORTED_FONTS[0], 400, 'italic'),
-    loadFont(SUPPORTED_FONTS[0], 700, 'italic'),
+    ...STANDARD_WEIGHTS_300_TO_900.flatMap((w) => [
+      loadFont(SUPPORTED_FONTS[0], w.value, 'normal'),
+      loadFont(SUPPORTED_FONTS[0], w.value, 'italic'),
+    ]),
+    loadFont(SUPPORTED_FONTS[1], 100, 'normal'),
     loadFont(SUPPORTED_FONTS[1], 600, 'normal'),
     loadFont(SUPPORTED_FONTS[1], 700, 'normal'),
     loadFont(SUPPORTED_FONTS[1], 900, 'normal'),
-    loadFont(SUPPORTED_FONTS[1], 400, 'italic'),
+    loadFont(SUPPORTED_FONTS[1], 600, 'italic'),
     loadFont(SUPPORTED_FONTS[1], 700, 'italic'),
+    ensureFrauncesFontData(),
   ]);
 };
 
@@ -113,10 +182,18 @@ export const registerCustomFontFile = async (file: File): Promise<FontOption> =>
   document.fonts.add(loadedFace);
   loadedFontFamilies.add(baseName);
 
+  const isVariableRange = /\s+\d+/.test(loadedFace.weight);
   return {
     name: baseName,
     family: baseName,
     source: 'custom',
     categoryLabel: 'Local Font',
+    isVariableWeight: isVariableRange,
+    availableWeights: isVariableRange
+      ? STANDARD_WEIGHTS_100_TO_900
+      : [
+          { value: 400, label: 'Regular' },
+          { value: 700, label: 'Bold' },
+        ],
   };
 };

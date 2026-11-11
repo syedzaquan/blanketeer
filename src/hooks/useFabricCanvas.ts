@@ -24,11 +24,13 @@ import {
   type FabricObjectWithMeta,
 } from '../utils/canvasHelpers';
 import { exportCanvasToPNG } from '../utils/exportCanvas';
+import { ensureFrauncesFontData, isFrauncesFamily } from '../utils/frauncesSvg';
 import {
   SUPPORTED_FONTS,
   loadFont,
   preloadAllFonts,
   registerCustomFontFile,
+  snapToSupportedWeight,
   type FontOption,
 } from '../utils/fonts';
 import { applyCutoutMask } from '../utils/imageCutouts';
@@ -218,6 +220,7 @@ export function useFabricCanvas() {
             applyLockState(obj, true);
           }
           if (obj instanceof StoryTextbox) {
+            obj.dirty = true;
             obj.initDimensions();
             obj.setCoords();
           }
@@ -333,6 +336,7 @@ export function useFabricCanvas() {
       fontFamily: 'Fedro',
       fontSize: 96,
       fontWeight: 700,
+      fontSoft: 100,
       fill: '#ffffff',
       textAlign: 'center',
       lineHeight: 1.08,
@@ -355,6 +359,7 @@ export function useFabricCanvas() {
       fontsRef.current.forEach((f) => fabric.cache.clearFontCache(f.family));
       canvasRef.current.getObjects().forEach((obj) => {
         if (obj instanceof fabric.Textbox) {
+          obj.dirty = true;
           obj.initDimensions();
           obj.setCoords();
         }
@@ -705,6 +710,9 @@ export function useFabricCanvas() {
       const fontOption = fontsRef.current.find((f) => f.family === cfg.fontFamily);
       if (fontOption) {
         await loadFont(fontOption, cfg.fontWeight, 'normal');
+        if (isFrauncesFamily(fontOption.family)) {
+          await ensureFrauncesFontData();
+        }
         fabric.cache.clearFontCache(fontOption.family);
       }
 
@@ -717,6 +725,9 @@ export function useFabricCanvas() {
         fontFamily: cfg.fontFamily,
         fontSize: cfg.fontSize,
         fontWeight: cfg.fontWeight,
+        fontOpsz: Math.min(144, Math.max(9, Math.round(cfg.fontSize))),
+        fontSoft: 100,
+        fontWonk: 0,
         fill: cfg.fill,
         textAlign: 'center',
         lineHeight: cfg.lineHeight,
@@ -746,6 +757,9 @@ export function useFabricCanvas() {
         fontSize: number;
         fontWeight: number;
         fontStyle: 'normal' | 'italic';
+        fontOpsz: number;
+        fontSoft: number;
+        fontWonk: number;
         underline: boolean;
         linethrough: boolean;
         textAlign: 'left' | 'center' | 'right' | 'justify';
@@ -766,23 +780,51 @@ export function useFabricCanvas() {
         return;
       }
 
-      const nextFamily = patch.fontFamily ?? active.fontFamily;
-      const nextWeight = patch.fontWeight ?? active.fontWeight;
-      const nextStyle = patch.fontStyle ?? active.fontStyle;
+      const effectivePatch = { ...patch };
+      const nextFamily = effectivePatch.fontFamily ?? active.fontFamily;
+
+      if (effectivePatch.fontFamily !== undefined) {
+        const wasFraunces = isFrauncesFamily(active.fontFamily);
+        const willBeFraunces = isFrauncesFamily(nextFamily);
+
+        if (willBeFraunces && !wasFraunces) {
+          effectivePatch.fontWeight = effectivePatch.fontWeight ?? 600;
+          effectivePatch.fontSoft = effectivePatch.fontSoft ?? 100;
+          effectivePatch.fontOpsz =
+            effectivePatch.fontOpsz ??
+            Math.min(144, Math.max(9, Math.round(active.fontSize || 72)));
+        } else if (!willBeFraunces && effectivePatch.fontWeight === undefined) {
+          const currentWeight =
+            typeof active.fontWeight === 'number'
+              ? active.fontWeight
+              : parseInt(String(active.fontWeight), 10) || 400;
+          effectivePatch.fontWeight = snapToSupportedWeight(
+            currentWeight,
+            nextFamily,
+            fontsRef.current
+          );
+        }
+      }
+
+      const nextWeight = effectivePatch.fontWeight ?? active.fontWeight;
+      const nextStyle = effectivePatch.fontStyle ?? active.fontStyle;
 
       if (
-        patch.fontFamily !== undefined ||
-        patch.fontWeight !== undefined ||
-        patch.fontStyle !== undefined
+        effectivePatch.fontFamily !== undefined ||
+        effectivePatch.fontWeight !== undefined ||
+        effectivePatch.fontStyle !== undefined
       ) {
         const fontOption = fontsRef.current.find((f) => f.family === nextFamily);
         if (fontOption) {
           await loadFont(fontOption, nextWeight, nextStyle);
         }
+        if (isFrauncesFamily(nextFamily)) {
+          await ensureFrauncesFontData();
+        }
         fabric.cache.clearFontCache(nextFamily);
       }
 
-      active.set(patch);
+      active.set(effectivePatch);
       active.dirty = true;
       active.initDimensions();
       active.setCoords();
@@ -1121,10 +1163,10 @@ export function useFabricCanvas() {
     });
   }, []);
 
-  const exportPNG = useCallback(() => {
+  const exportPNG = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    exportCanvasToPNG(canvas, `story-${Date.now()}.png`);
+    await exportCanvasToPNG(canvas, `story-${Date.now()}.png`);
     syncSelectionAndLayers();
   }, [syncSelectionAndLayers]);
 

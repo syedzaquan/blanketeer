@@ -68,6 +68,9 @@ export interface SelectedTextProps {
   fontSize: number;
   fontWeight: number;
   fontStyle: 'normal' | 'italic';
+  fontOpsz: number;
+  fontSoft: number;
+  fontWonk: number;
   underline: boolean;
   linethrough: boolean;
   textAlign: 'left' | 'center' | 'right' | 'justify';

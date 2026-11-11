@@ -11,6 +11,9 @@ import { StoryTextbox } from './storyTextbox';
 export const CUSTOM_SERIALIZED_PROPS = [
   'editorId',
   'editorName',
+  'fontOpsz',
+  'fontSoft',
+  'fontWonk',
   'bgStyle',
   'textBgColor',
   'pillRadius',
@@ -147,6 +150,9 @@ export function extractSelectedState(
       fontSize: Math.round(story.fontSize || 64),
       fontWeight: numericWeight,
       fontStyle: story.fontStyle === 'italic' ? 'italic' : 'normal',
+      fontOpsz: Math.round(story.fontOpsz ?? Math.min(144, Math.max(9, story.fontSize || 72))),
+      fontSoft: Math.round(story.fontSoft ?? 100),
+      fontWonk: Number((story.fontWonk ?? 0).toFixed(2)),
       underline: Boolean(story.underline),
       linethrough: Boolean(story.linethrough),
       textAlign:

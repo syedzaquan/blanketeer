@@ -128,7 +128,16 @@ export function TextTab({
               >
                 <span
                   className="text-base truncate"
-                  style={{ fontFamily: `"${font.family}", serif` }}
+                  style={
+                    font.family.toLowerCase() === 'fraunces'
+                      ? {
+                          fontFamily: `"${font.family}", serif`,
+                          fontWeight: 600,
+                          fontOpticalSizing: 'none',
+                          fontVariationSettings: "'opsz' 36, 'wght' 600, 'SOFT' 100, 'WONK' 0",
+                        }
+                      : { fontFamily: `"${font.family}", serif` }
+                  }
                 >
                   {font.name}
                 </span>

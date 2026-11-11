@@ -31,7 +31,7 @@ import {
   type TextBackgroundStyle,
 } from '../types/editor';
 import { cn } from '../utils/cn';
-import type { FontOption } from '../utils/fonts';
+import { getFontWeightOptions, type FontOption } from '../utils/fonts';
 
 interface InspectorProps {
   selectedObject: SelectedObjectState | null;
@@ -48,6 +48,9 @@ interface InspectorProps {
       fontSize: number;
       fontWeight: number;
       fontStyle: 'normal' | 'italic';
+      fontOpsz: number;
+      fontSoft: number;
+      fontWonk: number;
       underline: boolean;
       linethrough: boolean;
       textAlign: 'left' | 'center' | 'right' | 'justify';
@@ -103,7 +106,8 @@ const HIGHLIGHT_SWATCHES = [
   '#f43f5e',
 ];
 
-const FONT_WEIGHTS = [
+const WEIGHT_PRESETS = [
+  { value: 300, label: '300' },
   { value: 400, label: '400' },
   { value: 600, label: '600' },
   { value: 700, label: '700' },
@@ -331,29 +335,218 @@ export function Inspector({
               />
             </div>
 
-            {/* Font Weight */}
-            <div>
-              <span className="block text-[11px] text-zinc-400 mb-1.5">
-                Weight
-              </span>
-              <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
-                {FONT_WEIGHTS.map((w) => (
-                  <button
-                    key={w.value}
-                    type="button"
-                    onClick={() => onUpdateText({ fontWeight: w.value })}
-                    className={cn(
-                      'py-1.5 rounded-lg text-xs font-medium transition-colors',
-                      selectedObject.fontWeight === w.value
-                        ? 'bg-violet-600 text-white'
-                        : 'text-zinc-400 hover:text-zinc-200'
-                    )}
+            {/* Font Weight: Slider + quick presets for Fraunces, discrete available weight buttons for other fonts */}
+            {selectedObject.fontFamily.toLowerCase() === 'fraunces' ? (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label
+                    htmlFor="inspector-font-weight"
+                    className="text-[11px] text-zinc-400"
                   >
-                    {w.label}
-                  </button>
-                ))}
+                    Weight (wght)
+                  </label>
+                  <span className="text-[11px] font-mono text-zinc-200">
+                    {selectedObject.fontWeight}
+                  </span>
+                </div>
+                <input
+                  id="inspector-font-weight"
+                  aria-label="Font Weight"
+                  type="range"
+                  min={100}
+                  max={900}
+                  step={10}
+                  value={Math.min(900, Math.max(100, selectedObject.fontWeight))}
+                  onChange={(e) =>
+                    onUpdateText({ fontWeight: Number(e.target.value) })
+                  }
+                  className="w-full accent-violet-500"
+                />
+                <div className="grid grid-cols-5 gap-1 mt-1.5 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+                  {WEIGHT_PRESETS.map((w) => (
+                    <button
+                      key={w.value}
+                      type="button"
+                      onClick={() => onUpdateText({ fontWeight: w.value })}
+                      className={cn(
+                        'py-1 rounded-lg text-[11px] font-medium transition-colors',
+                        selectedObject.fontWeight === w.value
+                          ? 'bg-violet-600 text-white'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      )}
+                    >
+                      {w.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              (() => {
+                const weightOptions = getFontWeightOptions(
+                  selectedObject.fontFamily,
+                  availableFonts
+                );
+                const colsClass =
+                  weightOptions.length <= 2
+                    ? 'grid-cols-2'
+                    : weightOptions.length >= 9
+                      ? 'grid-cols-3'
+                      : 'grid-cols-4';
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] text-zinc-400">
+                        Font Weight
+                      </span>
+                      <span className="text-[11px] font-mono text-zinc-200">
+                        {selectedObject.fontWeight}
+                      </span>
+                    </div>
+                    <div
+                      className={cn(
+                        'grid gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800',
+                        colsClass
+                      )}
+                      role="group"
+                      aria-label="Font Weight Selection"
+                    >
+                      {weightOptions.map((w) => (
+                        <button
+                          key={w.value}
+                          type="button"
+                          onClick={() => onUpdateText({ fontWeight: w.value })}
+                          className={cn(
+                            'py-1.5 px-1 rounded-lg flex flex-col items-center justify-center leading-tight transition-colors',
+                            selectedObject.fontWeight === w.value
+                              ? 'bg-violet-600 text-white'
+                              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                          )}
+                        >
+                          <span className="text-[11px] font-semibold">
+                            {w.value}
+                          </span>
+                          <span className="text-[9px] opacity-80 truncate max-w-full">
+                            {w.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+
+            {/* Fraunces 4-Axis Variable Font Controls */}
+            {selectedObject.fontFamily.toLowerCase() === 'fraunces' && (
+              <div className="p-3 rounded-xl bg-violet-950/20 border border-violet-500/25 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-violet-300">
+                    Fraunces Variable Axes
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdateText({
+                        fontOpsz: Math.min(
+                          144,
+                          Math.max(9, selectedObject.fontSize || 72)
+                        ),
+                        fontWeight: 600,
+                        fontSoft: 100,
+                        fontWonk: 0,
+                      })
+                    }
+                    className="text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                {/* Optical Size (opsz: 9..144) */}
+                <div>
+                  <div className="flex items-center justify-between text-[11px] mb-1">
+                    <label
+                      htmlFor="inspector-font-opsz"
+                      className="text-zinc-300"
+                    >
+                      Optical Size (opsz)
+                    </label>
+                    <span className="font-mono text-zinc-200">
+                      {selectedObject.fontOpsz}
+                    </span>
+                  </div>
+                  <input
+                    id="inspector-font-opsz"
+                    aria-label="Optical Size"
+                    type="range"
+                    min={9}
+                    max={144}
+                    step={1}
+                    value={selectedObject.fontOpsz}
+                    onChange={(e) =>
+                      onUpdateText({ fontOpsz: Number(e.target.value) })
+                    }
+                    className="w-full accent-violet-500"
+                  />
+                </div>
+
+                {/* Softness (SOFT: 000..100) */}
+                <div>
+                  <div className="flex items-center justify-between text-[11px] mb-1">
+                    <label
+                      htmlFor="inspector-font-soft"
+                      className="text-zinc-300"
+                    >
+                      Softness (SOFT)
+                    </label>
+                    <span className="font-mono text-zinc-200">
+                      {String(selectedObject.fontSoft).padStart(3, '0')}
+                    </span>
+                  </div>
+                  <input
+                    id="inspector-font-soft"
+                    aria-label="Softness"
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={selectedObject.fontSoft}
+                    onChange={(e) =>
+                      onUpdateText({ fontSoft: Number(e.target.value) })
+                    }
+                    className="w-full accent-violet-500"
+                  />
+                </div>
+
+                {/* Wonky (WONK: 0..1) */}
+                <div>
+                  <div className="flex items-center justify-between text-[11px] mb-1">
+                    <label
+                      htmlFor="inspector-font-wonk"
+                      className="text-zinc-300"
+                    >
+                      Wonky (WONK)
+                    </label>
+                    <span className="font-mono text-zinc-200">
+                      {selectedObject.fontWonk >= 0.5 ? '1 (On)' : '0 (Off)'}
+                    </span>
+                  </div>
+                  <input
+                    id="inspector-font-wonk"
+                    aria-label="Wonky"
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={1}
+                    value={selectedObject.fontWonk >= 0.5 ? 1 : 0}
+                    onChange={(e) =>
+                      onUpdateText({ fontWonk: Number(e.target.value) })
+                    }
+                    className="w-full accent-violet-500"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Italic, Underline, Strikethrough + Alignment */}
             <div className="grid grid-cols-2 gap-2">

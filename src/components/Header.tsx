@@ -48,7 +48,12 @@ export function Header({
           <Layers className="w-4 h-4 text-white" />
         </div>
         <div className="hidden sm:flex items-baseline gap-2 truncate">
-          <span className="font-fraunces font-bold text-base sm:text-lg tracking-tight text-white">
+          <span
+            className="font-fraunces font-bold text-base sm:text-lg tracking-tight text-white"
+            style={{
+              fontVariationSettings: "'opsz' 24, 'wght' 700, 'SOFT' 50, 'WONK' 0",
+            }}
+          >
             Blanketeer
           </span>
           <span className="hidden md:inline-block text-[11px] font-medium uppercase tracking-widest text-zinc-500">

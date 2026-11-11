@@ -1,12 +1,31 @@
 import * as fabric from 'fabric';
-import type { TCacheCanvasDimensions, TOptions } from 'fabric';
-import type { TextboxProps, SerializedTextboxProps } from 'fabric';
+import type {
+  CompleteTextStyleDeclaration,
+  SerializedTextboxProps,
+  TCacheCanvasDimensions,
+  TextboxProps,
+  TOptions,
+} from 'fabric';
 import type { TextBackgroundStyle } from '../types/editor';
 import { createEditorId } from './canvasHelpers';
+import {
+  buildFrauncesVariationSettings,
+  clampFrauncesAxes,
+  ensureFrauncesFontData,
+  getOrRequestFrauncesBitmap,
+  isFrauncesFamily,
+  isFrauncesFontDataReady,
+  measureFrauncesGlyphWidth,
+  type FrauncesAxisSettings,
+  type FrauncesRenderLine,
+} from './frauncesSvg';
 
 export interface StoryTextboxExtraProps {
   editorId?: string;
   editorName?: string;
+  fontOpsz?: number;
+  fontSoft?: number;
+  fontWonk?: number;
   bgStyle?: TextBackgroundStyle;
   textBgColor?: string;
   pillRadius?: number;
@@ -14,6 +33,10 @@ export interface StoryTextboxExtraProps {
   pillPaddingY?: number;
   locked?: boolean;
 }
+
+type CanvasContextWithVariation = CanvasRenderingContext2D & {
+  fontVariationSettings?: string;
+};
 
 export type StoryTextboxOptions = TOptions<TextboxProps> & StoryTextboxExtraProps;
 
@@ -148,6 +171,9 @@ export class StoryTextbox extends fabric.Textbox {
 
   static cacheProperties: string[] = [
     ...(fabric.Textbox.cacheProperties || []),
+    'fontOpsz',
+    'fontSoft',
+    'fontWonk',
     'bgStyle',
     'textBgColor',
     'pillRadius',
@@ -157,6 +183,9 @@ export class StoryTextbox extends fabric.Textbox {
 
   declare editorId: string;
   declare editorName: string;
+  declare fontOpsz: number;
+  declare fontSoft: number;
+  declare fontWonk: number;
   declare bgStyle: TextBackgroundStyle;
   declare textBgColor: string;
   declare pillRadius: number;
@@ -168,6 +197,9 @@ export class StoryTextbox extends fabric.Textbox {
     const {
       editorId,
       editorName = 'Text Layer',
+      fontOpsz,
+      fontSoft = 100,
+      fontWonk = 0,
       bgStyle = 'none',
       textBgColor = '#ffffff',
       pillRadius = 20,
@@ -177,16 +209,236 @@ export class StoryTextbox extends fabric.Textbox {
       ...textboxOptions
     } = options;
 
-    super(text, textboxOptions);
+    const defaultOpsz = Math.min(
+      144,
+      Math.max(9, Math.round((textboxOptions.fontSize as number | undefined) || 72))
+    );
+    const resolvedOpsz = fontOpsz ?? defaultOpsz;
+    const resolvedWeight =
+      textboxOptions.fontWeight ??
+      (isFrauncesFamily(String(textboxOptions.fontFamily ?? '')) ? 600 : undefined);
+
+    // Seed custom axis values before super() calls initDimensions() during construction.
+    super(text, {
+      ...textboxOptions,
+      ...(resolvedWeight !== undefined ? { fontWeight: resolvedWeight } : {}),
+      fontOpsz: resolvedOpsz,
+      fontSoft,
+      fontWonk,
+    } as TOptions<TextboxProps>);
 
     this.editorId = editorId || createEditorId();
     this.editorName = editorName;
+    this.fontOpsz = resolvedOpsz;
+    this.fontSoft = fontSoft;
+    this.fontWonk = fontWonk;
     this.bgStyle = bgStyle;
     this.textBgColor = textBgColor;
     this.pillRadius = pillRadius;
     this.pillPaddingX = pillPaddingX;
     this.pillPaddingY = pillPaddingY;
     this.locked = locked;
+  }
+
+  private _parseNumericWeight(rawWeight: unknown): number {
+    if (typeof rawWeight === 'number' && Number.isFinite(rawWeight)) {
+      return rawWeight;
+    }
+    if (rawWeight === 'bold') return 700;
+    if (rawWeight === 'normal') return 400;
+    const parsed = parseInt(String(rawWeight ?? 400), 10);
+    return Number.isFinite(parsed) ? parsed : 400;
+  }
+
+  private _getFrauncesAxes(
+    charStyle?: Partial<CompleteTextStyleDeclaration>
+  ): FrauncesAxisSettings {
+    const rawWeight = charStyle?.fontWeight ?? this.fontWeight;
+    const rawStyle = charStyle?.fontStyle ?? this.fontStyle;
+    return clampFrauncesAxes({
+      fontWeight: this._parseNumericWeight(rawWeight),
+      fontStyle: rawStyle === 'italic' ? 'italic' : 'normal',
+      fontOpsz: this.fontOpsz,
+      fontSoft: this.fontSoft,
+      fontWonk: this.fontWonk,
+    });
+  }
+
+  private _applyCanvasVariationSettings(
+    ctx: CanvasRenderingContext2D,
+    charStyle?: Partial<CompleteTextStyleDeclaration>
+  ): void {
+    const extCtx = ctx as CanvasContextWithVariation;
+    if (!('fontVariationSettings' in extCtx)) return;
+    const family = String(charStyle?.fontFamily ?? this.fontFamily ?? '');
+    if (isFrauncesFamily(family)) {
+      extCtx.fontVariationSettings = buildFrauncesVariationSettings(
+        this._getFrauncesAxes(charStyle)
+      );
+    } else if (extCtx.fontVariationSettings && extCtx.fontVariationSettings !== 'normal') {
+      extCtx.fontVariationSettings = 'normal';
+    }
+  }
+
+  override _setTextStyles(
+    ctx: CanvasRenderingContext2D,
+    charStyle?: CompleteTextStyleDeclaration,
+    forMeasuring?: boolean
+  ): void {
+    super._setTextStyles(ctx, charStyle, forMeasuring);
+    this._applyCanvasVariationSettings(ctx, charStyle);
+  }
+
+  override _measureChar(
+    _char: string,
+    charStyle: CompleteTextStyleDeclaration,
+    previousChar: string | undefined,
+    prevCharStyle: CompleteTextStyleDeclaration | Record<string, never>
+  ): { width: number; kernedWidth: number } {
+    const family = String(charStyle?.fontFamily ?? this.fontFamily ?? '');
+    if (!isFrauncesFamily(family)) {
+      return super._measureChar(_char, charStyle, previousChar, prevCharStyle);
+    }
+
+    const axes = this._getFrauncesAxes(charStyle);
+    const fontMultiplier =
+      Number(charStyle?.fontSize ?? this.fontSize ?? this.CACHE_FONT_SIZE) /
+      this.CACHE_FONT_SIZE;
+
+    const prevDecl =
+      previousChar && prevCharStyle && 'fontFamily' in prevCharStyle
+        ? this._getFontDeclaration(prevCharStyle as CompleteTextStyleDeclaration, true)
+        : '';
+    const currDecl = this._getFontDeclaration(charStyle, true);
+    const stylesAreEqual = Boolean(previousChar && currDecl === prevDecl);
+
+    const width = measureFrauncesGlyphWidth(_char, axes, this.CACHE_FONT_SIZE);
+    let kernedWidth = width;
+
+    if (stylesAreEqual && previousChar) {
+      const prevWidth = measureFrauncesGlyphWidth(
+        previousChar,
+        axes,
+        this.CACHE_FONT_SIZE
+      );
+      const coupleWidth = measureFrauncesGlyphWidth(
+        previousChar + _char,
+        axes,
+        this.CACHE_FONT_SIZE
+      );
+      kernedWidth = coupleWidth - prevWidth;
+    }
+
+    return {
+      width: width * fontMultiplier,
+      kernedWidth: kernedWidth * fontMultiplier,
+    };
+  }
+
+  override _renderTextFill(ctx: CanvasRenderingContext2D): void {
+    const useFrauncesSvg =
+      isFrauncesFamily(this.fontFamily) &&
+      !this.isEditing &&
+      typeof this.fill === 'string' &&
+      this.fill.length > 0 &&
+      !this.path;
+
+    if (!useFrauncesSvg) {
+      this._applyCanvasVariationSettings(ctx);
+      super._renderTextFill(ctx);
+      return;
+    }
+
+    if (!isFrauncesFontDataReady()) {
+      void ensureFrauncesFontData();
+      this._applyCanvasVariationSettings(ctx);
+      super._renderTextFill(ctx);
+      return;
+    }
+
+    const boxW = Math.max(1, this.width || 1);
+    const boxH = Math.max(1, this.height || 1);
+    const padX = Math.max(48, Math.ceil((this.fontSize || 48) * 0.75));
+    const padY = Math.max(48, Math.ceil((this.fontSize || 48) * 0.75));
+    const svgW = boxW + padX * 2;
+    const svgH = boxH + padY * 2;
+    const originX = boxW / 2 + padX;
+    const originY = boxH / 2 + padY;
+
+    const axes = this._getFrauncesAxes();
+    const charSpacingPx =
+      this.charSpacing !== 0 ? ((this.fontSize || 48) * this.charSpacing) / 1000 : 0;
+    const leftOffset = this._getLeftOffset();
+    let lineTopOffset = this._getTopOffset();
+
+    const lines: FrauncesRenderLine[] = [];
+    for (let i = 0, len = this._textLines.length; i < len; i++) {
+      const chars = this._textLines[i] || [];
+      const lineText = chars.join('');
+      const heightOfLine = this.getHeightOfLine(i);
+      const heightImpl = heightOfLine / (this.lineHeight || 1);
+      const baselineY =
+        originY + lineTopOffset + heightImpl * (1 - this._fontSizeFraction);
+      const lineStartX = originX + leftOffset + this._getLineLeftOffset(i);
+      const isJustified =
+        this.textAlign.includes('justify') && !this.isEndOfWrapping(i);
+
+      lines.push({
+        text: lineText,
+        chars,
+        lineStartX,
+        baselineY,
+        charBounds: this.__charBounds?.[i],
+        isJustified,
+      });
+
+      lineTopOffset += heightOfLine;
+    }
+
+    const maxEdge = Math.max(svgW, svgH, 1);
+    const renderScale = Math.min(2, 3200 / maxEdge);
+
+    const renderKey = [
+      axes.fontStyle,
+      axes.fontWeight,
+      axes.fontOpsz,
+      axes.fontSoft,
+      axes.fontWonk,
+      this.fontSize,
+      this.charSpacing,
+      this.lineHeight,
+      this.textAlign,
+      this.direction,
+      this.fill,
+      boxW.toFixed(2),
+      boxH.toFixed(2),
+      this.text,
+    ].join('|');
+
+    const bitmap = getOrRequestFrauncesBitmap({
+      renderKey,
+      svgWidth: svgW,
+      svgHeight: svgH,
+      renderScale,
+      fill: this.fill as string,
+      fontSize: this.fontSize || 48,
+      charSpacingPx,
+      axes,
+      lines,
+      onReady: () => {
+        this.dirty = true;
+        this.canvas?.requestRenderAll();
+      },
+    });
+
+    if (bitmap) {
+      ctx.drawImage(bitmap, -boxW / 2 - padX, -boxH / 2 - padY, svgW, svgH);
+      return;
+    }
+
+    // Immediate non-blank frame during 4-8ms async SVG image decode.
+    this._applyCanvasVariationSettings(ctx);
+    super._renderTextFill(ctx);
   }
 
   _getCacheCanvasDimensions(): TCacheCanvasDimensions {
@@ -196,6 +448,9 @@ export class StoryTextbox extends fabric.Textbox {
       const extraY = this.bgStyle === 'pill' ? Math.max(this.pillPaddingY, 16) : 12;
       dims.width += (extraX * 2 + 16) * dims.zoomX;
       dims.height += (extraY * 2 + 16) * dims.zoomY;
+    } else if (isFrauncesFamily(this.fontFamily)) {
+      dims.width += 24 * dims.zoomX;
+      dims.height += 24 * dims.zoomY;
     }
     return dims;
   }
@@ -296,6 +551,9 @@ export class StoryTextbox extends fabric.Textbox {
     const extraKeys = [
       'editorId',
       'editorName',
+      'fontOpsz',
+      'fontSoft',
+      'fontWonk',
       'bgStyle',
       'textBgColor',
       'pillRadius',

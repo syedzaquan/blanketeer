@@ -157,7 +157,7 @@ export function App() {
         canRedo={canRedo}
         onUndo={() => void undo()}
         onRedo={() => void redo()}
-        onExportPNG={exportPNG}
+        onExportPNG={() => void exportPNG()}
       />
 
       <input

@@ -2,10 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Local Variable Font: Fraunces (calibrated opsz=9..144 def 72, wght=100..900 def 400) */
+/* Local Full 4-Axis Variable Font: Fraunces (opsz=9..144, wght=100..900, SOFT=0..100, WONK=0..1) */
 @font-face {
   font-family: 'Fraunces';
-  src: url('./assets/fonts/fraunces/Fraunces-Variable-Roman.ttf') format('truetype');
+  src: url('./assets/fonts/fraunces/Fraunces-Roman.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -13,7 +13,7 @@
 
 @font-face {
   font-family: 'Fraunces';
-  src: url('./assets/fonts/fraunces/Fraunces-Variable-Italic.ttf') format('truetype');
+  src: url('./assets/fonts/fraunces/Fraunces-Italic.ttf') format('truetype');
   font-weight: 100 900;
   font-style: italic;
   font-display: swap;
