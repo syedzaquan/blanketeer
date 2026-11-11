@@ -34,7 +34,11 @@ import {
   renderGradientHotspot,
   type FabricObjectWithMeta,
 } from '../utils/canvasHelpers';
-import { exportCanvasToPNG } from '../utils/exportCanvas';
+import {
+  exportCanvasToPNG,
+  isIOSDevice,
+  type ExportPreviewPayload,
+} from '../utils/exportCanvas';
 import { ensureFrauncesFontData, isFrauncesFamily } from '../utils/frauncesSvg';
 import {
   SUPPORTED_FONTS,
@@ -479,6 +483,9 @@ export function useFabricCanvas() {
       height: initialPreset.height,
       preserveObjectStacking: true,
       selection: false,
+      // On iOS Retina (3x), a 1080x1920 working canvas exceeds Safari's 16.7 MP canvas limit
+      // and causes memory failures during editing/export. Native 1080px is already sharper than screen.
+      enableRetinaScaling: !isIOSDevice(),
       backgroundColor: '#18181b',
     });
 
@@ -1674,9 +1681,9 @@ export function useFabricCanvas() {
     });
   }, []);
 
-  const exportPNG = useCallback(async () => {
+  const exportPNG = useCallback(async (): Promise<ExportPreviewPayload | null> => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return null;
     cancelPendingBgWork();
     const currentBg = backgroundRef.current;
     if (
@@ -1690,8 +1697,9 @@ export function useFabricCanvas() {
         'full'
       );
     }
-    await exportCanvasToPNG(canvas, `story-${Date.now()}.png`);
+    const preview = await exportCanvasToPNG(canvas, `story-${Date.now()}.png`);
     syncSelectionAndLayers();
+    return preview;
   }, [cancelPendingBgWork, syncSelectionAndLayers]);
 
   // Global keyboard shortcuts (Delete, Undo, Redo, Duplicate, Nudge, Escape)

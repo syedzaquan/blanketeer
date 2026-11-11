@@ -1,8 +1,10 @@
 import { useRef, useState, type ChangeEvent } from 'react';
 import {
+  Download,
   Image as ImageIcon,
   Layers,
   Palette,
+  Share2,
   SlidersHorizontal,
   Type,
   X,
@@ -18,6 +20,7 @@ import { Toolbar } from './components/Toolbar';
 import { useFabricCanvas } from './hooks/useFabricCanvas';
 import type { SidebarTab } from './types/editor';
 import { cn } from './utils/cn';
+import { sharePngBlob, type ExportPreviewPayload } from './utils/exportCanvas';
 
 const SIDEBAR_TABS: { id: SidebarTab; label: string; icon: typeof Type }[] = [
   { id: 'text', label: 'Text', icon: Type },
@@ -31,6 +34,7 @@ type MobileSheetState = 'none' | 'tool' | 'inspector';
 export function App() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('text');
   const [mobileSheet, setMobileSheet] = useState<MobileSheetState>('none');
+  const [exportPreview, setExportPreview] = useState<ExportPreviewPayload | null>(null);
   const quickImageInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
@@ -155,6 +159,27 @@ export function App() {
     );
   };
 
+  const closeExportPreview = () => {
+    setExportPreview((prev) => {
+      if (prev?.blobUrl) {
+        URL.revokeObjectURL(prev.blobUrl);
+      }
+      return null;
+    });
+  };
+
+  const handleExportPNG = async () => {
+    const preview = await exportPNG();
+    if (preview) {
+      setExportPreview((prev) => {
+        if (prev?.blobUrl) {
+          URL.revokeObjectURL(prev.blobUrl);
+        }
+        return preview;
+      });
+    }
+  };
+
   return (
     <div className="fixed inset-0 flex flex-col bg-[#0a0a0a] text-neutral-200 overflow-hidden">
       <Header
@@ -164,7 +189,7 @@ export function App() {
         canRedo={canRedo}
         onUndo={() => void undo()}
         onRedo={() => void redo()}
-        onExportPNG={() => void exportPNG()}
+        onExportPNG={() => void handleExportPNG()}
       />
 
       <input
@@ -364,6 +389,75 @@ export function App() {
           <span className="text-[10px] font-medium leading-tight">Edit</span>
         </button>
       </nav>
+
+      {/* iOS Safari Export Preview Modal (used when native Share Sheet needs a fresh gesture or isn't supported) */}
+      {exportPreview && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Exported image"
+          onClick={closeExportPreview}
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-lg bg-[#141414] border border-neutral-800 p-3.5 flex flex-col gap-3"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-neutral-200">
+                Save or Share Image
+              </span>
+              <button
+                type="button"
+                onClick={closeExportPreview}
+                aria-label="Close export modal"
+                className="p-1 rounded-md text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="rounded-md bg-neutral-950 border border-neutral-800 p-2 flex items-center justify-center max-h-[55vh] overflow-hidden">
+              <img
+                src={exportPreview.dataURL}
+                alt="Exported story preview"
+                className="max-h-[50vh] w-auto object-contain rounded select-auto"
+              />
+            </div>
+
+            <p className="text-[11px] text-neutral-400 text-center">
+              Tap Save / Share below, or touch and hold the image to Save to Photos.
+            </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await sharePngBlob(
+                    exportPreview.blob,
+                    exportPreview.filename
+                  );
+                  if (res === 'unsupported') {
+                    window.open(exportPreview.blobUrl, '_blank', 'noopener');
+                  }
+                }}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-md bg-neutral-100 hover:bg-white text-neutral-950 text-xs font-medium transition-colors"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Save / Share</span>
+              </button>
+              <a
+                href={exportPreview.blobUrl}
+                download={exportPreview.filename}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 text-xs font-medium transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

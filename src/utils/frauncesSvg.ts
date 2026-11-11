@@ -419,6 +419,10 @@ export function getOrRequestFrauncesBitmap(
   return null;
 }
 
+export function hasPendingFrauncesDecodes(): boolean {
+  return pendingDecodePromises.size > 0;
+}
+
 export async function waitForPendingFrauncesDecodes(): Promise<void> {
   if (!isFrauncesFontDataReady()) {
     await ensureFrauncesFontData();
