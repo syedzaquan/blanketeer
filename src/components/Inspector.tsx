@@ -392,11 +392,13 @@ export function Inspector({
                   availableFonts
                 );
                 const colsClass =
-                  weightOptions.length <= 2
-                    ? 'grid-cols-2'
-                    : weightOptions.length >= 9
-                      ? 'grid-cols-3'
-                      : 'grid-cols-4';
+                  weightOptions.length === 1
+                    ? 'grid-cols-1'
+                    : weightOptions.length <= 2
+                      ? 'grid-cols-2'
+                      : weightOptions.length >= 9
+                        ? 'grid-cols-3'
+                        : 'grid-cols-4';
                 return (
                   <div>
                     <div className="flex items-center justify-between mb-1.5">

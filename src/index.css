@@ -160,6 +160,402 @@
   font-display: swap;
 }
 
+/* Local Font Family: Delight (100–900, Normal) */
+@font-face {
+  font-family: 'Delight';
+  src:
+    url('./assets/fonts/delight/Delight-Thin.woff2') format('woff2'),
+    url('./assets/fonts/delight/Delight-Thin.woff') format('woff');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src:
+    url('./assets/fonts/delight/Delight-ExtraLight.woff2') format('woff2'),
+    url('./assets/fonts/delight/Delight-ExtraLight.woff') format('woff');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src:
+    url('./assets/fonts/delight/Delight-Light.woff2') format('woff2'),
+    url('./assets/fonts/delight/Delight-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src:
+    url('./assets/fonts/delight/Delight-Regular.woff2') format('woff2'),
+    url('./assets/fonts/delight/Delight-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src:
+    url('./assets/fonts/delight/Delight-Medium.woff2') format('woff2'),
+    url('./assets/fonts/delight/Delight-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src:
+    url('./assets/fonts/delight/Delight-SemiBold.woff2') format('woff2'),
+    url('./assets/fonts/delight/Delight-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src:
+    url('./assets/fonts/delight/Delight-Bold.woff2') format('woff2'),
+    url('./assets/fonts/delight/Delight-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src:
+    url('./assets/fonts/delight/Delight-ExtraBold.woff2') format('woff2'),
+    url('./assets/fonts/delight/Delight-ExtraBold.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src:
+    url('./assets/fonts/delight/Delight-Black.woff2') format('woff2'),
+    url('./assets/fonts/delight/Delight-Black.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Local Font Family: LT Museum (300, 500, 700, 900, Normal & Italic) */
+@font-face {
+  font-family: 'LT Museum';
+  src:
+    url('./assets/fonts/lt-museum/LTMuseum-Light.woff2') format('woff2'),
+    url('./assets/fonts/lt-museum/LTMuseum-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LT Museum';
+  src:
+    url('./assets/fonts/lt-museum/LTMuseum-LightItalic.woff2') format('woff2'),
+    url('./assets/fonts/lt-museum/LTMuseum-LightItalic.woff') format('woff');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LT Museum';
+  src:
+    url('./assets/fonts/lt-museum/LTMuseum-Medium.woff2') format('woff2'),
+    url('./assets/fonts/lt-museum/LTMuseum-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LT Museum';
+  src:
+    url('./assets/fonts/lt-museum/LTMuseum-MediumItalic.woff2') format('woff2'),
+    url('./assets/fonts/lt-museum/LTMuseum-MediumItalic.woff') format('woff');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LT Museum';
+  src:
+    url('./assets/fonts/lt-museum/LTMuseum-Bold.woff2') format('woff2'),
+    url('./assets/fonts/lt-museum/LTMuseum-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LT Museum';
+  src:
+    url('./assets/fonts/lt-museum/LTMuseum-BoldItalic.woff2') format('woff2'),
+    url('./assets/fonts/lt-museum/LTMuseum-BoldItalic.woff') format('woff');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LT Museum';
+  src:
+    url('./assets/fonts/lt-museum/LTMuseum-Black.woff2') format('woff2'),
+    url('./assets/fonts/lt-museum/LTMuseum-Black.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LT Museum';
+  src:
+    url('./assets/fonts/lt-museum/LTMuseum-BlackItalic.woff2') format('woff2'),
+    url('./assets/fonts/lt-museum/LTMuseum-BlackItalic.woff') format('woff');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Local Font Family: LT Staircase (400, Normal & Italic) */
+@font-face {
+  font-family: 'LT Staircase';
+  src:
+    url('./assets/fonts/lt-staircase/lt-staircase.woff2') format('woff2'),
+    url('./assets/fonts/lt-staircase/lt-staircase.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LT Staircase';
+  src:
+    url('./assets/fonts/lt-staircase/lt-staircase-italic.woff2') format('woff2'),
+    url('./assets/fonts/lt-staircase/lt-staircase-italic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Local Font Family: Morganite (100–900, Normal) */
+@font-face {
+  font-family: 'Morganite';
+  src:
+    url('./assets/fonts/morganite/Morganite-Thin.woff2') format('woff2'),
+    url('./assets/fonts/morganite/Morganite-Thin.woff') format('woff');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Morganite';
+  src:
+    url('./assets/fonts/morganite/Morganite-ExtraLight.woff2') format('woff2'),
+    url('./assets/fonts/morganite/Morganite-ExtraLight.woff') format('woff');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Morganite';
+  src:
+    url('./assets/fonts/morganite/Morganite-Light.woff2') format('woff2'),
+    url('./assets/fonts/morganite/Morganite-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Morganite';
+  src:
+    url('./assets/fonts/morganite/Morganite-Book.woff2') format('woff2'),
+    url('./assets/fonts/morganite/Morganite-Book.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Morganite';
+  src:
+    url('./assets/fonts/morganite/Morganite-Medium.woff2') format('woff2'),
+    url('./assets/fonts/morganite/Morganite-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Morganite';
+  src:
+    url('./assets/fonts/morganite/Morganite-SemiBold.woff2') format('woff2'),
+    url('./assets/fonts/morganite/Morganite-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Morganite';
+  src:
+    url('./assets/fonts/morganite/Morganite-Bold.woff2') format('woff2'),
+    url('./assets/fonts/morganite/Morganite-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Morganite';
+  src:
+    url('./assets/fonts/morganite/Morganite-ExtraBold.woff2') format('woff2'),
+    url('./assets/fonts/morganite/Morganite-ExtraBold.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Morganite';
+  src:
+    url('./assets/fonts/morganite/Morganite-Black.woff2') format('woff2'),
+    url('./assets/fonts/morganite/Morganite-Black.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Local Font Family: Humane (100–700, Normal) */
+@font-face {
+  font-family: 'Humane';
+  src:
+    url('./assets/fonts/humane/Humane-Thin.woff2') format('woff2'),
+    url('./assets/fonts/humane/Humane-Thin.woff') format('woff');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Humane';
+  src:
+    url('./assets/fonts/humane/Humane-ExtraLight.woff2') format('woff2'),
+    url('./assets/fonts/humane/Humane-ExtraLight.woff') format('woff');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Humane';
+  src:
+    url('./assets/fonts/humane/Humane-Light.woff2') format('woff2'),
+    url('./assets/fonts/humane/Humane-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Humane';
+  src:
+    url('./assets/fonts/humane/Humane-Regular.woff2') format('woff2'),
+    url('./assets/fonts/humane/Humane-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Humane';
+  src:
+    url('./assets/fonts/humane/Humane-Medium.woff2') format('woff2'),
+    url('./assets/fonts/humane/Humane-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Humane';
+  src:
+    url('./assets/fonts/humane/Humane-SemiBold.woff2') format('woff2'),
+    url('./assets/fonts/humane/Humane-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Humane';
+  src:
+    url('./assets/fonts/humane/Humane-Bold.woff2') format('woff2'),
+    url('./assets/fonts/humane/Humane-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Local Font Family: Caslon Antique (400 & 700, Normal & Italic) */
+@font-face {
+  font-family: 'Caslon Antique';
+  src:
+    url('./assets/fonts/caslon-antique/CaslonAntique.woff2') format('woff2'),
+    url('./assets/fonts/caslon-antique/CaslonAntique.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Caslon Antique';
+  src:
+    url('./assets/fonts/caslon-antique/CaslonAntique-Italic.woff2') format('woff2'),
+    url('./assets/fonts/caslon-antique/CaslonAntique-Italic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Caslon Antique';
+  src:
+    url('./assets/fonts/caslon-antique/CaslonAntique-Bold.woff2') format('woff2'),
+    url('./assets/fonts/caslon-antique/CaslonAntique-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Caslon Antique';
+  src:
+    url('./assets/fonts/caslon-antique/CaslonAntique-BoldItalic.woff2') format('woff2'),
+    url('./assets/fonts/caslon-antique/CaslonAntique-BoldItalic.woff') format('woff');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 @layer base {
   html,
   body,

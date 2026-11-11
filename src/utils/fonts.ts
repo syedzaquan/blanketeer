@@ -16,6 +16,16 @@ export interface FontOption {
   isVariableWeight?: boolean;
 }
 
+const STANDARD_WEIGHTS_100_TO_700: FontWeightOption[] = [
+  { value: 100, label: 'Thin' },
+  { value: 200, label: 'ExLight' },
+  { value: 300, label: 'Light' },
+  { value: 400, label: 'Regular' },
+  { value: 500, label: 'Medium' },
+  { value: 600, label: 'SemiBold' },
+  { value: 700, label: 'Bold' },
+];
+
 const STANDARD_WEIGHTS_300_TO_900: FontWeightOption[] = [
   { value: 300, label: 'Light' },
   { value: 400, label: 'Regular' },
@@ -30,6 +40,22 @@ const STANDARD_WEIGHTS_100_TO_900: FontWeightOption[] = [
   { value: 100, label: 'Thin' },
   { value: 200, label: 'ExLight' },
   ...STANDARD_WEIGHTS_300_TO_900,
+];
+
+const LT_MUSEUM_WEIGHTS: FontWeightOption[] = [
+  { value: 300, label: 'Light' },
+  { value: 500, label: 'Medium' },
+  { value: 700, label: 'Bold' },
+  { value: 900, label: 'Black' },
+];
+
+const CASLON_ANTIQUE_WEIGHTS: FontWeightOption[] = [
+  { value: 400, label: 'Regular' },
+  { value: 700, label: 'Bold' },
+];
+
+const LT_STAIRCASE_WEIGHTS: FontWeightOption[] = [
+  { value: 400, label: 'Regular' },
 ];
 
 const FRAUNCES_PRESET_WEIGHTS: FontWeightOption[] = [
@@ -56,6 +82,48 @@ export const SUPPORTED_FONTS: FontOption[] = [
     categoryLabel: 'Variable Serif',
     availableWeights: FRAUNCES_PRESET_WEIGHTS,
     isVariableWeight: true,
+  },
+  {
+    name: 'Delight',
+    family: 'Delight',
+    source: 'custom',
+    categoryLabel: 'Modern Sans',
+    availableWeights: STANDARD_WEIGHTS_100_TO_900,
+  },
+  {
+    name: 'LT Museum',
+    family: 'LT Museum',
+    source: 'custom',
+    categoryLabel: 'Editorial Sans',
+    availableWeights: LT_MUSEUM_WEIGHTS,
+  },
+  {
+    name: 'LT Staircase',
+    family: 'LT Staircase',
+    source: 'custom',
+    categoryLabel: 'Display Serif',
+    availableWeights: LT_STAIRCASE_WEIGHTS,
+  },
+  {
+    name: 'Morganite',
+    family: 'Morganite',
+    source: 'custom',
+    categoryLabel: 'Tall Condensed',
+    availableWeights: STANDARD_WEIGHTS_100_TO_900,
+  },
+  {
+    name: 'Humane',
+    family: 'Humane',
+    source: 'custom',
+    categoryLabel: 'Condensed Display',
+    availableWeights: STANDARD_WEIGHTS_100_TO_700,
+  },
+  {
+    name: 'Caslon Antique',
+    family: 'Caslon Antique',
+    source: 'custom',
+    categoryLabel: 'Vintage Serif',
+    availableWeights: CASLON_ANTIQUE_WEIGHTS,
   },
   {
     name: 'Inter',
@@ -158,12 +226,24 @@ export const loadFont = async (
 };
 
 export const preloadAllFonts = async (): Promise<void> => {
+  const localDiscretePreloads = SUPPORTED_FONTS.filter(
+    (font) => font.source === 'custom' && !font.isVariableWeight
+  ).flatMap((font) =>
+    font.availableWeights.flatMap((w) => [
+      loadFont(font, w.value, 'normal'),
+      loadFont(font, w.value, 'italic'),
+    ])
+  );
+
   await Promise.allSettled([
-    ...SUPPORTED_FONTS.map((font) => loadFont(font, 400, 'normal')),
-    ...STANDARD_WEIGHTS_300_TO_900.flatMap((w) => [
-      loadFont(SUPPORTED_FONTS[0], w.value, 'normal'),
-      loadFont(SUPPORTED_FONTS[0], w.value, 'italic'),
-    ]),
+    ...SUPPORTED_FONTS.map((font) =>
+      loadFont(
+        font,
+        snapToSupportedWeight(400, font.family, SUPPORTED_FONTS),
+        'normal'
+      )
+    ),
+    ...localDiscretePreloads,
     loadFont(SUPPORTED_FONTS[1], 100, 'normal'),
     loadFont(SUPPORTED_FONTS[1], 600, 'normal'),
     loadFont(SUPPORTED_FONTS[1], 700, 'normal'),
