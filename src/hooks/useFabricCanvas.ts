@@ -228,7 +228,7 @@ function applyControlStyling(): void {
     touchCornerSize: 34,
     transparentCorners: false,
     borderScaleFactor: 2.5,
-    padding: 10,
+    padding: 0,
   });
 }
 
@@ -688,7 +688,12 @@ export function useFabricCanvas() {
     const handleObjectMoving = (e: { target?: fabric.FabricObject }) => {
       if (!e.target) return;
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-      activeSnapGuidesRef.current = snapObjectToGuides(e.target, width, height);
+      activeSnapGuidesRef.current = snapObjectToGuides(
+        e.target,
+        width,
+        height,
+        canvas.getObjects()
+      );
     };
 
     const handleObjectRotating = (e: { target?: fabric.FabricObject }) => {
@@ -2015,7 +2020,12 @@ export function useFabricCanvas() {
 
       if (Math.hypot(dx, dy) > 4) {
         const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-        activeSnapGuidesRef.current = snapObjectToGuides(target, width, height);
+        activeSnapGuidesRef.current = snapObjectToGuides(
+          target,
+          width,
+          height,
+          canvas.getObjects()
+        );
       }
 
       canvas.requestRenderAll();

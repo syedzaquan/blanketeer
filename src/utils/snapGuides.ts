@@ -9,11 +9,15 @@ export interface SafeZoneBounds {
   height: number;
 }
 
+export type SnapGuideKind = 'center' | 'safe' | 'edge' | 'element';
+
 export interface ActiveSnapGuides {
   x: number | null;
-  xKind: 'center' | 'safe' | null;
+  xKind: SnapGuideKind | null;
+  xSpan?: [number, number] | null;
   y: number | null;
-  yKind: 'center' | 'safe' | null;
+  yKind: SnapGuideKind | null;
+  ySpan?: [number, number] | null;
   isDragging: boolean;
 }
 
@@ -21,6 +25,14 @@ export interface ActiveRotationSnap {
   isRotating: boolean;
   angle: number;
   snapped: boolean;
+}
+
+interface SnapCandidate {
+  delta: number;
+  guide: number;
+  kind: SnapGuideKind;
+  spanStart?: number;
+  spanEnd?: number;
 }
 
 const SNAP_THRESHOLD = 18;
@@ -47,10 +59,24 @@ export function getSafeZoneBounds(
   };
 }
 
+function pickBestCandidate(candidates: SnapCandidate[]): SnapCandidate | null {
+  let best: SnapCandidate | null = null;
+  for (const c of candidates) {
+    if (
+      Math.abs(c.delta) <= SNAP_THRESHOLD &&
+      (!best || Math.abs(c.delta) < Math.abs(best.delta))
+    ) {
+      best = c;
+    }
+  }
+  return best;
+}
+
 export function snapObjectToGuides(
   obj: fabric.FabricObject,
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
+  canvasObjects: fabric.FabricObject[] = []
 ): ActiveSnapGuides {
   obj.setCoords();
   const rect = obj.getBoundingRect();
@@ -66,37 +92,63 @@ export function snapObjectToGuides(
   const objBottom = rect.top + rect.height;
   const objCenterY = rect.top + rect.height / 2;
 
-  const xCandidates: { delta: number; guide: number; kind: 'center' | 'safe' }[] = [
+  const xCandidates: SnapCandidate[] = [
     { delta: centerX - objCenterX, guide: centerX, kind: 'center' },
     { delta: safe.left - objLeft, guide: safe.left, kind: 'safe' },
     { delta: safe.right - objRight, guide: safe.right, kind: 'safe' },
+    { delta: 0 - objLeft, guide: 0, kind: 'edge' },
+    { delta: canvasWidth - objRight, guide: canvasWidth, kind: 'edge' },
   ];
 
-  const yCandidates: { delta: number; guide: number; kind: 'center' | 'safe' }[] = [
+  const yCandidates: SnapCandidate[] = [
     { delta: centerY - objCenterY, guide: centerY, kind: 'center' },
     { delta: safe.top - objTop, guide: safe.top, kind: 'safe' },
     { delta: safe.bottom - objBottom, guide: safe.bottom, kind: 'safe' },
+    { delta: 0 - objTop, guide: 0, kind: 'edge' },
+    { delta: canvasHeight - objBottom, guide: canvasHeight, kind: 'edge' },
   ];
 
-  let bestX: (typeof xCandidates)[number] | null = null;
-  for (const c of xCandidates) {
+  const selectedChildren =
+    obj instanceof fabric.ActiveSelection ? new Set(obj.getObjects()) : null;
+
+  for (const other of canvasObjects) {
     if (
-      Math.abs(c.delta) <= SNAP_THRESHOLD &&
-      (!bestX || Math.abs(c.delta) < Math.abs(bestX.delta))
+      other === obj ||
+      other.visible === false ||
+      (selectedChildren && selectedChildren.has(other))
     ) {
-      bestX = c;
+      continue;
     }
+    other.setCoords();
+    const oRect = other.getBoundingRect();
+    if (oRect.width <= 0 || oRect.height <= 0) continue;
+
+    const oLeft = oRect.left;
+    const oRight = oRect.left + oRect.width;
+    const oCenterX = oLeft + oRect.width / 2;
+    const oTop = oRect.top;
+    const oBottom = oRect.top + oRect.height;
+    const oCenterY = oTop + oRect.height / 2;
+
+    xCandidates.push(
+      { delta: oCenterX - objCenterX, guide: oCenterX, kind: 'element', spanStart: oTop, spanEnd: oBottom },
+      { delta: oLeft - objLeft, guide: oLeft, kind: 'element', spanStart: oTop, spanEnd: oBottom },
+      { delta: oRight - objRight, guide: oRight, kind: 'element', spanStart: oTop, spanEnd: oBottom },
+      { delta: oRight - objLeft, guide: oRight, kind: 'element', spanStart: oTop, spanEnd: oBottom },
+      { delta: oLeft - objRight, guide: oLeft, kind: 'element', spanStart: oTop, spanEnd: oBottom }
+    );
+
+    yCandidates.push(
+      { delta: oCenterY - objCenterY, guide: oCenterY, kind: 'element', spanStart: oLeft, spanEnd: oRight },
+      { delta: oTop - objTop, guide: oTop, kind: 'element', spanStart: oLeft, spanEnd: oRight },
+      { delta: oBottom - objBottom, guide: oBottom, kind: 'element', spanStart: oLeft, spanEnd: oRight },
+      { delta: oBottom - objTop, guide: oBottom, kind: 'element', spanStart: oLeft, spanEnd: oRight },
+      { delta: oTop - objBottom, guide: oTop, kind: 'element', spanStart: oLeft, spanEnd: oRight }
+    );
   }
 
-  let bestY: (typeof yCandidates)[number] | null = null;
-  for (const c of yCandidates) {
-    if (
-      Math.abs(c.delta) <= SNAP_THRESHOLD &&
-      (!bestY || Math.abs(c.delta) < Math.abs(bestY.delta))
-    ) {
-      bestY = c;
-    }
-  }
+  const bestX = pickBestCandidate(xCandidates);
+  const bestY = pickBestCandidate(yCandidates);
 
   if (bestX) {
     obj.set({ left: (obj.left ?? 0) + bestX.delta });
@@ -109,11 +161,55 @@ export function snapObjectToGuides(
     obj.setCoords();
   }
 
+  const finalRect = bestX || bestY ? obj.getBoundingRect() : rect;
+  const finalTop = finalRect.top;
+  const finalBottom = finalRect.top + finalRect.height;
+  const finalLeft = finalRect.left;
+  const finalRight = finalRect.left + finalRect.width;
+
+  let xSpan: [number, number] | null = null;
+  if (bestX && bestX.kind === 'element') {
+    let minY = finalTop;
+    let maxY = finalBottom;
+    for (const c of xCandidates) {
+      if (
+        c.kind === 'element' &&
+        Math.abs(c.guide - bestX.guide) <= 0.5 &&
+        c.spanStart !== undefined &&
+        c.spanEnd !== undefined
+      ) {
+        minY = Math.min(minY, c.spanStart);
+        maxY = Math.max(maxY, c.spanEnd);
+      }
+    }
+    xSpan = [Math.max(0, minY - 16), Math.min(canvasHeight, maxY + 16)];
+  }
+
+  let ySpan: [number, number] | null = null;
+  if (bestY && bestY.kind === 'element') {
+    let minX = finalLeft;
+    let maxX = finalRight;
+    for (const c of yCandidates) {
+      if (
+        c.kind === 'element' &&
+        Math.abs(c.guide - bestY.guide) <= 0.5 &&
+        c.spanStart !== undefined &&
+        c.spanEnd !== undefined
+      ) {
+        minX = Math.min(minX, c.spanStart);
+        maxX = Math.max(maxX, c.spanEnd);
+      }
+    }
+    ySpan = [Math.max(0, minX - 16), Math.min(canvasWidth, maxX + 16)];
+  }
+
   return {
     x: bestX ? bestX.guide : null,
     xKind: bestX ? bestX.kind : null,
+    xSpan,
     y: bestY ? bestY.guide : null,
     yKind: bestY ? bestY.kind : null,
+    ySpan,
     isDragging: true,
   };
 }
@@ -204,28 +300,53 @@ export function renderGuidesOnTopContext(
     }
   }
 
-  // Active magnetic snap lines (+1px thicker, light blue, subtle drop shadow)
+  // Active magnetic snap lines
   if (guides.x !== null || guides.y !== null) {
     topCtx.save();
     topCtx.setLineDash([]);
     topCtx.lineWidth = 3.5;
-    topCtx.strokeStyle = '#7dd3fc';
     topCtx.shadowColor = 'rgba(0, 0, 0, 0.42)';
     topCtx.shadowBlur = 6;
     topCtx.shadowOffsetX = 0;
     topCtx.shadowOffsetY = 2;
 
     if (guides.x !== null) {
+      const isElementGuide = guides.xKind === 'element';
+      topCtx.strokeStyle = isElementGuide ? '#f472b6' : '#7dd3fc';
+      const drawX =
+        guides.xKind === 'edge'
+          ? guides.x === 0
+            ? 2
+            : guides.x === width
+              ? width - 2
+              : guides.x
+          : guides.x;
+      const [yStart, yEnd] =
+        isElementGuide && guides.xSpan ? guides.xSpan : [0, height];
+
       topCtx.beginPath();
-      topCtx.moveTo(guides.x, 0);
-      topCtx.lineTo(guides.x, height);
+      topCtx.moveTo(drawX, yStart);
+      topCtx.lineTo(drawX, yEnd);
       topCtx.stroke();
     }
 
     if (guides.y !== null) {
+      const isElementGuide = guides.yKind === 'element';
+      topCtx.strokeStyle = isElementGuide ? '#f472b6' : '#7dd3fc';
+      const drawY =
+        guides.yKind === 'edge'
+          ? guides.y === 0
+            ? 2
+            : guides.y === height
+              ? height - 2
+              : guides.y
+          : guides.y;
+      const [xStart, xEnd] =
+        isElementGuide && guides.ySpan ? guides.ySpan : [0, width];
+
       topCtx.beginPath();
-      topCtx.moveTo(0, guides.y);
-      topCtx.lineTo(width, guides.y);
+      topCtx.moveTo(xStart, drawY);
+      topCtx.lineTo(xEnd, drawY);
       topCtx.stroke();
     }
     topCtx.restore();
@@ -260,4 +381,3 @@ export function renderGuidesOnTopContext(
 
   topCtx.restore();
 }
-
