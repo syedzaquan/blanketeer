@@ -43,13 +43,13 @@ export function TextEditingPopover({
   const { boxRect } = editingState;
   const viewportW = typeof window !== 'undefined' ? window.innerWidth : 390;
   const clampedCenterX = Math.max(
-    148,
-    Math.min(viewportW - 148, boxRect.left + boxRect.width / 2)
+    176,
+    Math.min(viewportW - 176, boxRect.left + boxRect.width / 2)
   );
-  const placeAbove = boxRect.top >= 116;
+  const placeAbove = boxRect.top >= 124;
   const topY = placeAbove
-    ? boxRect.top - 10
-    : boxRect.top + boxRect.height + 10;
+    ? boxRect.top - 12
+    : boxRect.top + boxRect.height + 12;
 
   const keepFocus = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -59,7 +59,7 @@ export function TextEditingPopover({
   return (
     <div
       data-testid="text-editing-popover"
-      onMouseDown={keepFocus}
+      onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
       style={{
@@ -67,9 +67,9 @@ export function TextEditingPopover({
         top: `${topY}px`,
         transform: placeAbove ? 'translate(-50%, -100%)' : 'translateX(-50%)',
       }}
-      className="fixed z-40 flex flex-col items-center gap-1.5 select-none"
+      className="fixed z-40 flex flex-col items-center gap-2 max-w-[calc(100vw-16px)] select-none"
     >
-      <div className="flex items-center gap-0.5 p-1 rounded-xl bg-[#1c1c1e]/95 backdrop-blur-md border border-neutral-700/90 shadow-xl text-neutral-200">
+      <div className="flex items-center gap-1 lg:gap-0.5 p-1.5 lg:p-1 rounded-2xl lg:rounded-xl bg-[#1c1c1e]/95 backdrop-blur-md border border-neutral-700/90 shadow-xl text-neutral-200">
         <button
           type="button"
           onMouseDown={keepFocus}
@@ -77,13 +77,13 @@ export function TextEditingPopover({
           aria-label="Bold"
           title="Bold"
           className={cn(
-            'p-2 lg:p-1.5 rounded-lg transition-colors',
+            'p-2.5 lg:p-1.5 rounded-xl lg:rounded-lg transition-colors',
             editingState.bold
               ? 'bg-neutral-100 text-neutral-950'
               : 'hover:bg-neutral-800 text-neutral-200'
           )}
         >
-          <Bold className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+          <Bold className="w-5 h-5 lg:w-3.5 lg:h-3.5" />
         </button>
 
         <button
@@ -93,13 +93,13 @@ export function TextEditingPopover({
           aria-label="Italic"
           title="Italic"
           className={cn(
-            'p-2 lg:p-1.5 rounded-lg transition-colors',
+            'p-2.5 lg:p-1.5 rounded-xl lg:rounded-lg transition-colors',
             editingState.italic
               ? 'bg-neutral-100 text-neutral-950'
               : 'hover:bg-neutral-800 text-neutral-200'
           )}
         >
-          <Italic className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+          <Italic className="w-5 h-5 lg:w-3.5 lg:h-3.5" />
         </button>
 
         <button
@@ -109,16 +109,16 @@ export function TextEditingPopover({
           aria-label="Underline"
           title="Underline"
           className={cn(
-            'p-2 lg:p-1.5 rounded-lg transition-colors',
+            'p-2.5 lg:p-1.5 rounded-xl lg:rounded-lg transition-colors',
             editingState.underline
               ? 'bg-neutral-100 text-neutral-950'
               : 'hover:bg-neutral-800 text-neutral-200'
           )}
         >
-          <Underline className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+          <Underline className="w-5 h-5 lg:w-3.5 lg:h-3.5" />
         </button>
 
-        <div className="w-px h-5 bg-neutral-700/80 mx-0.5" />
+        <div className="w-px h-6 lg:h-5 bg-neutral-700/80 mx-0.5" />
 
         <button
           type="button"
@@ -129,15 +129,15 @@ export function TextEditingPopover({
           aria-label="Text color"
           title="Text color"
           className={cn(
-            'p-2 lg:p-1.5 rounded-lg flex items-center gap-1 transition-colors',
+            'p-2.5 lg:p-1.5 rounded-xl lg:rounded-lg flex items-center gap-1.5 lg:gap-1 transition-colors',
             openPalette === 'color'
               ? 'bg-neutral-700 text-white'
               : 'hover:bg-neutral-800 text-neutral-200'
           )}
         >
-          <Palette className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+          <Palette className="w-5 h-5 lg:w-3.5 lg:h-3.5" />
           <span
-            className="w-2.5 h-2.5 rounded-full border border-white/40"
+            className="w-3 h-3 lg:w-2.5 lg:h-2.5 rounded-full border border-white/40"
             style={{ backgroundColor: editingState.fill }}
           />
         </button>
@@ -153,22 +153,22 @@ export function TextEditingPopover({
           aria-label="Highlight color"
           title="Highlight color"
           className={cn(
-            'p-2 lg:p-1.5 rounded-lg flex items-center gap-1 transition-colors',
+            'p-2.5 lg:p-1.5 rounded-xl lg:rounded-lg flex items-center gap-1.5 lg:gap-1 transition-colors',
             openPalette === 'highlight' || editingState.textBackgroundColor
               ? 'bg-neutral-700 text-white'
               : 'hover:bg-neutral-800 text-neutral-200'
           )}
         >
-          <Highlighter className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+          <Highlighter className="w-5 h-5 lg:w-3.5 lg:h-3.5" />
           {editingState.textBackgroundColor && (
             <span
-              className="w-2.5 h-2.5 rounded-full border border-white/40"
+              className="w-3 h-3 lg:w-2.5 lg:h-2.5 rounded-full border border-white/40"
               style={{ backgroundColor: editingState.textBackgroundColor }}
             />
           )}
         </button>
 
-        <div className="w-px h-5 bg-neutral-700/80 mx-0.5" />
+        <div className="w-px h-6 lg:h-5 bg-neutral-700/80 mx-0.5" />
 
         <button
           type="button"
@@ -176,7 +176,7 @@ export function TextEditingPopover({
           onClick={onSelectAll}
           aria-label="Select all text"
           title="Select all text"
-          className="px-2 py-1.5 lg:py-1 rounded-lg text-xs lg:text-[11px] font-medium text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
+          className="px-3 py-2 lg:px-2 lg:py-1 rounded-xl lg:rounded-lg text-sm lg:text-[11px] font-medium text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
         >
           All
         </button>
@@ -187,21 +187,21 @@ export function TextEditingPopover({
           onClick={onDone}
           aria-label="Done editing text"
           title="Done"
-          className="p-2 lg:p-1.5 rounded-lg bg-neutral-100 text-neutral-950 hover:bg-white transition-colors"
+          className="p-2.5 lg:p-1.5 rounded-xl lg:rounded-lg bg-neutral-100 text-neutral-950 hover:bg-white transition-colors"
         >
-          <Check className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+          <Check className="w-5 h-5 lg:w-3.5 lg:h-3.5" />
         </button>
       </div>
 
       {openPalette !== 'none' && (
-        <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-[#1c1c1e]/95 backdrop-blur-md border border-neutral-700/90 shadow-xl max-w-[92vw] flex-wrap justify-center">
+        <div className="flex items-center gap-2 lg:gap-1.5 px-3 py-2.5 lg:px-2.5 lg:py-2 rounded-2xl lg:rounded-xl bg-[#1c1c1e]/95 backdrop-blur-md border border-neutral-700/90 shadow-xl max-w-[calc(100vw-16px)] flex-wrap justify-center">
           {openPalette === 'highlight' && (
             <button
               type="button"
               onMouseDown={keepFocus}
               onClick={() => onApplyStyle({ textBackgroundColor: '' })}
               className={cn(
-                'px-2 h-6 rounded-md text-[11px] font-medium border transition-colors',
+                'px-3 h-8 lg:px-2 lg:h-6 rounded-lg lg:rounded-md text-xs lg:text-[11px] font-medium border transition-colors',
                 !editingState.textBackgroundColor
                   ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
                   : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:text-white'
@@ -231,7 +231,7 @@ export function TextEditingPopover({
                 }
                 aria-label={`${openPalette === 'color' ? 'Text' : 'Highlight'} color ${swatch}`}
                 className={cn(
-                  'w-6 h-6 rounded-full border transition-transform',
+                  'w-8 h-8 lg:w-6 lg:h-6 rounded-full border transition-transform',
                   isActive
                     ? 'border-white ring-2 ring-white/50 scale-110'
                     : 'border-neutral-600 hover:scale-105'
@@ -259,7 +259,7 @@ export function TextEditingPopover({
                   : { textBackgroundColor: e.target.value }
               )
             }
-            className="w-6 h-6 rounded-full border border-neutral-600 bg-transparent cursor-pointer shrink-0"
+            className="w-8 h-8 lg:w-6 lg:h-6 rounded-full border border-neutral-600 bg-transparent cursor-pointer shrink-0"
           />
         </div>
       )}
