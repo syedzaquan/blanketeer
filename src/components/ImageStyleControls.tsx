@@ -69,6 +69,7 @@ const STROKE_STYLES: { id: ImageStrokeStyle; label: string }[] = [
   { id: 'solid', label: 'Solid' },
   { id: 'dashed', label: 'Dashed' },
   { id: 'dotted', label: 'Dotted' },
+  { id: 'stamp', label: 'Stamp' },
 ];
 
 const SHADOW_SWATCHES = [
@@ -413,18 +414,24 @@ export function ImageStyleControls({
         )}
       </div>
 
-      {/* Stroke Options */}
+      {/* Border / Frame Options */}
       <div className="border-t border-neutral-800/80 pt-3.5">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xs font-medium text-neutral-300">
-            Stroke
+            Border / Frame
           </h3>
           {selectedImage && (
             <button
               id={`${idPrefix}-stroke-toggle`}
               type="button"
               onClick={() =>
-                onUpdateImageProps({ strokeWidth: hasStroke ? 0 : 8 })
+                onUpdateImageProps({
+                  strokeWidth: hasStroke
+                    ? 0
+                    : strokeStyle === 'stamp'
+                      ? 24
+                      : 8,
+                })
               }
               className={cn(
                 'px-3 py-1.5 lg:px-2 lg:py-0.5 rounded-md lg:rounded text-xs lg:text-[11px] font-medium border transition-colors',
@@ -450,15 +457,15 @@ export function ImageStyleControls({
                 htmlFor={`${idPrefix}-stroke-width`}
                 className="text-neutral-400"
               >
-                Stroke Width
+                {strokeStyle === 'stamp' ? 'Frame Width' : 'Stroke Width'}
               </label>
               <div className="w-16">
                 <NumericField
                   id={`${idPrefix}-stroke-width`}
-                  ariaLabel="Image stroke width in pixels"
+                  ariaLabel="Image border width in pixels"
                   value={strokeWidth}
                   min={0}
-                  max={40}
+                  max={64}
                   disabled={!selectedImage}
                   suffix="px"
                   onCommit={(val) => onUpdateImageProps({ strokeWidth: val })}
@@ -467,10 +474,10 @@ export function ImageStyleControls({
             </div>
             <input
               id={`${idPrefix}-stroke-width-slider`}
-              aria-label="Image stroke width slider"
+              aria-label="Image border width slider"
               type="range"
               min={0}
-              max={40}
+              max={64}
               step={1}
               disabled={!selectedImage}
               value={strokeWidth}
@@ -483,7 +490,9 @@ export function ImageStyleControls({
 
           <div>
             <div className="flex items-center justify-between text-[11px] mb-1.5">
-              <span className="text-neutral-400">Stroke Color</span>
+              <span className="text-neutral-400">
+                {strokeStyle === 'stamp' ? 'Frame Color' : 'Stroke Color'}
+              </span>
               <span className="font-mono text-neutral-300">
                 {strokeColor}
               </span>
@@ -491,14 +500,16 @@ export function ImageStyleControls({
             <div className="flex items-center gap-1.5 flex-wrap">
               <input
                 id={`${idPrefix}-stroke-color`}
-                aria-label="Image stroke color"
+                aria-label="Image border color"
                 type="color"
                 disabled={!selectedImage}
                 value={strokeColor}
                 onChange={(e) =>
                   onUpdateImageProps({
                     strokeColor: e.target.value,
-                    ...(strokeWidth === 0 ? { strokeWidth: 8 } : {}),
+                    ...(strokeWidth === 0
+                      ? { strokeWidth: strokeStyle === 'stamp' ? 24 : 8 }
+                      : {}),
                   })
                 }
                 className="w-8 h-8 lg:w-6 lg:h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
@@ -512,7 +523,9 @@ export function ImageStyleControls({
                   onClick={() =>
                     onUpdateImageProps({
                       strokeColor: swatch,
-                      ...(strokeWidth === 0 ? { strokeWidth: 8 } : {}),
+                      ...(strokeWidth === 0
+                        ? { strokeWidth: strokeStyle === 'stamp' ? 24 : 8 }
+                        : {}),
                     })
                   }
                   className={cn(
@@ -530,9 +543,9 @@ export function ImageStyleControls({
 
           <div>
             <span className="block text-[11px] text-neutral-400 mb-1">
-              Stroke Style
+              Style
             </span>
-            <div className="grid grid-cols-3 gap-1.5 lg:gap-1">
+            <div className="grid grid-cols-4 gap-1">
               {STROKE_STYLES.map((opt) => (
                 <button
                   key={opt.id}
@@ -542,7 +555,11 @@ export function ImageStyleControls({
                   onClick={() =>
                     onUpdateImageProps({
                       strokeStyle: opt.id,
-                      ...(strokeWidth === 0 ? { strokeWidth: 8 } : {}),
+                      ...(opt.id === 'stamp' && strokeWidth < 16
+                        ? { strokeWidth: 24 }
+                        : strokeWidth === 0
+                          ? { strokeWidth: 8 }
+                          : {}),
                     })
                   }
                   className={cn(

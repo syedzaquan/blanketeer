@@ -63,11 +63,14 @@ function traceRoundedRectPath(
   width: number,
   height: number,
   rx: number,
-  ry: number
+  ry: number,
+  beginNewPath = true
 ): void {
   const rX = Math.max(0, Math.min(rx, width / 2));
   const rY = Math.max(0, Math.min(ry, height / 2));
-  ctx.beginPath();
+  if (beginNewPath) {
+    ctx.beginPath();
+  }
   if (rX === 0 || rY === 0) {
     ctx.rect(x, y, width, height);
     ctx.closePath();
@@ -104,6 +107,88 @@ function traceRoundedRectPath(
   );
   ctx.lineTo(x, y + rY);
   ctx.bezierCurveTo(x, y + k * rY, x + k * rX, y, x + rX, y);
+  ctx.closePath();
+}
+
+function computeStampEdgeLayout(
+  edgeLength: number,
+  notchRadius: number,
+  cornerMargin: number
+): { count: number; startOffset: number; step: number } {
+  const gap = notchRadius * 0.85;
+  const step = notchRadius * 2 + gap;
+  const available = edgeLength - 2 * cornerMargin;
+  if (available < notchRadius * 2 || step <= 0) {
+    return { count: 0, startOffset: 0, step: 0 };
+  }
+  const count = Math.max(1, Math.floor((available + gap) / step));
+  const totalSpan = count * notchRadius * 2 + (count - 1) * gap;
+  const startOffset = (edgeLength - totalSpan) / 2;
+  return { count, startOffset, step };
+}
+
+function traceStampOuterRectPath(
+  ctx: CanvasRenderingContext2D,
+  halfW: number,
+  halfH: number,
+  frameW: number
+): void {
+  const notchR = Math.max(2.5, Math.min(frameW * 0.4, 22));
+  const cornerMargin = Math.max(notchR * 0.75, frameW * 0.35);
+  const topBottom = computeStampEdgeLayout(halfW * 2, notchR, cornerMargin);
+  const leftRight = computeStampEdgeLayout(halfH * 2, notchR, cornerMargin);
+
+  ctx.beginPath();
+  ctx.moveTo(-halfW, -halfH);
+
+  // Top edge (left -> right)
+  for (let i = 0; i < topBottom.count; i++) {
+    const cx = -halfW + topBottom.startOffset + notchR + i * topBottom.step;
+    ctx.arc(cx, -halfH, notchR, Math.PI, 0, true);
+  }
+  ctx.lineTo(halfW, -halfH);
+
+  // Right edge (top -> bottom)
+  for (let i = 0; i < leftRight.count; i++) {
+    const cy = -halfH + leftRight.startOffset + notchR + i * leftRight.step;
+    ctx.arc(halfW, cy, notchR, -Math.PI / 2, Math.PI / 2, true);
+  }
+  ctx.lineTo(halfW, halfH);
+
+  // Bottom edge (right -> left)
+  for (let i = 0; i < topBottom.count; i++) {
+    const cx = halfW - topBottom.startOffset - notchR - i * topBottom.step;
+    ctx.arc(cx, halfH, notchR, 0, Math.PI, true);
+  }
+  ctx.lineTo(-halfW, halfH);
+
+  // Left edge (bottom -> top)
+  for (let i = 0; i < leftRight.count; i++) {
+    const cy = halfH - leftRight.startOffset - notchR - i * leftRight.step;
+    ctx.arc(-halfW, cy, notchR, Math.PI / 2, -Math.PI / 2, true);
+  }
+  ctx.closePath();
+}
+
+function traceStampOuterEllipsePath(
+  ctx: CanvasRenderingContext2D,
+  rx: number,
+  ry: number,
+  frameW: number
+): void {
+  const notchR = Math.max(2.5, Math.min(frameW * 0.4, 22));
+  const perimeter =
+    Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+  const count = Math.max(8, Math.round(perimeter / (notchR * 2.85)));
+
+  ctx.beginPath();
+  for (let i = 0; i < count; i++) {
+    const theta = (i / count) * Math.PI * 2;
+    const px = rx * Math.cos(theta);
+    const py = ry * Math.sin(theta);
+    const tangent = Math.atan2(ry * Math.cos(theta), -rx * Math.sin(theta));
+    ctx.arc(px, py, notchR, tangent + Math.PI, tangent, true);
+  }
   ctx.closePath();
 }
 
@@ -232,13 +317,16 @@ export class StoryImage extends fabric.FabricImage {
         cp.stroke = this.imageStrokeColor;
         cp.strokeWidth = localWidth;
         cp.strokeLineJoin = 'round';
-        cp.strokeLineCap = style === 'dotted' ? 'round' : 'butt';
+        cp.strokeLineCap =
+          style === 'dotted' || style === 'stamp' ? 'round' : 'butt';
         cp.strokeDashArray =
           style === 'dashed'
             ? [localWidth * 1.25, localWidth * 0.85]
             : style === 'dotted'
               ? [0.01, localWidth * 1.15]
-              : null;
+              : style === 'stamp'
+                ? [0.01, localWidth * 0.62]
+                : null;
         cp._render(ctx);
       } finally {
         cp.fill = prevFill;
@@ -255,6 +343,61 @@ export class StoryImage extends fabric.FabricImage {
     // Original / Circle / Square / Squircle: draw uniform-width OUTSIDE border
     ctx.save();
     ctx.scale(1 / sx, 1 / sy);
+    const minLocalDim = Math.min(imgW, imgH);
+
+    if (style === 'stamp') {
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.fillStyle = this.imageStrokeColor;
+
+      if (shape === 'circle') {
+        const innerRx = Math.max(1, (minLocalDim / 2) * sx - 0.5);
+        const innerRy = Math.max(1, (minLocalDim / 2) * sy - 0.5);
+        traceStampOuterEllipsePath(
+          ctx,
+          (minLocalDim / 2) * sx + strokePx,
+          (minLocalDim / 2) * sy + strokePx,
+          strokePx
+        );
+        ctx.moveTo(innerRx, 0);
+        ctx.ellipse(0, 0, innerRx, innerRy, 0, 0, Math.PI * 2);
+        ctx.fill('evenodd');
+        ctx.restore();
+        return;
+      }
+
+      const innerW = shape === 'square' ? minLocalDim * sx : scaledW;
+      const innerH = shape === 'square' ? minLocalDim * sy : scaledH;
+      traceStampOuterRectPath(
+        ctx,
+        innerW / 2 + strokePx,
+        innerH / 2 + strokePx,
+        strokePx
+      );
+
+      if (shape === 'rounded') {
+        const rawR = Math.min(
+          (minLocalDim * (this.cutoutRadius ?? 16)) / 100,
+          minLocalDim / 2
+        );
+        const holeW = Math.max(1, innerW - 1);
+        const holeH = Math.max(1, innerH - 1);
+        const rx = rawR > 0 ? Math.max(0, rawR * sx - 0.5) : 0;
+        const ry = rawR > 0 ? Math.max(0, rawR * sy - 0.5) : 0;
+        traceRoundedRectPath(ctx, -holeW / 2, -holeH / 2, holeW, holeH, rx, ry, false);
+      } else {
+        ctx.rect(
+          -innerW / 2 + 0.5,
+          -innerH / 2 + 0.5,
+          Math.max(1, innerW - 1),
+          Math.max(1, innerH - 1)
+        );
+      }
+
+      ctx.fill('evenodd');
+      ctx.restore();
+      return;
+    }
+
     ctx.strokeStyle = this.imageStrokeColor;
     this._applyStrokeDash(ctx, strokePx, style);
 
@@ -266,7 +409,6 @@ export class StoryImage extends fabric.FabricImage {
     }
     const outset = isSolid ? strokePx / 2 - 0.5 : strokePx / 2;
     const drawWidth = isSolid ? strokePx + 1 : strokePx;
-    const minLocalDim = Math.min(imgW, imgH);
 
     if (shape === 'none') {
       ctx.lineJoin = 'miter';

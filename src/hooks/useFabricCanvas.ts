@@ -1542,7 +1542,7 @@ export function useFabricCanvas() {
       if (patch.strokeWidth !== undefined && Number.isFinite(patch.strokeWidth)) {
         storyImg.set(
           'imageStrokeWidth',
-          Math.max(0, Math.min(40, Math.round(patch.strokeWidth)))
+          Math.max(0, Math.min(64, Math.round(patch.strokeWidth)))
         );
       }
       if (patch.strokeStyle !== undefined) {
