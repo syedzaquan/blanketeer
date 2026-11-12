@@ -32,10 +32,14 @@ export type ImagePropsPatch = Partial<{
 
 interface ImageStyleControlsProps {
   selectedImage: SelectedImageProps | null;
+  canvasWidth: number;
+  canvasHeight: number;
   idPrefix: string;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
   onUpdateImageProps: (patch: ImagePropsPatch) => void;
 }
+
+const SIZE_PERCENT_PRESETS = [100, 50, 25] as const;
 
 const CUTOUT_OPTIONS: {
   id: CutoutShape;
@@ -172,6 +176,8 @@ function NumericField({
 
 export function ImageStyleControls({
   selectedImage,
+  canvasWidth,
+  canvasHeight,
   idPrefix,
   onApplyCutout,
   onUpdateImageProps,
@@ -273,6 +279,57 @@ export function ImageStyleControls({
               onCommit={(height) => onUpdateImageProps({ height })}
             />
           </div>
+        </div>
+
+        {/* Quick % Size Presets (locks aspect ratio) */}
+        <div className="mt-2.5 flex flex-col gap-1.5">
+          {(
+            [
+              { axis: 'width', label: 'Width', total: canvasWidth, current: selectedImage?.width },
+              { axis: 'height', label: 'Height', total: canvasHeight, current: selectedImage?.height },
+            ] as const
+          ).map((row) => (
+            <div
+              key={row.axis}
+              className="grid grid-cols-[3rem_1fr] items-center gap-2"
+            >
+              <span className="text-[11px] text-neutral-400">{row.label}</span>
+              <div className="grid grid-cols-3 gap-1">
+                {SIZE_PERCENT_PRESETS.map((pct) => {
+                  const targetPx = Math.round((row.total * pct) / 100);
+                  const active =
+                    Boolean(selectedImage?.aspectLocked) &&
+                    row.current !== undefined &&
+                    Math.abs(row.current - targetPx) <= 1;
+                  return (
+                    <button
+                      key={pct}
+                      type="button"
+                      disabled={!selectedImage}
+                      onClick={() =>
+                        onUpdateImageProps({
+                          [row.axis]: targetPx,
+                          aspectLocked: true,
+                        })
+                      }
+                      aria-label={`Set image ${row.axis} to ${pct}%`}
+                      title={`Set ${row.label.toLowerCase()} to ${pct}% (${targetPx}px) with aspect ratio locked`}
+                      className={cn(
+                        'py-1.5 lg:py-1 rounded-md lg:rounded text-xs lg:text-[11px] font-mono font-medium border transition-colors',
+                        !selectedImage
+                          ? 'opacity-40 cursor-not-allowed bg-neutral-800/40 border-neutral-800 text-neutral-600'
+                          : active
+                            ? 'bg-neutral-700 border-neutral-500 text-white'
+                            : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-700/70 hover:text-white'
+                      )}
+                    >
+                      {pct}%
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

@@ -159,6 +159,8 @@ export function App() {
       return (
         <ImageTab
           selectedObject={selectedObject}
+          canvasWidth={canvasWidth}
+          canvasHeight={canvasHeight}
           onAddImageFile={(file) => void addImageFromFile(file)}
           onApplyCutout={applyImageCutout}
           onUpdateImageProps={updateImageProps}

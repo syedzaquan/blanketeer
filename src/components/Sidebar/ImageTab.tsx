@@ -9,6 +9,8 @@ import {
 
 interface ImageTabProps {
   selectedObject: SelectedObjectState | null;
+  canvasWidth: number;
+  canvasHeight: number;
   onAddImageFile: (file: File) => void;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
   onUpdateImageProps: (patch: ImagePropsPatch) => void;
@@ -16,6 +18,8 @@ interface ImageTabProps {
 
 export function ImageTab({
   selectedObject,
+  canvasWidth,
+  canvasHeight,
   onAddImageFile,
   onApplyCutout,
   onUpdateImageProps,
@@ -143,6 +147,8 @@ export function ImageTab({
 
       <ImageStyleControls
         selectedImage={selectedImage}
+        canvasWidth={canvasWidth}
+        canvasHeight={canvasHeight}
         idPrefix="image-tab"
         onApplyCutout={onApplyCutout}
         onUpdateImageProps={onUpdateImageProps}

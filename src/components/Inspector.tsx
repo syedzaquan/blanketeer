@@ -924,6 +924,8 @@ export function Inspector({
       {selectedObject.kind === 'image' && (
         <ImageStyleControls
           selectedImage={selectedObject}
+          canvasWidth={ASPECT_RATIO_PRESETS[aspectRatio].width}
+          canvasHeight={ASPECT_RATIO_PRESETS[aspectRatio].height}
           idPrefix="inspector-image"
           onApplyCutout={onApplyCutout}
           onUpdateImageProps={onUpdateImageProps}
