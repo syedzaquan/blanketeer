@@ -81,6 +81,14 @@ interface InspectorProps {
   onUpdateImageProps: (patch: ImagePropsPatch) => void;
   onTriggerFillSlot: (slotId: string) => void;
   onUpdateSlotCorner: (slotId: string, cornerPercent: number) => void;
+  onUpdateShape: (
+    patch: Partial<{
+      fill: string;
+      stroke: string;
+      strokeWidth: number;
+      cornerRadius: number;
+    }>
+  ) => void;
   onUpdateCommon: (
     patch: Partial<{
       opacity: number;
@@ -120,6 +128,7 @@ export function Inspector({
   onUpdateImageProps,
   onTriggerFillSlot,
   onUpdateSlotCorner,
+  onUpdateShape,
   onUpdateCommon,
   onBringForward,
   onSendBackward,
@@ -207,7 +216,9 @@ export function Inspector({
                 ? 'Image Layer'
                 : selectedObject.kind === 'slot'
                   ? 'Image Slot'
-                  : 'Layer'}
+                  : selectedObject.kind === 'shape'
+                    ? 'Shape Layer'
+                    : 'Layer'}
           </span>
           <h2 className="text-sm lg:text-xs font-medium text-neutral-100 truncate max-w-[165px]">
             {selectedObject.name}
@@ -927,6 +938,160 @@ export function Inspector({
           onApplyCutout={onApplyCutout}
           onUpdateImageProps={onUpdateImageProps}
         />
+      )}
+
+      {/* SHAPE INSPECTOR */}
+      {selectedObject.kind === 'shape' && (
+        <>
+          <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-medium text-neutral-300">Fill</h3>
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateShape({
+                    fill: selectedObject.fill ? '' : '#ffffff',
+                  })
+                }
+                className={cn(
+                  'px-2.5 py-1 lg:px-2 lg:py-0.5 rounded-md lg:rounded text-xs lg:text-[11px] font-medium border transition-colors',
+                  !selectedObject.fill
+                    ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                    : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                )}
+              >
+                {selectedObject.fill ? 'No Fill' : 'Transparent'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={selectedObject.fill || '#ffffff'}
+                onChange={(e) => onUpdateShape({ fill: e.target.value })}
+                aria-label="Shape fill color"
+                className="w-9 h-9 lg:w-7 lg:h-7 rounded border border-neutral-600 bg-transparent cursor-pointer shrink-0"
+              />
+              <input
+                type="text"
+                value={selectedObject.fill || 'transparent'}
+                onChange={(e) => onUpdateShape({ fill: e.target.value })}
+                className="flex-1 px-3 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
+              {PRESET_COLOR_SWATCHES.map((swatch) => (
+                <button
+                  key={swatch}
+                  type="button"
+                  onClick={() => onUpdateShape({ fill: swatch })}
+                  aria-label={`Set shape fill ${swatch}`}
+                  className={cn(
+                    'h-8 lg:h-6 rounded-md lg:rounded border transition-colors',
+                    selectedObject.fill.toLowerCase() === swatch.toLowerCase()
+                      ? 'border-white ring-1 ring-white/50'
+                      : 'border-neutral-700 hover:border-neutral-500'
+                  )}
+                  style={{ backgroundColor: swatch }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
+            <h3 className="text-xs font-medium text-neutral-300">Border</h3>
+
+            <div>
+              <div className="flex items-center justify-between text-[11px] mb-1">
+                <span className="text-neutral-400">Width</span>
+                <span className="font-mono text-neutral-300">
+                  {selectedObject.strokeWidth}px
+                </span>
+              </div>
+              <RangeSlider
+                min={0}
+                max={40}
+                step={1}
+                value={selectedObject.strokeWidth}
+                defaultValue={0}
+                onValueChange={(strokeWidth) => onUpdateShape({ strokeWidth })}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={selectedObject.stroke || '#000000'}
+                onChange={(e) =>
+                  onUpdateShape({
+                    stroke: e.target.value,
+                    ...(selectedObject.strokeWidth === 0 ? { strokeWidth: 4 } : {}),
+                  })
+                }
+                aria-label="Shape border color"
+                className="w-9 h-9 lg:w-7 lg:h-7 rounded border border-neutral-600 bg-transparent cursor-pointer shrink-0"
+              />
+              <div className="grid grid-cols-5 gap-1.5 flex-1">
+                {PRESET_COLOR_SWATCHES.slice(0, 5).map((swatch) => (
+                  <button
+                    key={swatch}
+                    type="button"
+                    onClick={() =>
+                      onUpdateShape({
+                        stroke: swatch,
+                        ...(selectedObject.strokeWidth === 0
+                          ? { strokeWidth: 4 }
+                          : {}),
+                      })
+                    }
+                    aria-label={`Set shape border ${swatch}`}
+                    className={cn(
+                      'h-7 lg:h-5 rounded border transition-colors',
+                      selectedObject.stroke.toLowerCase() === swatch.toLowerCase() &&
+                        selectedObject.strokeWidth > 0
+                        ? 'border-white ring-1 ring-white/50'
+                        : 'border-neutral-700 hover:border-neutral-500'
+                    )}
+                    style={{ backgroundColor: swatch }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {(selectedObject.shapeKind === 'rect' ||
+            selectedObject.shapeKind === 'rounded' ||
+            selectedObject.shapeKind === 'line') && (
+            <div className="border-t border-neutral-800/80 pt-3.5">
+              <div className="flex items-center justify-between text-[11px] mb-1">
+                <label
+                  htmlFor="inspector-shape-radius"
+                  className="text-neutral-400"
+                >
+                  Corner Radius
+                </label>
+                <span className="font-mono text-neutral-300">
+                  {selectedObject.cornerRadius}px
+                </span>
+              </div>
+              <RangeSlider
+                id="inspector-shape-radius"
+                aria-label="Shape corner radius"
+                min={0}
+                max={120}
+                step={1}
+                value={selectedObject.cornerRadius}
+                defaultValue={selectedObject.shapeKind === 'rounded' ? 36 : 0}
+                onValueChange={(cornerRadius) =>
+                  onUpdateShape({ cornerRadius })
+                }
+                className="w-full"
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* TEMPLATE SLOT INSPECTOR */}

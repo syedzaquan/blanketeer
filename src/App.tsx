@@ -5,6 +5,7 @@ import {
   Layers,
   LayoutTemplate,
   Palette,
+  Shapes,
   Share2,
   SlidersHorizontal,
   Type,
@@ -16,6 +17,7 @@ import { Inspector } from './components/Inspector';
 import { BackgroundTab } from './components/Sidebar/BackgroundTab';
 import { ImageTab } from './components/Sidebar/ImageTab';
 import { LayersTab } from './components/Sidebar/LayersTab';
+import { ShapesTab } from './components/Sidebar/ShapesTab';
 import { TemplatesTab } from './components/Sidebar/TemplatesTab';
 import { TextTab } from './components/Sidebar/TextTab';
 import { Toolbar } from './components/Toolbar';
@@ -27,6 +29,7 @@ import { sharePngBlob, type ExportPreviewPayload } from './utils/exportCanvas';
 const SIDEBAR_TABS: { id: SidebarTab; label: string; icon: typeof Type }[] = [
   { id: 'text', label: 'Text', icon: Type },
   { id: 'image', label: 'Images', icon: ImageIcon },
+  { id: 'shapes', label: 'Shapes', icon: Shapes },
   { id: 'templates', label: 'Templates', icon: LayoutTemplate },
   { id: 'background', label: 'Backdrop', icon: Palette },
   { id: 'layers', label: 'Layers', icon: Layers },
@@ -66,6 +69,8 @@ export function App() {
     updateTextProps,
     uploadCustomFont,
     addImageFromFile,
+    addBasicShape,
+    updateShapeProps,
     applyTwoColumnTemplate,
     applyDiagonalTemplate,
     fillTemplateSlot,
@@ -172,6 +177,9 @@ export function App() {
           onUpdateImageProps={updateImageProps}
         />
       );
+    }
+    if (activeTab === 'shapes') {
+      return <ShapesTab onAddShape={addBasicShape} />;
     }
     if (activeTab === 'templates') {
       return (
@@ -397,6 +405,7 @@ export function App() {
           onUpdateImageProps={updateImageProps}
           onTriggerFillSlot={triggerFillSlot}
           onUpdateSlotCorner={updateTemplateSlotCorner}
+          onUpdateShape={updateShapeProps}
           onUpdateCommon={updateActiveCommonProps}
           onBringForward={bringForward}
           onSendBackward={sendBackward}

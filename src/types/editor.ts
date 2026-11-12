@@ -187,6 +187,30 @@ export interface SelectedTemplateSlotProps {
   locked: boolean;
 }
 
+export type BasicShapeKind =
+  | 'rect'
+  | 'rounded'
+  | 'circle'
+  | 'triangle'
+  | 'star'
+  | 'line';
+
+export interface SelectedShapeProps {
+  kind: 'shape';
+  id: string;
+  name: string;
+  shapeKind: BasicShapeKind;
+  fill: string;
+  stroke: string;
+  strokeWidth: number;
+  cornerRadius: number;
+  opacity: number;
+  angle: number;
+  flipX: boolean;
+  flipY: boolean;
+  locked: boolean;
+}
+
 export interface SelectedOtherProps {
   kind: 'other';
   id: string;
@@ -202,11 +226,12 @@ export type SelectedObjectState =
   | SelectedTextProps
   | SelectedImageProps
   | SelectedTemplateSlotProps
+  | SelectedShapeProps
   | SelectedOtherProps;
 
 export interface LayerItem {
   id: string;
-  kind: 'text' | 'image' | 'slot' | 'other';
+  kind: 'text' | 'image' | 'slot' | 'shape' | 'other';
   label: string;
   visible: boolean;
   locked: boolean;
@@ -230,6 +255,7 @@ export interface TemplateSlotSummary {
 export type SidebarTab =
   | 'text'
   | 'image'
+  | 'shapes'
   | 'templates'
   | 'background'
   | 'layers';

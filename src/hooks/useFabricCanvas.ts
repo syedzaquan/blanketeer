@@ -6,6 +6,7 @@ import {
   type BackgroundImageConfig,
   type BackgroundMode,
   type BackgroundState,
+  type BasicShapeKind,
   type CutoutShape,
   type DiagonalDirection,
   type GradientConfig,
@@ -1433,6 +1434,161 @@ export function useFabricCanvas() {
     [commitHistoryNow, syncSelectionAndLayers]
   );
 
+  const addBasicShape = useCallback(
+    (shapeKind: BasicShapeKind) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const cx = width / 2;
+      const cy = height / 2;
+
+      const commonProps = {
+        left: cx,
+        top: cy,
+        originX: 'center' as const,
+        originY: 'center' as const,
+        fill: '#ffffff',
+        stroke: '#000000',
+        strokeWidth: 0,
+        strokeUniform: true,
+      };
+
+      let shape: fabric.FabricObject;
+      let editorName = 'Shape';
+      let cornerRadius = 0;
+
+      switch (shapeKind) {
+        case 'rect':
+          editorName = 'Square';
+          shape = new fabric.Rect({
+            ...commonProps,
+            width: 320,
+            height: 320,
+            rx: 0,
+            ry: 0,
+          });
+          break;
+        case 'rounded':
+          editorName = 'Rounded Box';
+          cornerRadius = 36;
+          shape = new fabric.Rect({
+            ...commonProps,
+            width: 360,
+            height: 240,
+            rx: 36,
+            ry: 36,
+          });
+          break;
+        case 'circle':
+          editorName = 'Circle';
+          shape = new fabric.Circle({
+            ...commonProps,
+            radius: 160,
+          });
+          break;
+        case 'triangle':
+          editorName = 'Triangle';
+          shape = new fabric.Triangle({
+            ...commonProps,
+            width: 320,
+            height: 280,
+          });
+          break;
+        case 'star': {
+          editorName = 'Star';
+          const outerR = 170;
+          const innerR = 72;
+          const points: { x: number; y: number }[] = [];
+          for (let i = 0; i < 10; i++) {
+            const r = i % 2 === 0 ? outerR : innerR;
+            const angle = (Math.PI / 5) * i - Math.PI / 2;
+            points.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r });
+          }
+          shape = new fabric.Polygon(points, {
+            ...commonProps,
+          });
+          break;
+        }
+        case 'line':
+          editorName = 'Line';
+          cornerRadius = 5;
+          shape = new fabric.Rect({
+            ...commonProps,
+            width: 480,
+            height: 10,
+            rx: 5,
+            ry: 5,
+          });
+          break;
+      }
+
+      const meta = ensureObjectMeta(shape) as FabricObjectWithMeta & {
+        shapeKind?: BasicShapeKind;
+        shapeCornerRadius?: number;
+      };
+      meta.editorName = editorName;
+      meta.shapeKind = shapeKind;
+      meta.shapeCornerRadius = cornerRadius;
+
+      canvas.add(shape);
+      canvas.setActiveObject(shape);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [commitHistoryNow, syncSelectionAndLayers]
+  );
+
+  const updateShapeProps = useCallback(
+    (
+      patch: Partial<{
+        fill: string;
+        stroke: string;
+        strokeWidth: number;
+        cornerRadius: number;
+      }>
+    ) => {
+      const canvas = canvasRef.current;
+      const active = canvas?.getActiveObject();
+      if (!canvas || !active) return;
+      const meta = active as FabricObjectWithMeta & {
+        shapeKind?: BasicShapeKind;
+        shapeCornerRadius?: number;
+      };
+      if (!meta.shapeKind) return;
+
+      if (patch.fill !== undefined) {
+        active.set('fill', patch.fill);
+      }
+      if (patch.stroke !== undefined) {
+        active.set('stroke', patch.stroke);
+      }
+      if (patch.strokeWidth !== undefined && Number.isFinite(patch.strokeWidth)) {
+        active.set({
+          strokeWidth: Math.max(0, Math.min(40, Math.round(patch.strokeWidth))),
+          strokeUniform: true,
+        });
+      }
+      if (
+        patch.cornerRadius !== undefined &&
+        Number.isFinite(patch.cornerRadius) &&
+        active instanceof fabric.Rect
+      ) {
+        const clamped = Math.max(0, Math.min(120, Math.round(patch.cornerRadius)));
+        meta.shapeCornerRadius = clamped;
+        active.set({ rx: clamped, ry: clamped });
+      }
+
+      active.dirty = true;
+      active.setCoords();
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      scheduleHistoryCommit(200);
+    },
+    [scheduleHistoryCommit, syncSelectionAndLayers]
+  );
+
   const applyTwoColumnTemplate = useCallback(
     (options: { placement: TemplatePlacement; cornerPercent: number }) => {
       const canvas = canvasRef.current;
@@ -2597,6 +2753,8 @@ export function useFabricCanvas() {
     updateTextProps,
     uploadCustomFont,
     addImageFromFile,
+    addBasicShape,
+    updateShapeProps,
     applyTwoColumnTemplate,
     applyDiagonalTemplate,
     fillTemplateSlot,

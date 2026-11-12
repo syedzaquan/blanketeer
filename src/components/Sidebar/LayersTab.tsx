@@ -7,6 +7,7 @@ import {
   Layers,
   LayoutTemplate,
   Lock,
+  Shapes,
   Trash2,
   Type,
   Unlock,
@@ -60,7 +61,9 @@ export function LayersTab({
                   ? ImageIcon
                   : layer.kind === 'slot'
                     ? LayoutTemplate
-                    : Layers;
+                    : layer.kind === 'shape'
+                      ? Shapes
+                      : Layers;
 
             return (
               <div

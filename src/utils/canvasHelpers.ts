@@ -2,6 +2,7 @@ import * as fabric from 'fabric';
 import type {
   BackgroundImageConfig,
   BackgroundOverlayGradient,
+  BasicShapeKind,
   GradientConfig,
   LayerItem,
   SelectedObjectState,
@@ -38,6 +39,8 @@ export const CUSTOM_SERIALIZED_PROPS = [
   'isTemplateSlot',
   'slotIndex',
   'slotCornerPercent',
+  'shapeKind',
+  'shapeCornerRadius',
   'locked',
 ];
 
@@ -363,6 +366,30 @@ export function extractSelectedState(
     };
   }
 
+  const shapeMeta = obj as fabric.FabricObject & {
+    shapeKind?: BasicShapeKind;
+    shapeCornerRadius?: number;
+  };
+  if (shapeMeta.shapeKind) {
+    const rectRx =
+      obj instanceof fabric.Rect ? Math.round(obj.rx ?? 0) : 0;
+    return {
+      kind: 'shape',
+      id: meta.editorId!,
+      name: meta.editorName!,
+      shapeKind: shapeMeta.shapeKind,
+      fill: typeof obj.fill === 'string' ? obj.fill : '',
+      stroke: typeof obj.stroke === 'string' ? obj.stroke : '#000000',
+      strokeWidth: Math.round(obj.strokeWidth ?? 0),
+      cornerRadius: Math.round(shapeMeta.shapeCornerRadius ?? rectRx),
+      opacity: Number((obj.opacity ?? 1).toFixed(2)),
+      angle: Math.round(obj.angle || 0),
+      flipX: Boolean(obj.flipX),
+      flipY: Boolean(obj.flipY),
+      locked: Boolean(meta.locked),
+    };
+  }
+
   return {
     kind: 'other',
     id: meta.editorId!,
@@ -404,7 +431,16 @@ export function extractLayersList(canvas: fabric.Canvas): LayerItem[] {
       const isText = obj instanceof StoryTextbox || obj instanceof fabric.Textbox;
       const isImage = obj instanceof fabric.FabricImage;
       const isSlot = obj instanceof TemplateSlotRect;
-      const kind = isText ? 'text' : isImage ? 'image' : isSlot ? 'slot' : 'other';
+      const isShape = Boolean((obj as { shapeKind?: BasicShapeKind }).shapeKind);
+      const kind = isText
+        ? 'text'
+        : isImage
+          ? 'image'
+          : isSlot
+            ? 'slot'
+            : isShape
+              ? 'shape'
+              : 'other';
 
       let label = meta.editorName || 'Layer';
       if (isText) {
