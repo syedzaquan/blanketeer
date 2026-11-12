@@ -269,3 +269,29 @@ export type SidebarTab =
   | 'background'
   | 'layers';
 
+export type OverflowControlKey =
+  | 'tl'
+  | 'tr'
+  | 'bl'
+  | 'br'
+  | 'ml'
+  | 'mr'
+  | 'mt'
+  | 'mb'
+  | 'mtr';
+
+export interface SelectionBoxSnapshot {
+  id: string;
+  locked: boolean;
+  hasControls: boolean;
+  isTextbox: boolean;
+  angle: number;
+  corners: {
+    tl: { x: number; y: number };
+    tr: { x: number; y: number };
+    br: { x: number; y: number };
+    bl: { x: number; y: number };
+  };
+  controls: Partial<Record<OverflowControlKey, { x: number; y: number }>>;
+}
+

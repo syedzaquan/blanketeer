@@ -5,11 +5,16 @@ import {
   useState,
   type DragEvent,
   type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
 import { ImagePlus, Lock, Minus, Plus, RotateCcw, Scan, Unlock } from 'lucide-react';
 import { useWindowSize } from '../hooks/useWindowSize';
-import type { TextEditingSelectionState } from '../types/editor';
+import type {
+  OverflowControlKey,
+  SelectionBoxSnapshot,
+  TextEditingSelectionState,
+} from '../types/editor';
 import { cn } from '../utils/cn';
 import { MobileFontSizeSlider } from './MobileFontSizeSlider';
 import { TextEditingPopover } from './TextEditingPopover';
@@ -43,6 +48,18 @@ interface CanvasViewportProps {
     touch2: { x: number; y: number }
   ) => void;
   onEndObjectPinch?: () => void;
+  selectionBox?: SelectionBoxSnapshot | null;
+  onBeginOverflowControlDrag?: (
+    corner: OverflowControlKey,
+    sceneX: number,
+    sceneY: number
+  ) => boolean;
+  onUpdateOverflowControlDrag?: (
+    sceneX: number,
+    sceneY: number,
+    shiftKey?: boolean
+  ) => void;
+  onEndOverflowControlDrag?: () => void;
   textEditingState?: TextEditingSelectionState | null;
   onApplyEditingStyle?: (
     patch: Partial<{
@@ -115,6 +132,10 @@ export function CanvasViewport({
   onBeginObjectPinch,
   onUpdateObjectPinch,
   onEndObjectPinch,
+  selectionBox = null,
+  onBeginOverflowControlDrag,
+  onUpdateOverflowControlDrag,
+  onEndOverflowControlDrag,
   textEditingState,
   onApplyEditingStyle,
   onSelectAllEditingText,
@@ -842,10 +863,83 @@ export function CanvasViewport({
     }
   };
 
+  const handleOverflowControlPointerDown = useCallback(
+    (corner: OverflowControlKey, e: ReactPointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const frame = frameBoxRef.current;
+      if (!frame) return;
+      const toScene = (clientX: number, clientY: number) => {
+        const rect = frame.getBoundingClientRect();
+        return {
+          x: ((clientX - rect.left) / Math.max(rect.width, 1)) * canvasWidth,
+          y: ((clientY - rect.top) / Math.max(rect.height, 1)) * canvasHeight,
+        };
+      };
+
+      const start = toScene(e.clientX, e.clientY);
+      const started = liveRef.current
+        ? onBeginOverflowControlDrag?.(corner, start.x, start.y)
+        : false;
+      if (!started) return;
+
+      const pointerId = e.pointerId;
+      const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        const pt = toScene(ev.clientX, ev.clientY);
+        onUpdateOverflowControlDrag?.(pt.x, pt.y, ev.shiftKey);
+      };
+      const onUp = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+        onEndOverflowControlDrag?.();
+      };
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+    },
+    [
+      canvasHeight,
+      canvasWidth,
+      onBeginOverflowControlDrag,
+      onEndOverflowControlDrag,
+      onUpdateOverflowControlDrag,
+    ]
+  );
+
   const isZoomedOrPanned =
     Math.abs(canvasScale - DEFAULT_CANVAS_SCALE) > 0.005 ||
     Math.abs(pan.x) > 1 ||
     Math.abs(pan.y) > 1;
+
+  const isNearOrOutsideCanvas = (pt: { x: number; y: number }) =>
+    pt.x < 12 || pt.x > canvasWidth - 12 || pt.y < 12 || pt.y > canvasHeight - 12;
+
+  const isStrictlyOutsideCanvas = (pt: { x: number; y: number }) =>
+    pt.x < 0 || pt.x > canvasWidth || pt.y < 0 || pt.y > canvasHeight;
+
+  const hasOverflowSelection = Boolean(
+    selectionBox &&
+      (isNearOrOutsideCanvas(selectionBox.corners.tl) ||
+        isNearOrOutsideCanvas(selectionBox.corners.tr) ||
+        isNearOrOutsideCanvas(selectionBox.corners.br) ||
+        isNearOrOutsideCanvas(selectionBox.corners.bl) ||
+        Object.values(selectionBox.controls).some(
+          (pt) => pt && isNearOrOutsideCanvas(pt)
+        ))
+  );
+
+  const getOverflowControlCursor = (key: OverflowControlKey): string => {
+    if (key === 'mtr') return 'grab';
+    if (key === 'tl' || key === 'br') return 'nwse-resize';
+    if (key === 'tr' || key === 'bl') return 'nesw-resize';
+    if (key === 'ml' || key === 'mr') return 'ew-resize';
+    return 'ns-resize';
+  };
 
   return (
     <div
@@ -863,10 +957,9 @@ export function CanvasViewport({
             : undefined
       )}
     >
-      {/* Scaled Canvas Frame */}
+      {/* Scaled Canvas Frame + Unclipped Selection Overflow Overlay */}
       <div
-        ref={frameBoxRef}
-        className="relative touch-none shadow-[0_12px_40px_rgba(0,0,0,0.65)] ring-1 ring-neutral-800 overflow-hidden checkerboard-bg shrink-0"
+        className="relative shrink-0"
         style={{
           width: `${scaledWidth}px`,
           height: `${scaledHeight}px`,
@@ -874,15 +967,90 @@ export function CanvasViewport({
         }}
       >
         <div
-          style={{
-            width: `${canvasWidth}px`,
-            height: `${canvasHeight}px`,
-            transform: `scale(${canvasScale})`,
-            transformOrigin: 'top left',
-          }}
+          ref={frameBoxRef}
+          className="relative w-full h-full touch-none shadow-[0_12px_40px_rgba(0,0,0,0.65)] ring-1 ring-neutral-800 overflow-hidden checkerboard-bg"
         >
-          <canvas ref={canvasElRef} />
+          <div
+            style={{
+              width: `${canvasWidth}px`,
+              height: `${canvasHeight}px`,
+              transform: `scale(${canvasScale})`,
+              transformOrigin: 'top left',
+            }}
+          >
+            <canvas ref={canvasElRef} />
+          </div>
         </div>
+
+        {hasOverflowSelection && selectionBox && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 overflow-visible pointer-events-none z-[15]"
+          >
+            <svg
+              viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+              className="w-full h-full overflow-visible pointer-events-none"
+            >
+              <polygon
+                points={`${selectionBox.corners.tl.x},${selectionBox.corners.tl.y} ${selectionBox.corners.tr.x},${selectionBox.corners.tr.y} ${selectionBox.corners.br.x},${selectionBox.corners.br.y} ${selectionBox.corners.bl.x},${selectionBox.corners.bl.y}`}
+                fill="none"
+                stroke="#8b5cf6"
+                strokeWidth={2 / Math.max(canvasScale, 0.1)}
+              />
+              {selectionBox.controls.mtr && (
+                <line
+                  x1={(selectionBox.corners.tl.x + selectionBox.corners.tr.x) / 2}
+                  y1={(selectionBox.corners.tl.y + selectionBox.corners.tr.y) / 2}
+                  x2={selectionBox.controls.mtr.x}
+                  y2={selectionBox.controls.mtr.y}
+                  stroke="#8b5cf6"
+                  strokeWidth={2 / Math.max(canvasScale, 0.1)}
+                />
+              )}
+            </svg>
+
+            {(
+              Object.entries(selectionBox.controls) as Array<
+                [OverflowControlKey, { x: number; y: number } | undefined]
+              >
+            ).map(([key, pt]) => {
+              if (!pt || !isNearOrOutsideCanvas(pt)) return null;
+              const interactive = isStrictlyOutsideCanvas(pt);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  tabIndex={-1}
+                  data-overflow-handle="true"
+                  onPointerDown={
+                    interactive
+                      ? (e) => handleOverflowControlPointerDown(key, e)
+                      : undefined
+                  }
+                  style={{
+                    left: `${(pt.x / canvasWidth) * 100}%`,
+                    top: `${(pt.y / canvasHeight) * 100}%`,
+                    transform: 'translate(-50%, -50%)',
+                    cursor: interactive
+                      ? getOverflowControlCursor(key)
+                      : undefined,
+                  }}
+                  className={cn(
+                    'absolute flex items-center justify-center w-8 h-8 touch-none',
+                    interactive ? 'pointer-events-auto' : 'pointer-events-none'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'block rounded-full bg-white border-2 border-[#8b5cf6] shadow-sm',
+                      key === 'mtr' ? 'w-3.5 h-3.5' : 'w-3 h-3'
+                    )}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Instagram-style Vertical Font Size Slider on Left Edge for Mobile */}

@@ -109,6 +109,10 @@ export function App() {
     beginObjectPinch,
     updateObjectPinch,
     endObjectPinch,
+    selectionBox,
+    beginOverflowControlDrag,
+    updateOverflowControlDrag,
+    endOverflowControlDrag,
     textEditingState,
     applyEditingSelectionStyle,
     selectAllEditingText,
@@ -350,6 +354,10 @@ export function App() {
             onBeginObjectPinch={beginObjectPinch}
             onUpdateObjectPinch={updateObjectPinch}
             onEndObjectPinch={endObjectPinch}
+            selectionBox={selectionBox}
+            onBeginOverflowControlDrag={beginOverflowControlDrag}
+            onUpdateOverflowControlDrag={updateOverflowControlDrag}
+            onEndOverflowControlDrag={endOverflowControlDrag}
             textEditingState={textEditingState}
             onApplyEditingStyle={applyEditingSelectionStyle}
             onSelectAllEditingText={selectAllEditingText}

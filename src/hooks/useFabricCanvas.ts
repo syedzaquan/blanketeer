@@ -13,7 +13,9 @@ import {
   type GradientConfig,
   type ImageStrokeStyle,
   type LayerItem,
+  type OverflowControlKey,
   type SelectedObjectState,
+  type SelectionBoxSnapshot,
   type TemplatePlacement,
   type TemplateSlotSummary,
   type TextBackgroundStyle,
@@ -70,9 +72,11 @@ import {
 import {
   renderGuidesOnTopContext,
   snapObjectToGuides,
+  snapObjectResizeToGuides,
   snapRotationAngle,
   type ActiveRotationSnap,
   type ActiveSnapGuides,
+  type ResizeSnapTransform,
 } from '../utils/snapGuides';
 import { StoryImage, buildImageShadow } from '../utils/storyImage';
 import { StoryTextbox } from '../utils/storyTextbox';
@@ -263,6 +267,72 @@ function applyLockState(obj: fabric.FabricObject, locked: boolean): void {
   obj.setCoords();
 }
 
+const OVERFLOW_CONTROL_KEYS: OverflowControlKey[] = [
+  'tl',
+  'tr',
+  'bl',
+  'br',
+  'ml',
+  'mr',
+  'mt',
+  'mb',
+  'mtr',
+];
+
+function buildSelectionBoxSnapshot(
+  obj: fabric.FabricObject | null | undefined
+): SelectionBoxSnapshot | null {
+  if (!obj) return null;
+  obj.setCoords();
+  const coords = obj.oCoords;
+  if (!coords?.tl || !coords?.tr || !coords?.br || !coords?.bl) {
+    return null;
+  }
+
+  const meta = ensureObjectMeta(obj);
+  const controls: SelectionBoxSnapshot['controls'] = {};
+  if (obj.hasControls && !meta.locked) {
+    for (const key of OVERFLOW_CONTROL_KEYS) {
+      if (obj.isControlVisible(key) && coords[key]) {
+        controls[key] = { x: coords[key].x, y: coords[key].y };
+      }
+    }
+  }
+
+  return {
+    id: meta.editorId || '',
+    locked: Boolean(meta.locked),
+    hasControls: Boolean(obj.hasControls),
+    isTextbox: obj instanceof StoryTextbox || obj instanceof fabric.Textbox,
+    angle: obj.angle || 0,
+    corners: {
+      tl: { x: coords.tl.x, y: coords.tl.y },
+      tr: { x: coords.tr.x, y: coords.tr.y },
+      br: { x: coords.br.x, y: coords.br.y },
+      bl: { x: coords.bl.x, y: coords.bl.y },
+    },
+    controls,
+  };
+}
+
+interface OverflowDragSession {
+  target: fabric.FabricObject;
+  corner: OverflowControlKey;
+  originX: 'left' | 'center' | 'right';
+  originY: 'top' | 'center' | 'bottom';
+  anchorPoint: fabric.Point;
+  startLocalX: number;
+  startLocalY: number;
+  startWidth: number;
+  startHeight: number;
+  startScaleX: number;
+  startScaleY: number;
+  startAngle: number;
+  startPointerAngle: number;
+  centerPoint: fabric.Point;
+  isTextbox: boolean;
+}
+
 export function useFabricCanvas() {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
@@ -270,6 +340,7 @@ export function useFabricCanvas() {
   const [aspectRatio, setAspectRatioState] = useState<AspectRatioKey>('4:5');
   const [background, setBackgroundState] = useState<BackgroundState>(DEFAULT_BACKGROUND);
   const [selectedObject, setSelectedObject] = useState<SelectedObjectState | null>(null);
+  const [selectionBox, setSelectionBox] = useState<SelectionBoxSnapshot | null>(null);
   const [layers, setLayers] = useState<LayerItem[]>([]);
   const [templateSlots, setTemplateSlots] = useState<TemplateSlotSummary[]>([]);
   const [photoPalette, setPhotoPalette] = useState<string[]>([]);
@@ -391,6 +462,7 @@ export function useFabricCanvas() {
   }, []);
   const bgFullResTimerRef = useRef<number | null>(null);
   const objectPinchRef = useRef<ObjectPinchSession | null>(null);
+  const overflowDragRef = useRef<OverflowDragSession | null>(null);
 
   const preset = ASPECT_RATIO_PRESETS[aspectRatio];
 
@@ -399,6 +471,7 @@ export function useFabricCanvas() {
     if (!canvas) return;
     const active = canvas.getActiveObject();
     setSelectedObject(extractSelectedState(active));
+    setSelectionBox(buildSelectionBoxSnapshot(active));
     setLayers(extractLayersList(canvas));
     setTemplateSlots(extractTemplateSlots(canvas));
   }, []);
@@ -793,19 +866,22 @@ export function useFabricCanvas() {
         height,
         canvas.getObjects()
       );
+      setSelectionBox(buildSelectionBoxSnapshot(e.target));
     };
 
     const handleObjectRotating = (e: { target?: fabric.FabricObject }) => {
       if (!e.target) return;
       activeRotationSnapRef.current = snapRotationAngle(e.target);
+      setSelectionBox(buildSelectionBoxSnapshot(e.target));
     };
 
-    const handleObjectScaling = (e: { target?: fabric.FabricObject }) => {
+    const handleObjectScaling = (e: {
+      target?: fabric.FabricObject;
+      transform?: ResizeSnapTransform;
+    }) => {
       const target = e.target;
-      if (
-        target &&
-        (target instanceof StoryTextbox || target instanceof fabric.Textbox)
-      ) {
+      if (!target) return;
+      if (target instanceof StoryTextbox || target instanceof fabric.Textbox) {
         const uniformScale = Math.max(0.05, Math.abs(target.scaleX || 1));
         if (
           Math.abs((target.scaleX || 1) - uniformScale) > 0.0001 ||
@@ -814,6 +890,34 @@ export function useFabricCanvas() {
           target.set({ scaleX: uniformScale, scaleY: uniformScale });
         }
       }
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      activeSnapGuidesRef.current = snapObjectResizeToGuides(
+        target,
+        e.transform,
+        width,
+        height,
+        canvas.getObjects(),
+        'scaling'
+      );
+      setSelectionBox(buildSelectionBoxSnapshot(target));
+    };
+
+    const handleObjectResizing = (e: {
+      target?: fabric.FabricObject;
+      transform?: ResizeSnapTransform;
+    }) => {
+      const target = e.target;
+      if (!target) return;
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      activeSnapGuidesRef.current = snapObjectResizeToGuides(
+        target,
+        e.transform,
+        width,
+        height,
+        canvas.getObjects(),
+        'resizing'
+      );
+      setSelectionBox(buildSelectionBoxSnapshot(target));
     };
 
     const handleObjectModified = (e?: { target?: fabric.FabricObject }) => {
@@ -933,6 +1037,7 @@ export function useFabricCanvas() {
     canvas.on('object:moving', handleObjectMoving);
     canvas.on('object:rotating', handleObjectRotating);
     canvas.on('object:scaling', handleObjectScaling);
+    canvas.on('object:resizing', handleObjectResizing);
     canvas.on('object:modified', handleObjectModified);
     canvas.on('text:editing:entered', syncTextEditingState);
     canvas.on('text:selection:changed', syncTextEditingState);
@@ -2628,6 +2733,204 @@ export function useFabricCanvas() {
     commitHistoryNow();
   }, [commitHistoryNow, syncSelectionAndLayers]);
 
+  const beginOverflowControlDrag = useCallback(
+    (corner: OverflowControlKey, sceneX: number, sceneY: number): boolean => {
+      const canvas = canvasRef.current;
+      const target = canvas?.getActiveObject();
+      if (!canvas || !target) return false;
+      const meta = ensureObjectMeta(target);
+      if (meta.locked || !target.hasControls) return false;
+
+      target.setCoords();
+
+      const originX: 'left' | 'center' | 'right' = corner.includes('l')
+        ? 'right'
+        : corner.includes('r') && corner !== 'mtr'
+          ? 'left'
+          : 'center';
+      const originY: 'top' | 'center' | 'bottom' = corner.includes('t') && corner !== 'mtr'
+        ? 'bottom'
+        : corner.includes('b')
+          ? 'top'
+          : 'center';
+
+      const anchorPoint = target.getPointByOrigin(originX, originY);
+      const centerPoint = target.getCenterPoint();
+      const angleDeg = target.angle || 0;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      const cos = Math.cos(-angleRad);
+      const sin = Math.sin(-angleRad);
+      const dx = sceneX - anchorPoint.x;
+      const dy = sceneY - anchorPoint.y;
+
+      overflowDragRef.current = {
+        target,
+        corner,
+        originX,
+        originY,
+        anchorPoint,
+        startLocalX: dx * cos - dy * sin,
+        startLocalY: dx * sin + dy * cos,
+        startWidth: Math.max(1, target.width || 1),
+        startHeight: Math.max(1, target.height || 1),
+        startScaleX: Math.max(0.02, Math.abs(target.scaleX || 1)),
+        startScaleY: Math.max(0.02, Math.abs(target.scaleY || 1)),
+        startAngle: angleDeg,
+        startPointerAngle:
+          (Math.atan2(sceneY - centerPoint.y, sceneX - centerPoint.x) * 180) / Math.PI,
+        centerPoint,
+        isTextbox:
+          target instanceof StoryTextbox || target instanceof fabric.Textbox,
+      };
+      return true;
+    },
+    []
+  );
+
+  const updateOverflowControlDrag = useCallback(
+    (sceneX: number, sceneY: number, shiftKey = false) => {
+      const session = overflowDragRef.current;
+      const canvas = canvasRef.current;
+      if (!session || !canvas) return;
+
+      const { target, corner, originX, originY, anchorPoint } = session;
+
+      if (corner === 'mtr') {
+        const currentPointerAngle =
+          (Math.atan2(
+            sceneY - session.centerPoint.y,
+            sceneX - session.centerPoint.x
+          ) *
+            180) /
+          Math.PI;
+        const nextAngle =
+          session.startAngle + (currentPointerAngle - session.startPointerAngle);
+        target.set({ angle: nextAngle });
+        target.setPositionByOrigin(session.centerPoint, 'center', 'center');
+        activeRotationSnapRef.current = snapRotationAngle(target);
+        target.setCoords();
+        setSelectionBox(buildSelectionBoxSnapshot(target));
+        canvas.requestRenderAll();
+        return;
+      }
+
+      const angleRad = (session.startAngle * Math.PI) / 180;
+      const cos = Math.cos(-angleRad);
+      const sin = Math.sin(-angleRad);
+      const dx = sceneX - anchorPoint.x;
+      const dy = sceneY - anchorPoint.y;
+      const localX = dx * cos - dy * sin;
+      const localY = dx * sin + dy * cos;
+      const deltaLocalX = localX - session.startLocalX;
+      const deltaLocalY = localY - session.startLocalY;
+
+      const startScaledW = session.startWidth * session.startScaleX;
+      const startScaledH = session.startHeight * session.startScaleY;
+      const targetScaledW = Math.max(
+        12,
+        corner.includes('l') ? startScaledW - deltaLocalX : startScaledW + deltaLocalX
+      );
+      const targetScaledH = Math.max(
+        12,
+        corner.includes('t') ? startScaledH - deltaLocalY : startScaledH + deltaLocalY
+      );
+
+      const { width: canvasW, height: canvasH } =
+        ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+
+      if (session.isTextbox && (corner === 'ml' || corner === 'mr')) {
+        const nextWidth = Math.max(40, targetScaledW / session.startScaleX);
+        target.set({ width: nextWidth });
+        target.setPositionByOrigin(anchorPoint, originX, originY);
+        activeSnapGuidesRef.current = snapObjectResizeToGuides(
+          target,
+          { corner },
+          canvasW,
+          canvasH,
+          canvas.getObjects(),
+          'resizing'
+        );
+      } else if (session.isTextbox) {
+        const ratio = Math.max(
+          0.05,
+          Math.hypot(targetScaledW, targetScaledH) /
+            Math.max(1, Math.hypot(startScaledW, startScaledH))
+        );
+        const nextScale = Math.max(0.05, session.startScaleX * ratio);
+        target.set({ scaleX: nextScale, scaleY: nextScale });
+        target.setPositionByOrigin(anchorPoint, originX, originY);
+        activeSnapGuidesRef.current = snapObjectResizeToGuides(
+          target,
+          { corner },
+          canvasW,
+          canvasH,
+          canvas.getObjects(),
+          'scaling'
+        );
+      } else {
+        const isCorner =
+          corner === 'tl' || corner === 'tr' || corner === 'bl' || corner === 'br';
+        if (isCorner && !shiftKey) {
+          const ratio = Math.max(
+            0.02,
+            Math.hypot(targetScaledW, targetScaledH) /
+              Math.max(1, Math.hypot(startScaledW, startScaledH))
+          );
+          target.set({
+            scaleX: session.startScaleX * ratio,
+            scaleY: session.startScaleY * ratio,
+          });
+        } else {
+          if (corner.includes('l') || corner.includes('r')) {
+            target.set({
+              scaleX: Math.max(0.02, targetScaledW / session.startWidth),
+            });
+          }
+          if (corner.includes('t') || corner.includes('b')) {
+            target.set({
+              scaleY: Math.max(0.02, targetScaledH / session.startHeight),
+            });
+          }
+        }
+        target.setPositionByOrigin(anchorPoint, originX, originY);
+        activeSnapGuidesRef.current = snapObjectResizeToGuides(
+          target,
+          { corner },
+          canvasW,
+          canvasH,
+          canvas.getObjects(),
+          'scaling'
+        );
+      }
+
+      target.setCoords();
+      setSelectionBox(buildSelectionBoxSnapshot(target));
+      canvas.requestRenderAll();
+    },
+    []
+  );
+
+  const endOverflowControlDrag = useCallback(() => {
+    const session = overflowDragRef.current;
+    overflowDragRef.current = null;
+    if (!session) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (session.isTextbox) {
+      normalizeTextboxScale(session.target);
+    } else {
+      session.target.setCoords();
+    }
+
+    activeSnapGuidesRef.current = { ...EMPTY_SNAP_GUIDES };
+    activeRotationSnapRef.current = { isRotating: false, angle: 0, snapped: false };
+    canvas.requestRenderAll();
+    syncSelectionAndLayers();
+    commitHistoryNow();
+  }, [commitHistoryNow, syncSelectionAndLayers]);
+
   const toggleSafeArea = useCallback(() => {
     setShowSafeArea((prev) => {
       const next = !prev;
@@ -2977,6 +3280,7 @@ export function useFabricCanvas() {
     aspectRatio,
     setAspectRatio,
     selectedObject,
+    selectionBox,
     layers,
     templateSlots,
     background,
@@ -3029,6 +3333,9 @@ export function useFabricCanvas() {
     beginObjectPinch,
     updateObjectPinch,
     endObjectPinch,
+    beginOverflowControlDrag,
+    updateOverflowControlDrag,
+    endOverflowControlDrag,
     photoPalette,
     textEditingState,
     applyEditingSelectionStyle,
