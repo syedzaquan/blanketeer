@@ -96,17 +96,6 @@ interface InspectorProps {
   onDelete: () => void;
 }
 
-const HIGHLIGHT_SWATCHES = [
-  '#ffffff',
-  '#0a0a0a',
-  '#262626',
-  '#fde68a',
-  '#f97316',
-  '#0ea5e9',
-  '#10b981',
-  '#f43f5e',
-];
-
 const WEIGHT_PRESETS = [
   { value: 300, label: '300' },
   { value: 400, label: '400' },
@@ -770,8 +759,8 @@ export function Inspector({
                   />
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 lg:gap-1.5">
-                  {HIGHLIGHT_SWATCHES.map((swatch) => (
+                <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
+                  {PRESET_COLOR_SWATCHES.map((swatch) => (
                     <button
                       key={swatch}
                       type="button"
@@ -782,7 +771,7 @@ export function Inspector({
                         selectedObject.textBgColor.toLowerCase() ===
                           swatch.toLowerCase()
                           ? 'border-white ring-1 ring-white/50'
-                          : 'border-neutral-800 hover:border-neutral-600'
+                          : 'border-neutral-700 hover:border-neutral-500'
                       )}
                       style={{ backgroundColor: swatch }}
                     />

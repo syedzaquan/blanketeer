@@ -180,7 +180,7 @@ function isPointNearObject(
 }
 
 const DEFAULT_BACKGROUND: BackgroundState = {
-  mode: 'gradient',
+  mode: 'color',
   color: '#FE5925',
   gradient: {
     startColor: '#F2A7A0',
@@ -560,7 +560,7 @@ export function useFabricCanvas() {
       // On iOS Retina (3x), a 1080x1920 working canvas exceeds Safari's 16.7 MP canvas limit
       // and causes memory failures during editing/export. Native 1080px is already sharper than screen.
       enableRetinaScaling: !isIOSDevice(),
-      backgroundColor: '#18181b',
+      backgroundColor: DEFAULT_BACKGROUND.color,
     });
 
     const rawCanvas = canvas as unknown as {
@@ -578,11 +578,7 @@ export function useFabricCanvas() {
     };
 
     canvasRef.current = canvas;
-    canvas.backgroundColor = createLinearGradient(
-      initialPreset.width,
-      initialPreset.height,
-      DEFAULT_BACKGROUND.gradient
-    );
+    canvas.backgroundColor = DEFAULT_BACKGROUND.color;
 
     // Seed an editorial starter text layer so the canvas feels alive immediately
     const starterTitle = createStarterTextbox(
@@ -2148,11 +2144,7 @@ export function useFabricCanvas() {
 
       canvas.clear();
       canvas.backgroundImage = undefined;
-      canvas.backgroundColor = createLinearGradient(
-        defaultPreset.width,
-        defaultPreset.height,
-        defaultBg.gradient
-      );
+      canvas.backgroundColor = defaultBg.color;
 
       const starterTitle = createStarterTextbox(
         defaultPreset.width,
