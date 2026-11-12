@@ -1872,6 +1872,57 @@ export function useFabricCanvas() {
     []
   );
 
+  const getTouchHitKind = useCallback(
+    (
+      e: MouseEvent | TouchEvent | PointerEvent
+    ): 'selected' | 'unselected' | 'empty' => {
+      const canvas = canvasRef.current;
+      if (!canvas) return 'empty';
+      const active = canvas.getActiveObject();
+      if (
+        active &&
+        'isEditing' in active &&
+        Boolean((active as fabric.IText).isEditing)
+      ) {
+        return 'selected';
+      }
+      canvas.calcOffset();
+      const target = canvas.findTarget(e as fabric.TPointerEvent);
+      if (!target) return 'empty';
+      if (
+        active &&
+        ensureObjectMeta(target).editorId === ensureObjectMeta(active).editorId
+      ) {
+        return 'selected';
+      }
+      return 'unselected';
+    },
+    []
+  );
+
+  const selectObjectAtClientPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      canvas.calcOffset();
+      const syntheticEvent = {
+        type: 'pointerdown',
+        pointerType: 'touch',
+        clientX,
+        clientY,
+      } as unknown as fabric.TPointerEvent;
+      const target = canvas.findTarget(syntheticEvent);
+      if (!target) {
+        canvas.discardActiveObject();
+      } else {
+        canvas.setActiveObject(target);
+      }
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+    },
+    [syncSelectionAndLayers]
+  );
+
   const cancelPointerAction = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -2312,6 +2363,8 @@ export function useFabricCanvas() {
     deselectAll,
     recalculateOffset,
     canPanCanvasAt,
+    getTouchHitKind,
+    selectObjectAtClientPoint,
     cancelPointerAction,
     getActiveObjectId,
     restoreSelectionById,

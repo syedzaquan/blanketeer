@@ -93,6 +93,8 @@ export function App() {
     deselectAll,
     recalculateOffset,
     canPanCanvasAt,
+    getTouchHitKind,
+    selectObjectAtClientPoint,
     cancelPointerAction,
     getActiveObjectId,
     restoreSelectionById,
@@ -308,6 +310,8 @@ export function App() {
             onDropImageFile={(file) => void addImageFromFile(file)}
             onRecalculateOffset={recalculateOffset}
             onCanPanCanvasAt={canPanCanvasAt}
+            onGetTouchHitKind={getTouchHitKind}
+            onSelectObjectAtClientPoint={selectObjectAtClientPoint}
             onCancelPointerAction={cancelPointerAction}
             onGetActiveObjectId={getActiveObjectId}
             onRestoreSelectionById={restoreSelectionById}

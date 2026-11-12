@@ -24,6 +24,10 @@ interface CanvasViewportProps {
   onDropImageFile: (file: File) => void;
   onRecalculateOffset: () => void;
   onCanPanCanvasAt?: (e: globalThis.MouseEvent | globalThis.TouchEvent) => boolean;
+  onGetTouchHitKind?: (
+    e: globalThis.MouseEvent | globalThis.TouchEvent | globalThis.PointerEvent
+  ) => 'selected' | 'unselected' | 'empty';
+  onSelectObjectAtClientPoint?: (clientX: number, clientY: number) => void;
   onCancelPointerAction?: () => void;
   onGetActiveObjectId?: () => string | null;
   onRestoreSelectionById?: (id: string | null) => void;
@@ -87,6 +91,8 @@ export function CanvasViewport({
   onDropImageFile,
   onRecalculateOffset,
   onCanPanCanvasAt,
+  onGetTouchHitKind,
+  onSelectObjectAtClientPoint,
   onCancelPointerAction,
   onGetActiveObjectId,
   onRestoreSelectionById,
@@ -155,6 +161,8 @@ export function CanvasViewport({
     isSpacePressed,
     onDeselectAll,
     onCanPanCanvasAt,
+    onGetTouchHitKind,
+    onSelectObjectAtClientPoint,
     onCancelPointerAction,
     onGetActiveObjectId,
     onRestoreSelectionById,
@@ -173,6 +181,8 @@ export function CanvasViewport({
       isSpacePressed,
       onDeselectAll,
       onCanPanCanvasAt,
+      onGetTouchHitKind,
+      onSelectObjectAtClientPoint,
       onCancelPointerAction,
       onGetActiveObjectId,
       onRestoreSelectionById,
@@ -317,6 +327,7 @@ export function CanvasViewport({
       | 'backdrop-touch-pan'
       | null = null;
     let awaitingAllFingersLift = false;
+    let suppressFabricSingleTouch = false;
     let preTouchActiveId: string | null | undefined = undefined;
     const activeTouchPointers = new Set<number>();
     let backdropTouchStart: {
@@ -325,6 +336,7 @@ export function CanvasViewport({
       panX: number;
       panY: number;
       moved: boolean;
+      hitKind: 'selected' | 'unselected' | 'empty';
     } | null = null;
     let pinchStart: {
       dist: number;
@@ -349,11 +361,25 @@ export function CanvasViewport({
 
     const onPointerDownCapture = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
-      if (activeTouchPointers.size === 0 && preTouchActiveId === undefined) {
+      const isFirstTouch = activeTouchPointers.size === 0;
+      if (isFirstTouch && preTouchActiveId === undefined) {
         preTouchActiveId = liveRef.current.onGetActiveObjectId?.() ?? null;
+      }
+      if (isFirstTouch && !awaitingAllFingersLift) {
+        const isBackdrop = e.target === el;
+        const isInFrame = Boolean(frameBoxRef.current?.contains(e.target as Node));
+        if (isBackdrop) {
+          suppressFabricSingleTouch = true;
+        } else if (isInFrame) {
+          const hitKind = liveRef.current.onGetTouchHitKind?.(e) ?? 'empty';
+          suppressFabricSingleTouch = hitKind !== 'selected';
+        } else {
+          suppressFabricSingleTouch = false;
+        }
       }
       activeTouchPointers.add(e.pointerId);
       if (
+        suppressFabricSingleTouch ||
         activeTouchPointers.size >= 2 ||
         gestureMode === 'object-pinch' ||
         gestureMode === 'viewport-pinch' ||
@@ -366,6 +392,7 @@ export function CanvasViewport({
     const onPointerMoveCapture = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
       if (
+        suppressFabricSingleTouch ||
         activeTouchPointers.size >= 2 ||
         gestureMode === 'object-pinch' ||
         gestureMode === 'viewport-pinch' ||
@@ -378,11 +405,15 @@ export function CanvasViewport({
     const onPointerUpCapture = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
       const shouldBlock =
+        suppressFabricSingleTouch ||
         activeTouchPointers.size >= 2 ||
         gestureMode === 'object-pinch' ||
         gestureMode === 'viewport-pinch' ||
         awaitingAllFingersLift;
       activeTouchPointers.delete(e.pointerId);
+      if (activeTouchPointers.size === 0) {
+        suppressFabricSingleTouch = false;
+      }
       if (activeTouchPointers.size === 0 && gestureMode === null && !awaitingAllFingersLift) {
         preTouchActiveId = undefined;
       }
@@ -423,13 +454,18 @@ export function CanvasViewport({
           panX: live.pan.x,
           panY: live.pan.y,
         };
-      } else if (
-        e.touches.length === 1 &&
-        !awaitingAllFingersLift &&
-        (e.target === el ||
-          (frameBoxRef.current?.contains(e.target as Node) &&
-            Boolean(liveRef.current.onCanPanCanvasAt?.(e))))
-      ) {
+      } else if (e.touches.length === 1 && !awaitingAllFingersLift) {
+        const isBackdrop = e.target === el;
+        const isInFrame = Boolean(frameBoxRef.current?.contains(e.target as Node));
+        if (!isBackdrop && !isInFrame) return;
+
+        const hitKind = isBackdrop
+          ? 'empty'
+          : (liveRef.current.onGetTouchHitKind?.(e) ?? 'empty');
+        if (hitKind === 'selected') return;
+
+        e.stopPropagation();
+        suppressFabricSingleTouch = true;
         const live = liveRef.current;
         gestureMode = 'backdrop-touch-pan';
         backdropTouchStart = {
@@ -438,6 +474,7 @@ export function CanvasViewport({
           panX: live.pan.x,
           panY: live.pan.y,
           moved: false,
+          hitKind,
         };
       }
     };
@@ -499,6 +536,7 @@ export function CanvasViewport({
         backdropTouchStart
       ) {
         e.preventDefault();
+        e.stopPropagation();
         const dx = e.touches[0].clientX - backdropTouchStart.x;
         const dy = e.touches[0].clientY - backdropTouchStart.y;
         if (Math.hypot(dx, dy) > 4) {
@@ -527,12 +565,22 @@ export function CanvasViewport({
 
     const onTouchEnd = (e: TouchEvent) => {
       if (gestureMode === 'backdrop-touch-pan') {
+        e.preventDefault();
+        e.stopPropagation();
         if (backdropTouchStart && !backdropTouchStart.moved && e.touches.length === 0) {
-          liveRef.current.onDeselectAll();
+          if (backdropTouchStart.hitKind === 'unselected') {
+            liveRef.current.onSelectObjectAtClientPoint?.(
+              backdropTouchStart.x,
+              backdropTouchStart.y
+            );
+          } else {
+            liveRef.current.onDeselectAll();
+          }
         }
         backdropTouchStart = null;
         gestureMode = null;
         if (e.touches.length === 0) {
+          suppressFabricSingleTouch = false;
           preTouchActiveId = undefined;
         }
         return;
@@ -548,6 +596,7 @@ export function CanvasViewport({
           pinchStart = null;
           awaitingAllFingersLift = e.touches.length > 0;
           if (e.touches.length === 0) {
+            suppressFabricSingleTouch = false;
             preTouchActiveId = undefined;
           }
         }
@@ -555,9 +604,11 @@ export function CanvasViewport({
         e.stopPropagation();
         if (e.touches.length === 0) {
           awaitingAllFingersLift = false;
+          suppressFabricSingleTouch = false;
           preTouchActiveId = undefined;
         }
       } else if (e.touches.length === 0) {
+        suppressFabricSingleTouch = false;
         preTouchActiveId = undefined;
       }
     };
