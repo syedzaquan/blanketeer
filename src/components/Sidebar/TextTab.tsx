@@ -1,7 +1,7 @@
-import { useRef, type ChangeEvent } from 'react';
-import { Plus, Upload } from 'lucide-react';
+import { useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { ChevronDown, Plus, Upload } from 'lucide-react';
 import type { SelectedObjectState } from '../../types/editor';
-import type { FontOption } from '../../utils/fonts';
+import { groupFontEntries, type FontOption } from '../../utils/fonts';
 import {
   TEXT_STYLE_PRESETS,
   findMatchingTextPreset,
@@ -27,6 +27,7 @@ export function TextTab({
   onUploadCustomFont,
 }: TextTabProps) {
   const fontInputRef = useRef<HTMLInputElement | null>(null);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const selectedText = selectedObject?.kind === 'text' ? selectedObject : null;
   const activeStyleId = selectedText
     ? findMatchingTextPreset(
@@ -35,6 +36,26 @@ export function TextTab({
         selectedText.fill
       )
     : null;
+
+  const fontEntries = useMemo(
+    () => groupFontEntries(availableFonts),
+    [availableFonts]
+  );
+
+  const toggleGroup = (groupName: string) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [groupName]: !prev[groupName],
+    }));
+  };
+
+  const handleSelectFont = (family: string) => {
+    if (selectedText) {
+      onApplyFont(family);
+    } else {
+      onAddText('heading', family);
+    }
+  };
 
   const handleFontFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -137,52 +158,143 @@ export function TextTab({
         </div>
 
         <div className="flex flex-col gap-1">
-          {availableFonts.map((font) => {
-            const lowerFamily = font.family.toLowerCase();
-            const isActive =
-              selectedText?.fontFamily.toLowerCase() === lowerFamily;
-            const isTallCondensed =
-              lowerFamily === 'humane' || lowerFamily === 'morganite';
+          {fontEntries.map((entry) => {
+            if (entry.kind === 'single') {
+              const font = entry.font;
+              const lowerFamily = font.family.toLowerCase();
+              const isActive =
+                selectedText?.fontFamily.toLowerCase() === lowerFamily;
+              const isTallCondensed =
+                lowerFamily === 'humane' || lowerFamily === 'morganite';
+              return (
+                <button
+                  key={font.family}
+                  type="button"
+                  onClick={() => handleSelectFont(font.family)}
+                  className={cn(
+                    'flex items-center justify-between px-3 py-2.5 lg:px-2.5 lg:py-2 rounded-lg lg:rounded-md border text-left transition-colors',
+                    isActive
+                      ? 'bg-neutral-700 border-neutral-500 text-white'
+                      : 'bg-neutral-800/70 border-neutral-700/80 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-600'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'truncate',
+                      isTallCondensed ? 'text-[26px] leading-none py-0.5' : 'text-[15px]'
+                    )}
+                    style={
+                      lowerFamily === 'fraunces'
+                        ? {
+                            fontFamily: `"${font.family}", serif`,
+                            fontWeight: 600,
+                            fontOpticalSizing: 'none',
+                            fontVariationSettings: "'opsz' 36, 'wght' 600, 'SOFT' 100, 'WONK' 0",
+                          }
+                        : { fontFamily: `"${font.family}", serif` }
+                    }
+                  >
+                    {font.name}
+                  </span>
+                  <span className="text-[10px] text-neutral-500 shrink-0 ml-2">
+                    {font.categoryLabel}
+                  </span>
+                </button>
+              );
+            }
+
+            const { groupName, fonts } = entry;
+            const isOpen = Boolean(openGroups[groupName]);
+            const activeFontInGroup = fonts.find(
+              (f) => selectedText?.fontFamily.toLowerCase() === f.family.toLowerCase()
+            );
+            const leadFont = fonts[0];
+
             return (
-              <button
-                key={font.family}
-                type="button"
-                onClick={() => {
-                  if (selectedText) {
-                    onApplyFont(font.family);
-                  } else {
-                    onAddText('heading', font.family);
-                  }
-                }}
+              <div
+                key={`group-${groupName}`}
                 className={cn(
-                  'flex items-center justify-between px-3 py-2.5 lg:px-2.5 lg:py-2 rounded-lg lg:rounded-md border text-left transition-colors',
-                  isActive
-                    ? 'bg-neutral-700 border-neutral-500 text-white'
-                    : 'bg-neutral-800/70 border-neutral-700/80 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-600'
+                  'rounded-lg lg:rounded-md border overflow-hidden transition-colors',
+                  activeFontInGroup
+                    ? 'border-neutral-500 bg-neutral-800/90'
+                    : 'border-neutral-700/80 bg-neutral-800/70'
                 )}
               >
-                <span
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => toggleGroup(groupName)}
                   className={cn(
-                    'truncate',
-                    isTallCondensed ? 'text-[26px] leading-none py-0.5' : 'text-[15px]'
+                    'w-full flex items-center justify-between px-3 py-2.5 lg:px-2.5 lg:py-2 text-left transition-colors',
+                    activeFontInGroup
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-200 hover:bg-neutral-800'
                   )}
-                  style={
-                    lowerFamily === 'fraunces'
-                      ? {
-                          fontFamily: `"${font.family}", serif`,
-                          fontWeight: 600,
-                          fontOpticalSizing: 'none',
-                          fontVariationSettings: "'opsz' 36, 'wght' 600, 'SOFT' 100, 'WONK' 0",
-                        }
-                      : { fontFamily: `"${font.family}", serif` }
-                  }
                 >
-                  {font.name}
-                </span>
-                <span className="text-[10px] text-neutral-500 shrink-0 ml-2">
-                  {font.categoryLabel}
-                </span>
-              </button>
+                  <span
+                    className="truncate text-[15px]"
+                    style={
+                      leadFont
+                        ? { fontFamily: `"${leadFont.family}", serif` }
+                        : undefined
+                    }
+                  >
+                    {groupName}
+                  </span>
+                  <span className="flex items-center gap-1.5 shrink-0 ml-2">
+                    <span className="text-[10px] text-neutral-400">
+                      {activeFontInGroup
+                        ? activeFontInGroup.name.replace(`${groupName} `, '')
+                        : `${fonts.length} styles`}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        'w-4 h-4 lg:w-3.5 lg:h-3.5 text-neutral-400 transition-transform duration-150',
+                        isOpen && 'rotate-180'
+                      )}
+                    />
+                  </span>
+                </button>
+
+                {isOpen && (
+                  <div className="border-t border-neutral-700/70 bg-neutral-900/60 p-1.5 flex flex-col gap-1">
+                    {fonts.map((font) => {
+                      const isActive =
+                        selectedText?.fontFamily.toLowerCase() ===
+                        font.family.toLowerCase();
+                      return (
+                        <button
+                          key={font.family}
+                          type="button"
+                          onClick={() => handleSelectFont(font.family)}
+                          className={cn(
+                            'flex items-center justify-between px-2.5 py-2 lg:py-1.5 rounded-md border text-left transition-colors',
+                            isActive
+                              ? 'bg-neutral-700 border-neutral-500 text-white'
+                              : 'bg-neutral-800/70 border-neutral-700/60 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-600'
+                          )}
+                        >
+                          <span
+                            className="truncate text-[15px]"
+                            style={{ fontFamily: `"${font.family}", serif` }}
+                          >
+                            {font.name}
+                          </span>
+                          {font.badge ? (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-700/80 text-neutral-300 shrink-0 ml-2">
+                              {font.badge}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-neutral-500 shrink-0 ml-2">
+                              {font.categoryLabel}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

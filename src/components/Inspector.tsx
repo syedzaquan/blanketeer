@@ -27,7 +27,11 @@ import {
 } from '../types/editor';
 import { PRESET_COLOR_SWATCHES } from '../utils/canvasHelpers';
 import { cn } from '../utils/cn';
-import { getFontWeightOptions, type FontOption } from '../utils/fonts';
+import {
+  getFontWeightOptions,
+  groupFontEntries,
+  type FontOption,
+} from '../utils/fonts';
 import {
   TEXT_STYLE_PRESETS,
   findMatchingTextPreset,
@@ -310,11 +314,25 @@ export function Inspector({
                 onChange={(e) => onUpdateText({ fontFamily: e.target.value })}
                 className="w-full px-3 py-2.5 lg:px-2.5 lg:py-1.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 focus:outline-none focus:border-neutral-500"
               >
-                {availableFonts.map((font) => (
-                  <option key={font.family} value={font.family}>
-                    {font.name} ({font.categoryLabel})
-                  </option>
-                ))}
+                {groupFontEntries(availableFonts).map((entry) =>
+                  entry.kind === 'single' ? (
+                    <option key={entry.font.family} value={entry.font.family}>
+                      {entry.font.name} ({entry.font.categoryLabel})
+                    </option>
+                  ) : (
+                    <optgroup
+                      key={`optgroup-${entry.groupName}`}
+                      label={entry.groupName}
+                    >
+                      {entry.fonts.map((font) => (
+                        <option key={font.family} value={font.family}>
+                          {font.name}
+                          {font.badge ? ` (${font.badge})` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )
+                )}
               </select>
             </div>
 

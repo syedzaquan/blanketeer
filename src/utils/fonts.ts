@@ -14,6 +14,8 @@ export interface FontOption {
   categoryLabel: string;
   availableWeights: FontWeightOption[];
   isVariableWeight?: boolean;
+  group?: string;
+  badge?: string;
 }
 
 const STANDARD_WEIGHTS_100_TO_700: FontWeightOption[] = [
@@ -55,6 +57,10 @@ const CASLON_ANTIQUE_WEIGHTS: FontWeightOption[] = [
 ];
 
 const LT_STAIRCASE_WEIGHTS: FontWeightOption[] = [
+  { value: 400, label: 'Regular' },
+];
+
+const IM_FELL_WEIGHTS: FontWeightOption[] = [
   { value: 400, label: 'Regular' },
 ];
 
@@ -126,6 +132,43 @@ export const SUPPORTED_FONTS: FontOption[] = [
     availableWeights: CASLON_ANTIQUE_WEIGHTS,
   },
   {
+    name: 'IM Fell DW Pica',
+    family: 'IM Fell DW Pica',
+    source: 'google',
+    url: 'https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@0;1&display=swap',
+    categoryLabel: 'Historic Serif',
+    availableWeights: IM_FELL_WEIGHTS,
+    group: 'IM Fell',
+    badge: 'Main',
+  },
+  {
+    name: 'IM Fell English',
+    family: 'IM Fell English',
+    source: 'google',
+    url: 'https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap',
+    categoryLabel: 'Historic Serif',
+    availableWeights: IM_FELL_WEIGHTS,
+    group: 'IM Fell',
+  },
+  {
+    name: 'IM Fell Great Primer',
+    family: 'IM Fell Great Primer',
+    source: 'google',
+    url: 'https://fonts.googleapis.com/css2?family=IM+Fell+Great+Primer:ital@0;1&display=swap',
+    categoryLabel: 'Historic Serif',
+    availableWeights: IM_FELL_WEIGHTS,
+    group: 'IM Fell',
+  },
+  {
+    name: 'IM Fell Double Pica',
+    family: 'IM Fell Double Pica',
+    source: 'google',
+    url: 'https://fonts.googleapis.com/css2?family=IM+Fell+Double+Pica:ital@0;1&display=swap',
+    categoryLabel: 'Historic Serif',
+    availableWeights: IM_FELL_WEIGHTS,
+    group: 'IM Fell',
+  },
+  {
     name: 'Inter',
     family: 'Inter',
     source: 'google',
@@ -142,6 +185,31 @@ export const SUPPORTED_FONTS: FontOption[] = [
     availableWeights: STANDARD_WEIGHTS_100_TO_900,
   },
 ];
+
+export type FontEntry =
+  | { kind: 'single'; font: FontOption }
+  | { kind: 'group'; groupName: string; fonts: FontOption[] };
+
+export function groupFontEntries(fonts: FontOption[]): FontEntry[] {
+  const entries: FontEntry[] = [];
+  const seenGroups = new Map<string, FontOption[]>();
+
+  for (const font of fonts) {
+    if (!font.group) {
+      entries.push({ kind: 'single', font });
+      continue;
+    }
+    const existing = seenGroups.get(font.group);
+    if (existing) {
+      existing.push(font);
+    } else {
+      const list = [font];
+      seenGroups.set(font.group, list);
+      entries.push({ kind: 'group', groupName: font.group, fonts: list });
+    }
+  }
+  return entries;
+}
 
 export function getFontWeightOptions(
   fontFamily: string,
