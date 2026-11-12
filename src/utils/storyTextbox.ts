@@ -31,6 +31,7 @@ export interface StoryTextboxExtraProps {
   pillRadius?: number;
   pillPaddingX?: number;
   pillPaddingY?: number;
+  placeholder?: string;
   locked?: boolean;
 }
 
@@ -180,6 +181,7 @@ export class StoryTextbox extends fabric.Textbox {
     'pillRadius',
     'pillPaddingX',
     'pillPaddingY',
+    'placeholder',
   ];
 
   declare editorId: string;
@@ -192,6 +194,7 @@ export class StoryTextbox extends fabric.Textbox {
   declare pillRadius: number;
   declare pillPaddingX: number;
   declare pillPaddingY: number;
+  declare placeholder: string;
   declare locked: boolean;
 
   constructor(text: string, options: StoryTextboxOptions = {}) {
@@ -206,6 +209,7 @@ export class StoryTextbox extends fabric.Textbox {
       pillRadius = 20,
       pillPaddingX = 24,
       pillPaddingY = 8,
+      placeholder = '',
       locked = false,
       ...textboxOptions
     } = options;
@@ -239,6 +243,7 @@ export class StoryTextbox extends fabric.Textbox {
     this.pillRadius = pillRadius;
     this.pillPaddingX = pillPaddingX;
     this.pillPaddingY = pillPaddingY;
+    this.placeholder = placeholder;
     this.locked = locked;
   }
 
@@ -543,6 +548,32 @@ export class StoryTextbox extends fabric.Textbox {
     this._removeShadow(ctx);
   }
 
+  _render(ctx: CanvasRenderingContext2D): void {
+    super._render(ctx);
+    if (!this.text && this.placeholder) {
+      ctx.save();
+      ctx.globalAlpha *= 0.5;
+      ctx.font = this._getFontDeclaration();
+      ctx.fillStyle = typeof this.fill === 'string' ? this.fill : '#ffffff';
+      ctx.textBaseline = 'middle';
+      const align =
+        this.textAlign === 'right'
+          ? 'right'
+          : this.textAlign === 'left'
+            ? 'left'
+            : 'center';
+      ctx.textAlign = align;
+      const x =
+        align === 'left'
+          ? -this.width / 2
+          : align === 'right'
+            ? this.width / 2
+            : 0;
+      ctx.fillText(this.placeholder, x, 0, this.width);
+      ctx.restore();
+    }
+  }
+
   toObject<
     T extends Omit<
       TOptions<TextboxProps> & fabric.TClassProperties<this>,
@@ -561,6 +592,7 @@ export class StoryTextbox extends fabric.Textbox {
       'pillRadius',
       'pillPaddingX',
       'pillPaddingY',
+      'placeholder',
       'locked',
       ...propertiesToInclude,
     ] as unknown as K[];

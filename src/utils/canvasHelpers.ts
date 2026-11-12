@@ -22,6 +22,7 @@ export const CUSTOM_SERIALIZED_PROPS = [
   'pillRadius',
   'pillPaddingX',
   'pillPaddingY',
+  'placeholder',
   'cutoutShape',
   'cutoutRadius',
   'aspectLocked',
