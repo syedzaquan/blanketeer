@@ -70,6 +70,7 @@ const STROKE_STYLES: { id: ImageStrokeStyle; label: string }[] = [
   { id: 'dashed', label: 'Dashed' },
   { id: 'dotted', label: 'Dotted' },
   { id: 'stamp', label: 'Stamp' },
+  { id: 'wavy', label: 'Wavy' },
 ];
 
 const SHADOW_SWATCHES = [
@@ -186,6 +187,7 @@ export function ImageStyleControls({
   const strokeWidth = selectedImage?.strokeWidth ?? 0;
   const strokeColor = selectedImage?.strokeColor ?? '#ffffff';
   const strokeStyle = selectedImage?.strokeStyle ?? 'solid';
+  const isFrameStyle = strokeStyle === 'stamp' || strokeStyle === 'wavy';
   const hasStroke = strokeWidth > 0;
   const shadowEnabled = selectedImage?.shadowEnabled ?? false;
   const shadowColor = selectedImage?.shadowColor ?? '#000000';
@@ -428,7 +430,7 @@ export function ImageStyleControls({
                 onUpdateImageProps({
                   strokeWidth: hasStroke
                     ? 0
-                    : strokeStyle === 'stamp'
+                    : isFrameStyle
                       ? 24
                       : 8,
                 })
@@ -457,7 +459,7 @@ export function ImageStyleControls({
                 htmlFor={`${idPrefix}-stroke-width`}
                 className="text-neutral-400"
               >
-                {strokeStyle === 'stamp' ? 'Frame Width' : 'Stroke Width'}
+                {isFrameStyle ? 'Frame Width' : 'Stroke Width'}
               </label>
               <div className="w-16">
                 <NumericField
@@ -491,7 +493,7 @@ export function ImageStyleControls({
           <div>
             <div className="flex items-center justify-between text-[11px] mb-1.5">
               <span className="text-neutral-400">
-                {strokeStyle === 'stamp' ? 'Frame Color' : 'Stroke Color'}
+                {isFrameStyle ? 'Frame Color' : 'Stroke Color'}
               </span>
               <span className="font-mono text-neutral-300">
                 {strokeColor}
@@ -508,7 +510,7 @@ export function ImageStyleControls({
                   onUpdateImageProps({
                     strokeColor: e.target.value,
                     ...(strokeWidth === 0
-                      ? { strokeWidth: strokeStyle === 'stamp' ? 24 : 8 }
+                      ? { strokeWidth: isFrameStyle ? 24 : 8 }
                       : {}),
                   })
                 }
@@ -524,7 +526,7 @@ export function ImageStyleControls({
                     onUpdateImageProps({
                       strokeColor: swatch,
                       ...(strokeWidth === 0
-                        ? { strokeWidth: strokeStyle === 'stamp' ? 24 : 8 }
+                        ? { strokeWidth: isFrameStyle ? 24 : 8 }
                         : {}),
                     })
                   }
@@ -545,33 +547,36 @@ export function ImageStyleControls({
             <span className="block text-[11px] text-neutral-400 mb-1">
               Style
             </span>
-            <div className="grid grid-cols-4 gap-1">
-              {STROKE_STYLES.map((opt) => (
-                <button
-                  key={opt.id}
-                  id={`${idPrefix}-stroke-style-${opt.id}`}
-                  type="button"
-                  disabled={!selectedImage}
-                  onClick={() =>
-                    onUpdateImageProps({
-                      strokeStyle: opt.id,
-                      ...(opt.id === 'stamp' && strokeWidth < 16
-                        ? { strokeWidth: 24 }
-                        : strokeWidth === 0
-                          ? { strokeWidth: 8 }
-                          : {}),
-                    })
-                  }
-                  className={cn(
-                    'py-2 lg:py-1 rounded-lg lg:rounded-md text-xs lg:text-[11px] font-medium border transition-colors',
-                    strokeStyle === opt.id
-                      ? 'bg-neutral-700 border-neutral-500 text-white'
-                      : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:text-white'
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-1.5 lg:gap-1">
+              {STROKE_STYLES.map((opt) => {
+                const optIsFrame = opt.id === 'stamp' || opt.id === 'wavy';
+                return (
+                  <button
+                    key={opt.id}
+                    id={`${idPrefix}-stroke-style-${opt.id}`}
+                    type="button"
+                    disabled={!selectedImage}
+                    onClick={() =>
+                      onUpdateImageProps({
+                        strokeStyle: opt.id,
+                        ...(optIsFrame && strokeWidth < 16
+                          ? { strokeWidth: 24 }
+                          : strokeWidth === 0
+                            ? { strokeWidth: 8 }
+                            : {}),
+                      })
+                    }
+                    className={cn(
+                      'flex-1 min-w-[30%] py-2 lg:py-1 rounded-lg lg:rounded-md text-xs lg:text-[11px] font-medium border transition-colors',
+                      strokeStyle === opt.id
+                        ? 'bg-neutral-700 border-neutral-500 text-white'
+                        : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:text-white'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

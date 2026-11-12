@@ -192,6 +192,127 @@ function traceStampOuterEllipsePath(
   ctx.closePath();
 }
 
+function traceWavyOuterRectPath(
+  ctx: CanvasRenderingContext2D,
+  halfW: number,
+  halfH: number,
+  frameW: number
+): void {
+  const amp = Math.max(2, Math.min(frameW * 0.34, 18));
+  const bhw = Math.max(2, halfW - amp);
+  const bhh = Math.max(2, halfH - amp);
+  const idealPeriod = Math.max(28, frameW * 2.4);
+  const lobesX = Math.max(2, Math.round((bhw * 2) / idealPeriod));
+  const lobesY = Math.max(2, Math.round((bhh * 2) / idealPeriod));
+  const stepsX = lobesX * 14;
+  const stepsY = lobesY * 14;
+  const k = 0.5522847498;
+
+  ctx.beginPath();
+  ctx.moveTo(-bhw, -bhh - amp);
+
+  // Top edge (left -> right)
+  for (let i = 1; i <= stepsX; i++) {
+    const t = i / stepsX;
+    const x = -bhw + t * (bhw * 2);
+    const y = -bhh - amp * Math.cos(Math.PI * 2 * lobesX * t);
+    ctx.lineTo(x, y);
+  }
+  // Top-right corner
+  ctx.bezierCurveTo(
+    bhw + k * amp,
+    -bhh - amp,
+    bhw + amp,
+    -bhh - k * amp,
+    bhw + amp,
+    -bhh
+  );
+
+  // Right edge (top -> bottom)
+  for (let i = 1; i <= stepsY; i++) {
+    const t = i / stepsY;
+    const x = bhw + amp * Math.cos(Math.PI * 2 * lobesY * t);
+    const y = -bhh + t * (bhh * 2);
+    ctx.lineTo(x, y);
+  }
+  // Bottom-right corner
+  ctx.bezierCurveTo(
+    bhw + amp,
+    bhh + k * amp,
+    bhw + k * amp,
+    bhh + amp,
+    bhw,
+    bhh + amp
+  );
+
+  // Bottom edge (right -> left)
+  for (let i = 1; i <= stepsX; i++) {
+    const t = i / stepsX;
+    const x = bhw - t * (bhw * 2);
+    const y = bhh + amp * Math.cos(Math.PI * 2 * lobesX * t);
+    ctx.lineTo(x, y);
+  }
+  // Bottom-left corner
+  ctx.bezierCurveTo(
+    -bhw - k * amp,
+    bhh + amp,
+    -bhw - amp,
+    bhh + k * amp,
+    -bhw - amp,
+    bhh
+  );
+
+  // Left edge (bottom -> top)
+  for (let i = 1; i <= stepsY; i++) {
+    const t = i / stepsY;
+    const x = -bhw - amp * Math.cos(Math.PI * 2 * lobesY * t);
+    const y = bhh - t * (bhh * 2);
+    ctx.lineTo(x, y);
+  }
+  // Top-left corner
+  ctx.bezierCurveTo(
+    -bhw - amp,
+    -bhh - k * amp,
+    -bhw - k * amp,
+    -bhh - amp,
+    -bhw,
+    -bhh - amp
+  );
+
+  ctx.closePath();
+}
+
+function traceWavyOuterEllipsePath(
+  ctx: CanvasRenderingContext2D,
+  rx: number,
+  ry: number,
+  frameW: number
+): void {
+  const amp = Math.max(2, Math.min(frameW * 0.34, 18));
+  const brx = Math.max(2, rx - amp);
+  const bry = Math.max(2, ry - amp);
+  const perimeter =
+    Math.PI * (3 * (brx + bry) - Math.sqrt((3 * brx + bry) * (brx + 3 * bry)));
+  const idealPeriod = Math.max(28, frameW * 2.4);
+  const lobes = Math.max(8, Math.round(perimeter / idealPeriod));
+  const steps = lobes * 14;
+
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const theta = t * Math.PI * 2;
+    const wave = amp * Math.cos(theta * lobes);
+    const px = (brx + wave) * Math.cos(theta);
+    const py = (bry + wave) * Math.sin(theta);
+    if (i === 0) {
+      ctx.moveTo(px, py);
+    } else {
+      ctx.lineTo(px, py);
+    }
+  }
+  ctx.closePath();
+}
+
 export class StoryImage extends fabric.FabricImage {
   static type = 'StoryImage';
 
@@ -318,7 +439,9 @@ export class StoryImage extends fabric.FabricImage {
         cp.strokeWidth = localWidth;
         cp.strokeLineJoin = 'round';
         cp.strokeLineCap =
-          style === 'dotted' || style === 'stamp' ? 'round' : 'butt';
+          style === 'dotted' || style === 'stamp' || style === 'wavy'
+            ? 'round'
+            : 'butt';
         cp.strokeDashArray =
           style === 'dashed'
             ? [localWidth * 1.25, localWidth * 0.85]
@@ -326,7 +449,9 @@ export class StoryImage extends fabric.FabricImage {
               ? [0.01, localWidth * 1.15]
               : style === 'stamp'
                 ? [0.01, localWidth * 0.62]
-                : null;
+                : style === 'wavy'
+                  ? [localWidth * 0.45, localWidth * 0.45]
+                  : null;
         cp._render(ctx);
       } finally {
         cp.fill = prevFill;
@@ -345,19 +470,20 @@ export class StoryImage extends fabric.FabricImage {
     ctx.scale(1 / sx, 1 / sy);
     const minLocalDim = Math.min(imgW, imgH);
 
-    if (style === 'stamp') {
+    if (style === 'stamp' || style === 'wavy') {
       ctx.globalCompositeOperation = 'destination-over';
       ctx.fillStyle = this.imageStrokeColor;
 
       if (shape === 'circle') {
         const innerRx = Math.max(1, (minLocalDim / 2) * sx - 0.5);
         const innerRy = Math.max(1, (minLocalDim / 2) * sy - 0.5);
-        traceStampOuterEllipsePath(
-          ctx,
-          (minLocalDim / 2) * sx + strokePx,
-          (minLocalDim / 2) * sy + strokePx,
-          strokePx
-        );
+        const outerRx = (minLocalDim / 2) * sx + strokePx;
+        const outerRy = (minLocalDim / 2) * sy + strokePx;
+        if (style === 'wavy') {
+          traceWavyOuterEllipsePath(ctx, outerRx, outerRy, strokePx);
+        } else {
+          traceStampOuterEllipsePath(ctx, outerRx, outerRy, strokePx);
+        }
         ctx.moveTo(innerRx, 0);
         ctx.ellipse(0, 0, innerRx, innerRy, 0, 0, Math.PI * 2);
         ctx.fill('evenodd');
@@ -367,12 +493,13 @@ export class StoryImage extends fabric.FabricImage {
 
       const innerW = shape === 'square' ? minLocalDim * sx : scaledW;
       const innerH = shape === 'square' ? minLocalDim * sy : scaledH;
-      traceStampOuterRectPath(
-        ctx,
-        innerW / 2 + strokePx,
-        innerH / 2 + strokePx,
-        strokePx
-      );
+      const outerHalfW = innerW / 2 + strokePx;
+      const outerHalfH = innerH / 2 + strokePx;
+      if (style === 'wavy') {
+        traceWavyOuterRectPath(ctx, outerHalfW, outerHalfH, strokePx);
+      } else {
+        traceStampOuterRectPath(ctx, outerHalfW, outerHalfH, strokePx);
+      }
 
       if (shape === 'rounded') {
         const rawR = Math.min(

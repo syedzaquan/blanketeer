@@ -98,7 +98,7 @@ export type TextBackgroundStyle = 'none' | 'solid' | 'pill';
 
 export type CutoutShape = 'none' | 'circle' | 'square' | 'rounded' | 'star' | 'heart';
 
-export type ImageStrokeStyle = 'solid' | 'dashed' | 'dotted' | 'stamp';
+export type ImageStrokeStyle = 'solid' | 'dashed' | 'dotted' | 'stamp' | 'wavy';
 
 export interface SelectedTextProps {
   kind: 'text';
