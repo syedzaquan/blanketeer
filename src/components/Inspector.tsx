@@ -259,6 +259,145 @@ export function Inspector({
             />
           </div>
 
+          {/* Line Highlight / Pill */}
+          <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
+            <h3 className="text-xs font-medium text-neutral-300">
+              Highlight
+            </h3>
+
+            <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
+              {(
+                [
+                  { id: 'none', label: 'None' },
+                  { id: 'solid', label: 'Solid' },
+                  { id: 'pill', label: 'IG Pill' },
+                ] as const
+              ).map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => onUpdateText({ bgStyle: mode.id })}
+                  className={cn(
+                    'py-2 lg:py-1 rounded-md lg:rounded-[5px] text-xs font-medium transition-colors',
+                    selectedObject.bgStyle === mode.id
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
+                  )}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+
+            {selectedObject.bgStyle !== 'none' && (
+              <div className="flex flex-col gap-2.5 pt-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={selectedObject.textBgColor}
+                    onChange={(e) =>
+                      onUpdateText({ textBgColor: e.target.value })
+                    }
+                    aria-label="Highlight background color"
+                    className="w-9 h-9 lg:w-7 lg:h-7 rounded border border-neutral-600 bg-transparent cursor-pointer shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={selectedObject.textBgColor}
+                    onChange={(e) =>
+                      onUpdateText({ textBgColor: e.target.value })
+                    }
+                    className="flex-1 px-3 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
+                  {PRESET_COLOR_SWATCHES.map((swatch) => (
+                    <button
+                      key={swatch}
+                      type="button"
+                      onClick={() => onUpdateText({ textBgColor: swatch })}
+                      aria-label={`Set highlight color ${swatch}`}
+                      className={cn(
+                        'h-8 lg:h-6 rounded-md lg:rounded border transition-colors',
+                        selectedObject.textBgColor.toLowerCase() ===
+                          swatch.toLowerCase()
+                          ? 'border-white ring-1 ring-white/50'
+                          : 'border-neutral-700 hover:border-neutral-500'
+                      )}
+                      style={{ backgroundColor: swatch }}
+                    />
+                  ))}
+                </div>
+
+                {selectedObject.bgStyle === 'pill' && (
+                  <>
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-1">
+                        <span className="text-neutral-400">Pill Radius</span>
+                        <span className="font-mono text-neutral-300">
+                          {selectedObject.pillRadius}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={48}
+                        value={selectedObject.pillRadius}
+                        onChange={(e) =>
+                          onUpdateText({ pillRadius: Number(e.target.value) })
+                        }
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span className="text-neutral-400">Pad X</span>
+                          <span className="font-mono text-neutral-300">
+                            {selectedObject.pillPaddingX}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={6}
+                          max={60}
+                          value={selectedObject.pillPaddingX}
+                          onChange={(e) =>
+                            onUpdateText({
+                              pillPaddingX: Number(e.target.value),
+                            })
+                          }
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span className="text-neutral-400">Pad Y</span>
+                          <span className="font-mono text-neutral-300">
+                            {selectedObject.pillPaddingY}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={32}
+                          value={selectedObject.pillPaddingY}
+                          onChange={(e) =>
+                            onUpdateText({
+                              pillPaddingY: Number(e.target.value),
+                            })
+                          }
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Typography */}
           <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-3">
             <h3 className="text-xs font-medium text-neutral-300">
@@ -707,145 +846,6 @@ export function Inspector({
             </div>
           </div>
 
-          {/* Line Highlight / Pill */}
-          <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
-            <h3 className="text-xs font-medium text-neutral-300">
-              Highlight
-            </h3>
-
-            <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
-              {(
-                [
-                  { id: 'none', label: 'None' },
-                  { id: 'solid', label: 'Solid' },
-                  { id: 'pill', label: 'IG Pill' },
-                ] as const
-              ).map((mode) => (
-                <button
-                  key={mode.id}
-                  type="button"
-                  onClick={() => onUpdateText({ bgStyle: mode.id })}
-                  className={cn(
-                    'py-2 lg:py-1 rounded-md lg:rounded-[5px] text-xs font-medium transition-colors',
-                    selectedObject.bgStyle === mode.id
-                      ? 'bg-neutral-700 text-white'
-                      : 'text-neutral-400 hover:text-neutral-100'
-                  )}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-
-            {selectedObject.bgStyle !== 'none' && (
-              <div className="flex flex-col gap-2.5 pt-1">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={selectedObject.textBgColor}
-                    onChange={(e) =>
-                      onUpdateText({ textBgColor: e.target.value })
-                    }
-                    aria-label="Highlight background color"
-                    className="w-9 h-9 lg:w-7 lg:h-7 rounded border border-neutral-600 bg-transparent cursor-pointer shrink-0"
-                  />
-                  <input
-                    type="text"
-                    value={selectedObject.textBgColor}
-                    onChange={(e) =>
-                      onUpdateText({ textBgColor: e.target.value })
-                    }
-                    className="flex-1 px-3 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-neutral-100 focus:outline-none focus:border-neutral-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
-                  {PRESET_COLOR_SWATCHES.map((swatch) => (
-                    <button
-                      key={swatch}
-                      type="button"
-                      onClick={() => onUpdateText({ textBgColor: swatch })}
-                      aria-label={`Set highlight color ${swatch}`}
-                      className={cn(
-                        'h-8 lg:h-6 rounded-md lg:rounded border transition-colors',
-                        selectedObject.textBgColor.toLowerCase() ===
-                          swatch.toLowerCase()
-                          ? 'border-white ring-1 ring-white/50'
-                          : 'border-neutral-700 hover:border-neutral-500'
-                      )}
-                      style={{ backgroundColor: swatch }}
-                    />
-                  ))}
-                </div>
-
-                {selectedObject.bgStyle === 'pill' && (
-                  <>
-                    <div>
-                      <div className="flex items-center justify-between text-[11px] mb-1">
-                        <span className="text-neutral-400">Pill Radius</span>
-                        <span className="font-mono text-neutral-300">
-                          {selectedObject.pillRadius}px
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={48}
-                        value={selectedObject.pillRadius}
-                        onChange={(e) =>
-                          onUpdateText({ pillRadius: Number(e.target.value) })
-                        }
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="text-neutral-400">Pad X</span>
-                          <span className="font-mono text-neutral-300">
-                            {selectedObject.pillPaddingX}
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={6}
-                          max={60}
-                          value={selectedObject.pillPaddingX}
-                          onChange={(e) =>
-                            onUpdateText({
-                              pillPaddingX: Number(e.target.value),
-                            })
-                          }
-                          className="w-full"
-                        />
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="text-neutral-400">Pad Y</span>
-                          <span className="font-mono text-neutral-300">
-                            {selectedObject.pillPaddingY}
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={0}
-                          max={32}
-                          value={selectedObject.pillPaddingY}
-                          onChange={(e) =>
-                            onUpdateText({
-                              pillPaddingY: Number(e.target.value),
-                            })
-                          }
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-
           {/* Spacing Controls */}
           <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
             <h3 className="text-xs font-medium text-neutral-300">
@@ -916,6 +916,7 @@ export function Inspector({
           canvasWidth={ASPECT_RATIO_PRESETS[aspectRatio].width}
           canvasHeight={ASPECT_RATIO_PRESETS[aspectRatio].height}
           idPrefix="inspector-image"
+          showTransformControls={false}
           onApplyCutout={onApplyCutout}
           onUpdateImageProps={onUpdateImageProps}
         />

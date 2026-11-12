@@ -1485,6 +1485,9 @@ export function useFabricCanvas() {
         width: number;
         height: number;
         aspectLocked: boolean;
+        angle: number;
+        flipX: boolean;
+        flipY: boolean;
         strokeColor: string;
         strokeWidth: number;
         strokeStyle: ImageStrokeStyle;
@@ -1548,6 +1551,15 @@ export function useFabricCanvas() {
       }
       if (patch.strokeStyle !== undefined) {
         storyImg.set('imageStrokeStyle', patch.strokeStyle);
+      }
+      if (patch.angle !== undefined && Number.isFinite(patch.angle)) {
+        storyImg.set('angle', patch.angle);
+      }
+      if (patch.flipX !== undefined) {
+        storyImg.set('flipX', patch.flipX);
+      }
+      if (patch.flipY !== undefined) {
+        storyImg.set('flipY', patch.flipY);
       }
 
       const hasShadowPatch =

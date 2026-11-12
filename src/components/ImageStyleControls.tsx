@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import {
   Circle,
+  FlipHorizontal2,
+  FlipVertical2,
   Heart,
   Link2,
   Link2Off,
@@ -19,6 +21,9 @@ export type ImagePropsPatch = Partial<{
   width: number;
   height: number;
   aspectLocked: boolean;
+  angle: number;
+  flipX: boolean;
+  flipY: boolean;
   strokeColor: string;
   strokeWidth: number;
   strokeStyle: ImageStrokeStyle;
@@ -35,6 +40,7 @@ interface ImageStyleControlsProps {
   canvasWidth: number;
   canvasHeight: number;
   idPrefix: string;
+  showTransformControls?: boolean;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
   onUpdateImageProps: (patch: ImagePropsPatch) => void;
 }
@@ -181,6 +187,7 @@ export function ImageStyleControls({
   canvasWidth,
   canvasHeight,
   idPrefix,
+  showTransformControls = true,
   onApplyCutout,
   onUpdateImageProps,
 }: ImageStyleControlsProps) {
@@ -335,6 +342,112 @@ export function ImageStyleControls({
           ))}
         </div>
       </div>
+
+      {showTransformControls && (
+        <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-medium text-neutral-300">
+              Rotation &amp; Flip
+            </h3>
+            {selectedImage &&
+              (selectedImage.angle !== 0 ||
+                selectedImage.flipX ||
+                selectedImage.flipY) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdateImageProps({ angle: 0, flipX: false, flipY: false })
+                  }
+                  aria-label="Reset rotation and flip"
+                  title="Reset rotation & flip"
+                  className="p-1.5 lg:p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/70 transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              )}
+          </div>
+
+          <div
+            className={cn(
+              'flex flex-col gap-2.5',
+              !selectedImage && 'opacity-40 pointer-events-none'
+            )}
+          >
+            <div className="grid grid-cols-2 gap-2 lg:gap-1.5">
+              <button
+                type="button"
+                disabled={!selectedImage}
+                onClick={() =>
+                  onUpdateImageProps({ flipX: !selectedImage?.flipX })
+                }
+                aria-label="Flip horizontal"
+                title="Flip horizontal"
+                className={cn(
+                  'flex items-center justify-center gap-1.5 py-2.5 lg:py-1.5 rounded-lg lg:rounded-md border text-xs lg:text-[11px] font-medium transition-colors',
+                  selectedImage?.flipX
+                    ? 'bg-neutral-700 border-neutral-500 text-white'
+                    : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-700/70 hover:text-white'
+                )}
+              >
+                <FlipHorizontal2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                <span>Flip H</span>
+              </button>
+              <button
+                type="button"
+                disabled={!selectedImage}
+                onClick={() =>
+                  onUpdateImageProps({ flipY: !selectedImage?.flipY })
+                }
+                aria-label="Flip vertical"
+                title="Flip vertical"
+                className={cn(
+                  'flex items-center justify-center gap-1.5 py-2.5 lg:py-1.5 rounded-lg lg:rounded-md border text-xs lg:text-[11px] font-medium transition-colors',
+                  selectedImage?.flipY
+                    ? 'bg-neutral-700 border-neutral-500 text-white'
+                    : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-700/70 hover:text-white'
+                )}
+              >
+                <FlipVertical2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                <span>Flip V</span>
+              </button>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between text-[11px] mb-1">
+                <label
+                  htmlFor={`${idPrefix}-rotation`}
+                  className="text-neutral-400"
+                >
+                  Rotation
+                </label>
+                <span className="font-mono text-neutral-300">
+                  {selectedImage?.angle ?? 0}°
+                </span>
+              </div>
+              <input
+                id={`${idPrefix}-rotation`}
+                aria-label="Image rotation"
+                type="range"
+                min={-180}
+                max={180}
+                step={1}
+                disabled={!selectedImage}
+                value={
+                  selectedImage
+                    ? selectedImage.angle > 180
+                      ? selectedImage.angle - 360
+                      : selectedImage.angle
+                    : 0
+                }
+                onChange={(e) =>
+                  onUpdateImageProps({ angle: Number(e.target.value) })
+                }
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Shape Cutout & Mask */}
       <div className="border-t border-neutral-800/80 pt-3.5">
