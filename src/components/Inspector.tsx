@@ -7,6 +7,7 @@ import {
   ArrowDownToLine,
   ArrowUp,
   ArrowUpToLine,
+  Bold,
   Copy,
   FlipHorizontal2,
   FlipVertical2,
@@ -251,6 +252,114 @@ export function Inspector({
             <label className="block text-xs lg:text-[11px] text-neutral-400 mb-1.5 lg:mb-1">
               Content
             </label>
+
+            {/* Style & Alignment */}
+            <div className="grid grid-cols-2 gap-2 lg:gap-1.5 mb-2">
+              <div className="flex items-center gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
+                <button
+                  type="button"
+                  aria-label="Bold"
+                  title="Bold"
+                  onClick={() =>
+                    onUpdateText({
+                      fontWeight: selectedObject.fontWeight >= 700 ? 400 : 700,
+                    })
+                  }
+                  className={cn(
+                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
+                    selectedObject.fontWeight >= 700
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
+                  )}
+                >
+                  <Bold className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Italic"
+                  title="Italic"
+                  onClick={() =>
+                    onUpdateText({
+                      fontStyle:
+                        selectedObject.fontStyle === 'italic'
+                          ? 'normal'
+                          : 'italic',
+                    })
+                  }
+                  className={cn(
+                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
+                    selectedObject.fontStyle === 'italic'
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
+                  )}
+                >
+                  <Italic className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Underline"
+                  title="Underline"
+                  onClick={() =>
+                    onUpdateText({ underline: !selectedObject.underline })
+                  }
+                  className={cn(
+                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
+                    selectedObject.underline
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
+                  )}
+                >
+                  <Underline className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Strikethrough"
+                  title="Strikethrough"
+                  onClick={() =>
+                    onUpdateText({ linethrough: !selectedObject.linethrough })
+                  }
+                  className={cn(
+                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
+                    selectedObject.linethrough
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
+                  )}
+                >
+                  <Strikethrough className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
+                {(
+                  [
+                    { id: 'left', icon: AlignLeft },
+                    { id: 'center', icon: AlignCenter },
+                    { id: 'right', icon: AlignRight },
+                    { id: 'justify', icon: AlignJustify },
+                  ] as const
+                ).map((align) => {
+                  const Icon = align.icon;
+                  return (
+                    <button
+                      key={align.id}
+                      type="button"
+                      aria-label={`Align ${align.id}`}
+                      title={`Align ${align.id}`}
+                      onClick={() => onUpdateText({ textAlign: align.id })}
+                      className={cn(
+                        'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
+                        selectedObject.textAlign === align.id
+                          ? 'bg-neutral-700 text-white'
+                          : 'text-neutral-400 hover:text-neutral-100'
+                      )}
+                    >
+                      <Icon className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <textarea
               rows={5}
               value={selectedObject.text}
@@ -707,94 +816,6 @@ export function Inspector({
               </div>
             )}
 
-            {/* Style & Alignment */}
-            <div className="grid grid-cols-2 gap-2 lg:gap-1.5">
-              <div className="flex items-center gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
-                <button
-                  type="button"
-                  aria-label="Italic"
-                  title="Italic"
-                  onClick={() =>
-                    onUpdateText({
-                      fontStyle:
-                        selectedObject.fontStyle === 'italic'
-                          ? 'normal'
-                          : 'italic',
-                    })
-                  }
-                  className={cn(
-                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
-                    selectedObject.fontStyle === 'italic'
-                      ? 'bg-neutral-700 text-white'
-                      : 'text-neutral-400 hover:text-neutral-100'
-                  )}
-                >
-                  <Italic className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Underline"
-                  title="Underline"
-                  onClick={() =>
-                    onUpdateText({ underline: !selectedObject.underline })
-                  }
-                  className={cn(
-                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
-                    selectedObject.underline
-                      ? 'bg-neutral-700 text-white'
-                      : 'text-neutral-400 hover:text-neutral-100'
-                  )}
-                >
-                  <Underline className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Strikethrough"
-                  title="Strikethrough"
-                  onClick={() =>
-                    onUpdateText({ linethrough: !selectedObject.linethrough })
-                  }
-                  className={cn(
-                    'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
-                    selectedObject.linethrough
-                      ? 'bg-neutral-700 text-white'
-                      : 'text-neutral-400 hover:text-neutral-100'
-                  )}
-                >
-                  <Strikethrough className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
-                {(
-                  [
-                    { id: 'left', icon: AlignLeft },
-                    { id: 'center', icon: AlignCenter },
-                    { id: 'right', icon: AlignRight },
-                    { id: 'justify', icon: AlignJustify },
-                  ] as const
-                ).map((align) => {
-                  const Icon = align.icon;
-                  return (
-                    <button
-                      key={align.id}
-                      type="button"
-                      aria-label={`Align ${align.id}`}
-                      title={`Align ${align.id}`}
-                      onClick={() => onUpdateText({ textAlign: align.id })}
-                      className={cn(
-                        'flex-1 py-2.5 lg:py-1.5 rounded flex items-center justify-center transition-colors',
-                        selectedObject.textAlign === align.id
-                          ? 'bg-neutral-700 text-white'
-                          : 'text-neutral-400 hover:text-neutral-100'
-                      )}
-                    >
-                      <Icon className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
 
           {/* Text Color */}

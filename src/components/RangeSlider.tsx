@@ -32,19 +32,34 @@ export function RangeSlider({
   onKeyDown,
   onPointerDown,
   onDoubleClick,
+  onTouchStart,
   onTouchEnd,
   ...rest
 }: RangeSliderProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const lastInputWasKeyboardRef = useRef(false);
   const lastTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
+  const ignoreChangeUntilRef = useRef(0);
 
   const resetToDefault = () => {
     if (disabled || defaultValue === undefined) return;
     const clamped = Math.min(max, Math.max(min, defaultValue));
+    ignoreChangeUntilRef.current = Date.now() + 400;
+    if (inputRef.current) {
+      inputRef.current.value = String(clamped);
+      inputRef.current.blur();
+    }
     onValueChange(clamped);
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (Date.now() < ignoreChangeUntilRef.current) {
+      if (defaultValue !== undefined) {
+        e.target.value = String(Math.min(max, Math.max(min, defaultValue)));
+      }
+      return;
+    }
+
     const raw = Number(e.target.value);
     if (!Number.isFinite(raw)) return;
 
@@ -64,13 +79,39 @@ export function RangeSlider({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    ignoreChangeUntilRef.current = 0;
     lastInputWasKeyboardRef.current = true;
     onKeyDown?.(e);
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLInputElement>) => {
+    if (e.pointerType !== 'touch') {
+      ignoreChangeUntilRef.current = 0;
+    }
     lastInputWasKeyboardRef.current = false;
     onPointerDown?.(e);
+  };
+
+  const handleTouchStart = (e: TouchEvent<HTMLInputElement>) => {
+    lastInputWasKeyboardRef.current = false;
+    if (!disabled && defaultValue !== undefined) {
+      const touch = e.touches[0];
+      const prev = lastTapRef.current;
+      if (
+        touch &&
+        prev &&
+        Date.now() - prev.time <= 320 &&
+        Math.hypot(touch.clientX - prev.x, touch.clientY - prev.y) <= 24
+      ) {
+        // Prevent native range-drag from starting on the 2nd tap so it can't get stuck open.
+        e.preventDefault();
+        lastTapRef.current = null;
+        resetToDefault();
+      } else {
+        ignoreChangeUntilRef.current = 0;
+      }
+    }
+    onTouchStart?.(e);
   };
 
   const handleDoubleClick = (e: MouseEvent<HTMLInputElement>) => {
@@ -79,26 +120,14 @@ export function RangeSlider({
   };
 
   const handleTouchEnd = (e: TouchEvent<HTMLInputElement>) => {
-    if (!disabled && defaultValue !== undefined) {
+    if (!disabled && defaultValue !== undefined && Date.now() >= ignoreChangeUntilRef.current) {
       const touch = e.changedTouches[0];
       if (touch) {
-        const now = Date.now();
-        const prev = lastTapRef.current;
-        if (
-          prev &&
-          now - prev.time <= 320 &&
-          Math.hypot(touch.clientX - prev.x, touch.clientY - prev.y) <= 24
-        ) {
-          e.preventDefault();
-          lastTapRef.current = null;
-          resetToDefault();
-        } else {
-          lastTapRef.current = {
-            time: now,
-            x: touch.clientX,
-            y: touch.clientY,
-          };
-        }
+        lastTapRef.current = {
+          time: Date.now(),
+          x: touch.clientX,
+          y: touch.clientY,
+        };
       }
     }
     onTouchEnd?.(e);
@@ -113,6 +142,7 @@ export function RangeSlider({
   return (
     <input
       {...rest}
+      ref={inputRef}
       type="range"
       min={min}
       max={max}
@@ -123,6 +153,7 @@ export function RangeSlider({
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onPointerDown={handlePointerDown}
+      onTouchStart={handleTouchStart}
       onDoubleClick={handleDoubleClick}
       onTouchEnd={handleTouchEnd}
     />
