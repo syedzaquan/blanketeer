@@ -1650,15 +1650,56 @@ export function useFabricCanvas() {
     }
   }, []);
 
+  const getActiveObjectId = useCallback((): string | null => {
+    const active = canvasRef.current?.getActiveObject();
+    return active ? ensureObjectMeta(active).editorId ?? null : null;
+  }, []);
+
+  const restoreSelectionById = useCallback(
+    (id: string | null) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const current = canvas.getActiveObject();
+      const currentId = current ? ensureObjectMeta(current).editorId ?? null : null;
+      if (currentId === id) return;
+
+      if (!id) {
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+        syncSelectionAndLayers();
+        return;
+      }
+
+      const target = canvas
+        .getObjects()
+        .find((obj) => ensureObjectMeta(obj).editorId === id);
+      if (target) {
+        canvas.setActiveObject(target);
+      } else {
+        canvas.discardActiveObject();
+      }
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+    },
+    [syncSelectionAndLayers]
+  );
+
   const beginObjectPinch = useCallback(
     (
       touch1: { x: number; y: number },
-      touch2: { x: number; y: number }
+      touch2: { x: number; y: number },
+      allowedObjectId?: string | null
     ): boolean => {
       const canvas = canvasRef.current;
       if (!canvas) return false;
       const active = canvas.getActiveObject();
       if (!active) return false;
+      if (allowedObjectId !== undefined) {
+        const activeId = ensureObjectMeta(active).editorId;
+        if (!allowedObjectId || activeId !== allowedObjectId) {
+          return false;
+        }
+      }
       if (
         ensureObjectMeta(active).locked ||
         active.lockScalingX ||
@@ -2028,6 +2069,8 @@ export function useFabricCanvas() {
     recalculateOffset,
     canPanCanvasAt,
     cancelPointerAction,
+    getActiveObjectId,
+    restoreSelectionById,
     beginObjectPinch,
     updateObjectPinch,
     endObjectPinch,

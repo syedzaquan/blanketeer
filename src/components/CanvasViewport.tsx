@@ -25,9 +25,12 @@ interface CanvasViewportProps {
   onRecalculateOffset: () => void;
   onCanPanCanvasAt?: (e: globalThis.MouseEvent | globalThis.TouchEvent) => boolean;
   onCancelPointerAction?: () => void;
+  onGetActiveObjectId?: () => string | null;
+  onRestoreSelectionById?: (id: string | null) => void;
   onBeginObjectPinch?: (
     touch1: { x: number; y: number },
-    touch2: { x: number; y: number }
+    touch2: { x: number; y: number },
+    allowedObjectId?: string | null
   ) => boolean;
   onUpdateObjectPinch?: (
     touch1: { x: number; y: number },
@@ -85,6 +88,8 @@ export function CanvasViewport({
   onRecalculateOffset,
   onCanPanCanvasAt,
   onCancelPointerAction,
+  onGetActiveObjectId,
+  onRestoreSelectionById,
   onBeginObjectPinch,
   onUpdateObjectPinch,
   onEndObjectPinch,
@@ -151,6 +156,8 @@ export function CanvasViewport({
     onDeselectAll,
     onCanPanCanvasAt,
     onCancelPointerAction,
+    onGetActiveObjectId,
+    onRestoreSelectionById,
     onBeginObjectPinch,
     onUpdateObjectPinch,
     onEndObjectPinch,
@@ -167,6 +174,8 @@ export function CanvasViewport({
       onDeselectAll,
       onCanPanCanvasAt,
       onCancelPointerAction,
+      onGetActiveObjectId,
+      onRestoreSelectionById,
       onBeginObjectPinch,
       onUpdateObjectPinch,
       onEndObjectPinch,
@@ -308,6 +317,7 @@ export function CanvasViewport({
       | 'backdrop-touch-pan'
       | null = null;
     let awaitingAllFingersLift = false;
+    let preTouchActiveId: string | null | undefined = undefined;
     const activeTouchPointers = new Set<number>();
     let backdropTouchStart: {
       x: number;
@@ -339,6 +349,9 @@ export function CanvasViewport({
 
     const onPointerDownCapture = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
+      if (activeTouchPointers.size === 0 && preTouchActiveId === undefined) {
+        preTouchActiveId = liveRef.current.onGetActiveObjectId?.() ?? null;
+      }
       activeTouchPointers.add(e.pointerId);
       if (
         activeTouchPointers.size >= 2 ||
@@ -370,27 +383,37 @@ export function CanvasViewport({
         gestureMode === 'viewport-pinch' ||
         awaitingAllFingersLift;
       activeTouchPointers.delete(e.pointerId);
+      if (activeTouchPointers.size === 0 && gestureMode === null && !awaitingAllFingersLift) {
+        preTouchActiveId = undefined;
+      }
       if (shouldBlock) {
         e.stopPropagation();
       }
     };
 
     const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1 && preTouchActiveId === undefined) {
+        preTouchActiveId = liveRef.current.onGetActiveObjectId?.() ?? null;
+      }
       if (e.touches.length === 2) {
         e.preventDefault();
         e.stopPropagation();
         awaitingAllFingersLift = false;
         backdropTouchStart = null;
+        if (preTouchActiveId === undefined) {
+          preTouchActiveId = liveRef.current.onGetActiveObjectId?.() ?? null;
+        }
         const pair = readTouchPoints(e.touches);
         const live = liveRef.current;
 
-        if (live.onBeginObjectPinch?.(pair.t1, pair.t2)) {
+        if (live.onBeginObjectPinch?.(pair.t1, pair.t2, preTouchActiveId)) {
           gestureMode = 'object-pinch';
           pinchStart = null;
           return;
         }
 
         live.onCancelPointerAction?.();
+        live.onRestoreSelectionById?.(preTouchActiveId);
         gestureMode = 'viewport-pinch';
         pinchStart = {
           dist: Math.max(pair.dist, 1),
@@ -509,6 +532,9 @@ export function CanvasViewport({
         }
         backdropTouchStart = null;
         gestureMode = null;
+        if (e.touches.length === 0) {
+          preTouchActiveId = undefined;
+        }
         return;
       }
 
@@ -521,12 +547,18 @@ export function CanvasViewport({
           gestureMode = null;
           pinchStart = null;
           awaitingAllFingersLift = e.touches.length > 0;
+          if (e.touches.length === 0) {
+            preTouchActiveId = undefined;
+          }
         }
       } else if (awaitingAllFingersLift) {
         e.stopPropagation();
         if (e.touches.length === 0) {
           awaitingAllFingersLift = false;
+          preTouchActiveId = undefined;
         }
+      } else if (e.touches.length === 0) {
+        preTouchActiveId = undefined;
       }
     };
 

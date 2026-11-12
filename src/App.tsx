@@ -84,6 +84,8 @@ export function App() {
     recalculateOffset,
     canPanCanvasAt,
     cancelPointerAction,
+    getActiveObjectId,
+    restoreSelectionById,
     beginObjectPinch,
     updateObjectPinch,
     endObjectPinch,
@@ -262,6 +264,8 @@ export function App() {
             onRecalculateOffset={recalculateOffset}
             onCanPanCanvasAt={canPanCanvasAt}
             onCancelPointerAction={cancelPointerAction}
+            onGetActiveObjectId={getActiveObjectId}
+            onRestoreSelectionById={restoreSelectionById}
             onBeginObjectPinch={beginObjectPinch}
             onUpdateObjectPinch={updateObjectPinch}
             onEndObjectPinch={endObjectPinch}
