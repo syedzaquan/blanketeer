@@ -251,11 +251,11 @@ export function Inspector({
               Content
             </label>
             <textarea
-              rows={2}
+              rows={5}
               value={selectedObject.text}
               onChange={(e) => onUpdateText({ text: e.target.value })}
-              className="w-full px-3 py-2 lg:px-2.5 lg:py-1.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500 resize-y"
-              placeholder="Enter text..."
+              className="w-full min-h-[108px] px-3 py-2.5 lg:px-2.5 lg:py-2 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 placeholder:text-neutral-100/50 focus:outline-none focus:border-neutral-500 resize-y"
+              placeholder="Add your text"
             />
           </div>
 

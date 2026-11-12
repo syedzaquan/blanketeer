@@ -820,75 +820,78 @@ export function CanvasViewport({
         />
       )}
 
-      {/* Top-right Safe Zone Toggle */}
-      <button
-        type="button"
-        onClick={onToggleSafeArea}
-        aria-label="Toggle Instagram Safe Area Guides"
-        title="Toggle Instagram Safe Area Guides"
-        className={cn(
-          'absolute top-2.5 right-3 z-10 flex items-center justify-center p-2.5 lg:p-2 rounded-lg lg:rounded-md border transition-colors',
-          showSafeArea
-            ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
-            : 'bg-[#1c1c1e] border-neutral-700/80 text-neutral-300 hover:text-white'
-        )}
-      >
-        <Scan className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
-      </button>
-
-      {/* Interactive Viewport Zoom Controls */}
+      {/* Top-right Zoom Controls & Safe Zone Toggle */}
       <div
-        data-testid="canvas-zoom-controls"
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
-        className="absolute bottom-2 left-2.5 sm:left-3 lg:bottom-3.5 lg:left-3.5 z-10 flex items-center gap-0.5 p-1 rounded-lg lg:rounded-md bg-[#1c1c1e] border border-neutral-700/80 text-xs lg:text-[11px] font-mono text-neutral-200"
+        className="absolute top-2.5 right-3 z-10 flex items-center gap-1.5"
       >
-        <button
-          type="button"
-          onClick={() => applyZoom((s) => s - SCALE_BUTTON_STEP)}
-          disabled={canvasScale <= MIN_CANVAS_SCALE + 0.001}
-          aria-label="Zoom out canvas"
-          title="Zoom out (Cmd/Ctrl -)"
-          className="p-2 lg:p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
+        <div
+          data-testid="canvas-zoom-controls"
+          className="flex items-center gap-0.5 p-1 rounded-lg lg:rounded-md bg-[#1c1c1e] border border-neutral-700/80 text-xs lg:text-[11px] font-mono text-neutral-200"
         >
-          <Minus className="w-4 h-4 lg:w-3 lg:h-3" />
-        </button>
+          <button
+            type="button"
+            onClick={() => applyZoom((s) => s - SCALE_BUTTON_STEP)}
+            disabled={canvasScale <= MIN_CANVAS_SCALE + 0.001}
+            aria-label="Zoom out canvas"
+            title="Zoom out (Cmd/Ctrl -)"
+            className="p-2 lg:p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
+          >
+            <Minus className="w-4 h-4 lg:w-3 lg:h-3" />
+          </button>
+
+          <button
+            type="button"
+            onClick={resetViewport}
+            aria-label="Reset canvas zoom"
+            title={`Reset to 26% & center (${canvasWidth} × ${canvasHeight})`}
+            className="px-2 py-1.5 lg:px-1.5 lg:py-0.5 rounded hover:bg-neutral-800 text-neutral-200 font-medium min-w-[2.75rem] lg:min-w-[2.5rem] text-center transition-colors"
+          >
+            {Math.round(canvasScale * 100)}%
+          </button>
+
+          <button
+            type="button"
+            onClick={() => applyZoom((s) => s + SCALE_BUTTON_STEP)}
+            disabled={canvasScale >= MAX_CANVAS_SCALE - 0.001}
+            aria-label="Zoom in canvas"
+            title="Zoom in (Cmd/Ctrl +)"
+            className="p-2 lg:p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
+          >
+            <Plus className="w-4 h-4 lg:w-3 lg:h-3" />
+          </button>
+
+          <button
+            type="button"
+            onClick={resetViewport}
+            aria-label="Reset canvas position and zoom"
+            title="Reset to default position & 26% zoom (Cmd/Ctrl 0)"
+            className={cn(
+              'p-2 lg:p-1 rounded flex items-center justify-center transition-colors',
+              isZoomedOrPanned
+                ? 'bg-neutral-800 text-neutral-100 hover:bg-neutral-700'
+                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800'
+            )}
+          >
+            <RotateCcw className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
+          </button>
+        </div>
 
         <button
           type="button"
-          onClick={resetViewport}
-          aria-label="Reset canvas zoom"
-          title={`Reset to 26% & center (${canvasWidth} × ${canvasHeight})`}
-          className="px-2 py-1.5 lg:px-1.5 lg:py-0.5 rounded hover:bg-neutral-800 text-neutral-200 font-medium min-w-[2.75rem] lg:min-w-[2.5rem] text-center transition-colors"
-        >
-          {Math.round(canvasScale * 100)}%
-        </button>
-
-        <button
-          type="button"
-          onClick={() => applyZoom((s) => s + SCALE_BUTTON_STEP)}
-          disabled={canvasScale >= MAX_CANVAS_SCALE - 0.001}
-          aria-label="Zoom in canvas"
-          title="Zoom in (Cmd/Ctrl +)"
-          className="p-2 lg:p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
-        >
-          <Plus className="w-4 h-4 lg:w-3 lg:h-3" />
-        </button>
-
-        <button
-          type="button"
-          onClick={resetViewport}
-          aria-label="Reset canvas position and zoom"
-          title="Reset to default position & 26% zoom (Cmd/Ctrl 0)"
+          onClick={onToggleSafeArea}
+          aria-label="Toggle Instagram Safe Area Guides"
+          title="Toggle Instagram Safe Area Guides"
           className={cn(
-            'p-2 lg:p-1 rounded flex items-center justify-center transition-colors',
-            isZoomedOrPanned
-              ? 'bg-neutral-800 text-neutral-100 hover:bg-neutral-700'
-              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800'
+            'flex items-center justify-center p-2.5 lg:p-1.5 rounded-lg lg:rounded-md border transition-colors',
+            showSafeArea
+              ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+              : 'bg-[#1c1c1e] border-neutral-700/80 text-neutral-300 hover:text-white'
           )}
         >
-          <RotateCcw className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
+          <Scan className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
         </button>
       </div>
 

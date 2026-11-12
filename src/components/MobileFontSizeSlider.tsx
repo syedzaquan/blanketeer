@@ -79,16 +79,14 @@ export function MobileFontSizeSlider({
     >
       <div
         className={cn(
-          'px-2 py-1 rounded-md text-xs font-mono font-medium border transition-colors min-w-[2.5rem] text-center',
-          isDragging
-            ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
-            : 'bg-[#1c1c1e] border-neutral-700/80 text-neutral-100'
+          'px-1 py-0.5 text-xs font-mono font-semibold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] transition-transform min-w-[2rem] text-center',
+          isDragging ? 'scale-110' : 'scale-100'
         )}
       >
         {Math.round(fontSize)}
       </div>
 
-      <div className="px-2 py-3 rounded-xl bg-[#1c1c1e] border border-neutral-700/80">
+      <div className="px-1 py-1">
         <div
           ref={trackRef}
           role="slider"
@@ -105,16 +103,16 @@ export function MobileFontSizeSlider({
           onKeyDown={handleKeyDown}
           className="relative w-7 h-40 sm:h-48 flex items-center justify-center touch-none cursor-ns-resize outline-none"
         >
-          <div className="relative w-1.5 h-full rounded-full bg-neutral-800 overflow-hidden">
+          <div className="relative w-1.5 h-full rounded-full bg-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.5)] overflow-hidden">
             <div
-              className="absolute bottom-0 left-0 right-0 rounded-full bg-neutral-200"
+              className="absolute bottom-0 left-0 right-0 rounded-full bg-white"
               style={{ height: `${percent}%` }}
             />
           </div>
 
           <div
             className={cn(
-              'pointer-events-none absolute w-5 h-5 rounded-full bg-white border border-neutral-900 transition-transform',
+              'pointer-events-none absolute w-5 h-5 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.65)] transition-transform',
               isDragging ? 'scale-110' : 'scale-100'
             )}
             style={{ bottom: `calc(${percent}% - 10px)` }}

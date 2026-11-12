@@ -199,9 +199,9 @@ const DEFAULT_BACKGROUND: BackgroundState = {
 const MAX_HISTORY = 40;
 
 function createStarterTextbox(canvasWidth: number, canvasHeight: number): StoryTextbox {
-  return new StoryTextbox('Tap to craft\nyour story', {
+  return new StoryTextbox('Add your text', {
     left: canvasWidth / 2,
-    top: canvasHeight * 0.44,
+    top: canvasHeight / 2,
     width: 780,
     originX: 'center',
     originY: 'center',
@@ -210,6 +210,7 @@ function createStarterTextbox(canvasWidth: number, canvasHeight: number): StoryT
     fontWeight: 700,
     fontSoft: 100,
     fill: '#ffffff',
+    opacity: 0.5,
     textAlign: 'center',
     lineHeight: 1.0,
     bgStyle: 'none',
