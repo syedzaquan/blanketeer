@@ -69,18 +69,19 @@ export function Header({
   };
 
   return (
-    <header className="h-12 lg:h-11 shrink-0 border-b border-neutral-800/80 bg-[#0f0f0f] px-2.5 sm:px-3 flex items-center justify-between gap-2 z-30">
-      {/* Brand */}
-      <div className="flex items-center gap-2.5 min-w-0">
-        <span className="text-sm lg:text-xs font-semibold text-neutral-100 tracking-tight select-none">
+    <header className="shrink-0 border-b border-neutral-800/80 bg-[#0f0f0f] z-30 flex flex-col lg:flex-row lg:h-11 lg:items-center lg:justify-between lg:px-3 lg:gap-2">
+      {/* Brand: centered top row on mobile/tablet, left-aligned on desktop */}
+      <div className="flex items-center justify-center gap-2.5 py-1.5 border-b border-neutral-800/60 lg:border-b-0 lg:py-0 lg:justify-start min-w-0">
+        <span className="text-xs font-semibold text-neutral-100 tracking-tight select-none">
           Blanketeer
         </span>
-        <span className="hidden md:inline-block text-[11px] font-mono text-neutral-500">
+        <span className="hidden lg:inline-block text-[11px] font-mono text-neutral-500">
           {currentPreset.width}×{currentPreset.height}
         </span>
       </div>
 
-      {/* Aspect Ratio Presets */}
+      <div className="h-11 lg:h-auto px-2.5 sm:px-3 lg:px-0 flex items-center justify-between gap-2 lg:contents">
+        {/* Aspect Ratio Presets */}
       <div
         className="flex items-center gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700"
         role="group"
@@ -247,6 +248,7 @@ export function Header({
             </div>
           )}
         </div>
+      </div>
       </div>
     </header>
   );
