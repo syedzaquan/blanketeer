@@ -370,7 +370,8 @@ export class StoryImage extends fabric.FabricImage {
     if (strokePx > 0) {
       const canvasZoom = Math.max(1, this.canvas?.getZoom() ?? 1);
       const retina = Math.max(1, this.getCanvasRetinaScaling());
-      const pad = Math.ceil(strokePx * 2 * canvasZoom * retina + 12);
+      const multiplier = this.imageStrokeStyle === 'polaroid' ? 6.5 : 2;
+      const pad = Math.ceil(strokePx * multiplier * canvasZoom * retina + 16);
       dims.width += pad;
       dims.height += pad;
       dims.x += pad;
@@ -469,6 +470,57 @@ export class StoryImage extends fabric.FabricImage {
     ctx.save();
     ctx.scale(1 / sx, 1 / sy);
     const minLocalDim = Math.min(imgW, imgH);
+
+    if (style === 'polaroid') {
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.fillStyle = this.imageStrokeColor;
+
+      const innerW =
+        shape === 'square' || shape === 'circle'
+          ? minLocalDim * sx
+          : scaledW;
+      const innerH =
+        shape === 'square' || shape === 'circle'
+          ? minLocalDim * sy
+          : scaledH;
+      const sidePad = strokePx;
+      const bottomPad = Math.round(strokePx * 3.2);
+      const outerX = -innerW / 2 - sidePad;
+      const outerY = -innerH / 2 - sidePad;
+      const outerW = innerW + sidePad * 2;
+      const outerH = innerH + sidePad + bottomPad;
+
+      ctx.beginPath();
+      ctx.rect(outerX, outerY, outerW, outerH);
+
+      if (shape === 'circle') {
+        const innerRx = Math.max(1, (minLocalDim / 2) * sx - 0.5);
+        const innerRy = Math.max(1, (minLocalDim / 2) * sy - 0.5);
+        ctx.moveTo(innerRx, 0);
+        ctx.ellipse(0, 0, innerRx, innerRy, 0, 0, Math.PI * 2);
+      } else if (shape === 'rounded') {
+        const rawR = Math.min(
+          (minLocalDim * (this.cutoutRadius ?? 16)) / 100,
+          minLocalDim / 2
+        );
+        const holeW = Math.max(1, innerW - 1);
+        const holeH = Math.max(1, innerH - 1);
+        const rx = rawR > 0 ? Math.max(0, rawR * sx - 0.5) : 0;
+        const ry = rawR > 0 ? Math.max(0, rawR * sy - 0.5) : 0;
+        traceRoundedRectPath(ctx, -holeW / 2, -holeH / 2, holeW, holeH, rx, ry, false);
+      } else {
+        ctx.rect(
+          -innerW / 2 + 0.5,
+          -innerH / 2 + 0.5,
+          Math.max(1, innerW - 1),
+          Math.max(1, innerH - 1)
+        );
+      }
+
+      ctx.fill('evenodd');
+      ctx.restore();
+      return;
+    }
 
     if (style === 'stamp' || style === 'wavy') {
       ctx.globalCompositeOperation = 'destination-over';

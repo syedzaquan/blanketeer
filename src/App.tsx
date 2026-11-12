@@ -22,7 +22,7 @@ import { TemplatesTab } from './components/Sidebar/TemplatesTab';
 import { TextTab } from './components/Sidebar/TextTab';
 import { Toolbar } from './components/Toolbar';
 import { useFabricCanvas } from './hooks/useFabricCanvas';
-import type { SidebarTab } from './types/editor';
+import type { ExportImageFormat, SidebarTab } from './types/editor';
 import { cn } from './utils/cn';
 import { sharePngBlob, type ExportPreviewPayload } from './utils/exportCanvas';
 
@@ -55,6 +55,7 @@ export function App() {
     selectedObject,
     layers,
     templateSlots,
+    photoPalette,
     background,
     availableFonts,
     showSafeArea,
@@ -73,6 +74,8 @@ export function App() {
     updateShapeProps,
     applyTwoColumnTemplate,
     applyDiagonalTemplate,
+    applySplitTemplate,
+    applyBentoTemplate,
     fillTemplateSlot,
     updateTemplateSlotCorner,
     applyImageCutout,
@@ -110,7 +113,9 @@ export function App() {
     applyEditingSelectionStyle,
     selectAllEditingText,
     exitTextEditing,
-    exportPNG,
+    exportImage,
+    exportProjectJSON,
+    importProjectJSON,
   } = useFabricCanvas();
 
   const showMobileInspector = mobileSheet === 'inspector' && Boolean(selectedObject);
@@ -187,6 +192,8 @@ export function App() {
           templateSlots={templateSlots}
           onApplyTwoColumnTemplate={applyTwoColumnTemplate}
           onApplyDiagonalTemplate={applyDiagonalTemplate}
+          onApplySplitTemplate={applySplitTemplate}
+          onApplyBentoTemplate={applyBentoTemplate}
           onTriggerFillSlot={triggerFillSlot}
           onSelectSlot={selectLayerById}
         />
@@ -196,6 +203,7 @@ export function App() {
       return (
         <BackgroundTab
           background={background}
+          photoPalette={photoPalette}
           onModeChange={(mode) => void setBackgroundMode(mode)}
           onColorChange={(color) => void setBackgroundColor(color)}
           onGradientChange={(gradient) => void setBackgroundGradient(gradient)}
@@ -226,15 +234,20 @@ export function App() {
     });
   };
 
-  const handleExportPNG = async () => {
-    const preview = await exportPNG();
-    if (preview) {
-      setExportPreview((prev) => {
-        if (prev?.blobUrl) {
-          URL.revokeObjectURL(prev.blobUrl);
-        }
-        return preview;
-      });
+  const handleExportImage = async (format: ExportImageFormat = 'png') => {
+    try {
+      const preview = await exportImage(format);
+      if (preview) {
+        setExportPreview((prev) => {
+          if (prev?.blobUrl) {
+            URL.revokeObjectURL(prev.blobUrl);
+          }
+          return preview;
+        });
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Could not export this image. Please try again.');
     }
   };
 
@@ -248,7 +261,14 @@ export function App() {
         onUndo={() => void undo()}
         onRedo={() => void redo()}
         onResetProject={() => setShowResetConfirm(true)}
-        onExportPNG={() => void handleExportPNG()}
+        onExportImage={(format) => void handleExportImage(format)}
+        onExportProjectJSON={exportProjectJSON}
+        onImportProjectJSON={(file) => {
+          void importProjectJSON(file).catch((err) => {
+            console.error('Import failed:', err);
+            alert('Invalid template JSON file.');
+          });
+        }}
       />
 
       <input
@@ -334,6 +354,12 @@ export function App() {
             onApplyEditingStyle={applyEditingSelectionStyle}
             onSelectAllEditingText={selectAllEditingText}
             onExitTextEditing={exitTextEditing}
+            selectedObjectLocked={selectedObject ? selectedObject.locked : null}
+            onToggleLock={() => {
+              if (selectedObject) {
+                toggleLayerLock(selectedObject.id);
+              }
+            }}
           />
 
           <div className={cn(hasMobileSheet ? 'hidden lg:contents' : 'shrink-0 lg:contents')}>
@@ -394,11 +420,17 @@ export function App() {
         <Inspector
           selectedObject={selectedObject}
           availableFonts={availableFonts}
+          photoPalette={photoPalette}
           aspectRatio={aspectRatio}
           background={background}
           layerCount={layers.length}
           mobileOpen={showMobileInspector}
           onCloseMobile={() => setMobileSheet('none')}
+          onToggleLock={() => {
+            if (selectedObject) {
+              toggleLayerLock(selectedObject.id);
+            }
+          }}
           onUpdateText={(patch) => void updateTextProps(patch)}
           onApplyTextPreset={(preset) => void applyTextPreset(preset)}
           onApplyCutout={applyImageCutout}

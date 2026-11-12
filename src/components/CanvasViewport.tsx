@@ -7,7 +7,7 @@ import {
   type MouseEvent,
   type RefObject,
 } from 'react';
-import { ImagePlus, Minus, Plus, RotateCcw, Scan } from 'lucide-react';
+import { ImagePlus, Lock, Minus, Plus, RotateCcw, Scan, Unlock } from 'lucide-react';
 import { useWindowSize } from '../hooks/useWindowSize';
 import type { TextEditingSelectionState } from '../types/editor';
 import { cn } from '../utils/cn';
@@ -55,6 +55,8 @@ interface CanvasViewportProps {
   ) => void;
   onSelectAllEditingText?: () => void;
   onExitTextEditing?: () => void;
+  selectedObjectLocked?: boolean | null;
+  onToggleLock?: () => void;
 }
 
 const DEFAULT_CANVAS_SCALE = 0.26;
@@ -117,6 +119,8 @@ export function CanvasViewport({
   onApplyEditingStyle,
   onSelectAllEditingText,
   onExitTextEditing,
+  selectedObjectLocked = null,
+  onToggleLock,
 }: CanvasViewportProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const frameBoxRef = useRef<HTMLDivElement | null>(null);
@@ -896,6 +900,27 @@ export function CanvasViewport({
         onPointerDown={(e) => e.stopPropagation()}
         className="absolute top-2.5 right-3 z-10 flex items-center gap-1.5"
       >
+        {selectedObjectLocked !== null && onToggleLock && (
+          <button
+            type="button"
+            onClick={onToggleLock}
+            aria-label={selectedObjectLocked ? 'Unlock selected layer' : 'Lock selected layer'}
+            title={selectedObjectLocked ? 'Unlock layer' : 'Lock layer'}
+            className={cn(
+              'flex items-center justify-center p-2.5 lg:p-1.5 rounded-lg lg:rounded-md border transition-colors',
+              selectedObjectLocked
+                ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                : 'bg-[#1c1c1e] border-neutral-700/80 text-neutral-300 hover:text-white'
+            )}
+          >
+            {selectedObjectLocked ? (
+              <Lock className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+            ) : (
+              <Unlock className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+            )}
+          </button>
+        )}
+
         <div
           data-testid="canvas-zoom-controls"
           className="flex items-center gap-0.5 p-1 rounded-lg lg:rounded-md bg-[#1c1c1e] border border-neutral-700/80 text-xs lg:text-[11px] font-mono text-neutral-200"

@@ -305,6 +305,7 @@ export function extractSelectedState(
       pillRadius: Math.round(story.pillRadius ?? 20),
       pillPaddingX: Math.round(story.pillPaddingX ?? 24),
       pillPaddingY: Math.round(story.pillPaddingY ?? 8),
+      textShadowEnabled: Boolean(story.shadow),
       opacity: Number((story.opacity ?? 1).toFixed(2)),
       angle: Math.round(story.angle || 0),
       flipX: Boolean(story.flipX),

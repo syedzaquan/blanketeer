@@ -9,6 +9,7 @@ import {
   type BasicShapeKind,
   type CutoutShape,
   type DiagonalDirection,
+  type ExportImageFormat,
   type GradientConfig,
   type ImageStrokeStyle,
   type LayerItem,
@@ -40,10 +41,11 @@ import {
   type FabricObjectWithMeta,
 } from '../utils/canvasHelpers';
 import {
-  exportCanvasToPNG,
+  exportCanvasToImage,
   isIOSDevice,
   type ExportPreviewPayload,
 } from '../utils/exportCanvas';
+import { extractImagePalette } from '../utils/colorPalette';
 import { ensureFrauncesFontData, isFrauncesFamily } from '../utils/frauncesSvg';
 import {
   SUPPORTED_FONTS,
@@ -270,6 +272,7 @@ export function useFabricCanvas() {
   const [selectedObject, setSelectedObject] = useState<SelectedObjectState | null>(null);
   const [layers, setLayers] = useState<LayerItem[]>([]);
   const [templateSlots, setTemplateSlots] = useState<TemplateSlotSummary[]>([]);
+  const [photoPalette, setPhotoPalette] = useState<string[]>([]);
   const [textEditingState, setTextEditingState] =
     useState<TextEditingSelectionState | null>(null);
   const [availableFonts, setAvailableFonts] = useState<FontOption[]>(SUPPORTED_FONTS);
@@ -302,6 +305,18 @@ export function useFabricCanvas() {
   const customFontsRef = useRef<SavedCustomFont[]>([]);
   const historyTimerRef = useRef<number | null>(null);
   const bgUpdateRafRef = useRef<number | null>(null);
+
+  const refreshPhotoPalette = useCallback((src: string) => {
+    void extractImagePalette(src, 5)
+      .then((colors) => {
+        if (colors.length > 0) {
+          setPhotoPalette(colors);
+        }
+      })
+      .catch(() => {
+        // Ignore palette extraction errors on unsupported/tainted images
+      });
+  }, []);
 
   const syncTextEditingState = useCallback(() => {
     const canvas = canvasRef.current;
@@ -1075,8 +1090,9 @@ export function useFabricCanvas() {
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
       await applyCanvasBackground(next, width, height, 'full');
       commitHistoryNow();
+      refreshPhotoPalette(src);
     },
-    [applyCanvasBackground, cancelPendingBgWork, commitHistoryNow]
+    [applyCanvasBackground, cancelPendingBgWork, commitHistoryNow, refreshPhotoPalette]
   );
 
   const updateBackgroundImageConfig = useCallback(
@@ -1222,6 +1238,7 @@ export function useFabricCanvas() {
         pillRadius: number;
         pillPaddingX: number;
         pillPaddingY: number;
+        textShadowEnabled: boolean;
       }>
     ) => {
       const canvas = canvasRef.current;
@@ -1231,7 +1248,22 @@ export function useFabricCanvas() {
         return;
       }
 
-      const effectivePatch = { ...patch };
+      const { textShadowEnabled, ...restPatch } = patch;
+      const effectivePatch = { ...restPatch };
+      if (textShadowEnabled !== undefined) {
+        active.set(
+          'shadow',
+          textShadowEnabled
+            ? new fabric.Shadow({
+                color: 'rgba(0, 0, 0, 0.48)',
+                blur: 16,
+                offsetX: 0,
+                offsetY: 4,
+                nonScaling: true,
+              })
+            : null
+        );
+      }
       const nextFamily = effectivePatch.fontFamily ?? active.fontFamily;
 
       if (effectivePatch.fontFamily !== undefined) {
@@ -1430,8 +1462,9 @@ export function useFabricCanvas() {
       canvas.requestRenderAll();
       syncSelectionAndLayers();
       commitHistoryNow();
+      refreshPhotoPalette(src);
     },
-    [commitHistoryNow, syncSelectionAndLayers]
+    [commitHistoryNow, refreshPhotoPalette, syncSelectionAndLayers]
   );
 
   const addBasicShape = useCallback(
@@ -1639,6 +1672,139 @@ export function useFabricCanvas() {
     [commitHistoryNow, syncSelectionAndLayers]
   );
 
+  const applySplitTemplate = useCallback(
+    (options: { direction: 'horizontal' | 'vertical'; cornerPercent: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const outerPad = 16;
+      const gap = 16;
+      const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
+
+      const existingSlots = canvas
+        .getObjects()
+        .filter((obj): obj is TemplateSlotRect => obj instanceof TemplateSlotRect);
+      if (existingSlots.length > 0) {
+        existingSlots.forEach((s) => canvas.remove(s));
+      }
+
+      const isVertical = options.direction === 'vertical';
+      const slotW = isVertical
+        ? Math.round((width - outerPad * 2 - gap) / 2)
+        : width - outerPad * 2;
+      const slotH = isVertical
+        ? height - outerPad * 2
+        : Math.round((height - outerPad * 2 - gap) / 2);
+
+      const slot1 = new TemplateSlotRect({
+        left: outerPad + slotW / 2,
+        top: outerPad + slotH / 2,
+        width: slotW,
+        height: slotH,
+        originX: 'center',
+        originY: 'center',
+        slotIndex: 1,
+        slotCornerPercent: cornerPercent,
+        editorName: 'Photo 1',
+      });
+      ensureObjectMeta(slot1);
+
+      const slot2 = new TemplateSlotRect({
+        left: isVertical
+          ? outerPad + slotW + gap + slotW / 2
+          : outerPad + slotW / 2,
+        top: isVertical
+          ? outerPad + slotH / 2
+          : outerPad + slotH + gap + slotH / 2,
+        width: slotW,
+        height: slotH,
+        originX: 'center',
+        originY: 'center',
+        slotIndex: 2,
+        slotCornerPercent: cornerPercent,
+        editorName: 'Photo 2',
+      });
+      ensureObjectMeta(slot2);
+
+      canvas.insertAt(0, slot1, slot2);
+      canvas.setActiveObject(slot1);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [commitHistoryNow, syncSelectionAndLayers]
+  );
+
+  const applyBentoTemplate = useCallback(
+    (options: { cornerPercent: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const outerPad = 16;
+      const gap = 16;
+      const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
+
+      const existingSlots = canvas
+        .getObjects()
+        .filter((obj): obj is TemplateSlotRect => obj instanceof TemplateSlotRect);
+      if (existingSlots.length > 0) {
+        existingSlots.forEach((s) => canvas.remove(s));
+      }
+
+      const colW = Math.round((width - outerPad * 2 - gap) / 2);
+      const fullH = height - outerPad * 2;
+      const halfH = Math.round((fullH - gap) / 2);
+
+      const slot1 = new TemplateSlotRect({
+        left: outerPad + colW / 2,
+        top: outerPad + fullH / 2,
+        width: colW,
+        height: fullH,
+        originX: 'center',
+        originY: 'center',
+        slotIndex: 1,
+        slotCornerPercent: cornerPercent,
+        editorName: 'Photo 1',
+      });
+      ensureObjectMeta(slot1);
+
+      const slot2 = new TemplateSlotRect({
+        left: outerPad + colW + gap + colW / 2,
+        top: outerPad + halfH / 2,
+        width: colW,
+        height: halfH,
+        originX: 'center',
+        originY: 'center',
+        slotIndex: 2,
+        slotCornerPercent: cornerPercent,
+        editorName: 'Photo 2',
+      });
+      ensureObjectMeta(slot2);
+
+      const slot3 = new TemplateSlotRect({
+        left: outerPad + colW + gap + colW / 2,
+        top: outerPad + halfH + gap + halfH / 2,
+        width: colW,
+        height: halfH,
+        originX: 'center',
+        originY: 'center',
+        slotIndex: 3,
+        slotCornerPercent: cornerPercent,
+        editorName: 'Photo 3',
+      });
+      ensureObjectMeta(slot3);
+
+      canvas.insertAt(0, slot1, slot2, slot3);
+      canvas.setActiveObject(slot1);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [commitHistoryNow, syncSelectionAndLayers]
+  );
+
   const applyDiagonalTemplate = useCallback(
     (options: { direction: DiagonalDirection; cornerPercent: number }) => {
       const canvas = canvasRef.current;
@@ -1757,8 +1923,9 @@ export function useFabricCanvas() {
       canvas.requestRenderAll();
       syncSelectionAndLayers();
       commitHistoryNow();
+      refreshPhotoPalette(croppedSrc);
     },
-    [commitHistoryNow, findObjectById, syncSelectionAndLayers]
+    [commitHistoryNow, findObjectById, refreshPhotoPalette, syncSelectionAndLayers]
   );
 
   const updateTemplateSlotCorner = useCallback(
@@ -2470,26 +2637,96 @@ export function useFabricCanvas() {
     });
   }, []);
 
-  const exportPNG = useCallback(async (): Promise<ExportPreviewPayload | null> => {
+  const exportImage = useCallback(
+    async (
+      format: ExportImageFormat = 'png',
+      quality = 0.92
+    ): Promise<ExportPreviewPayload | null> => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      cancelPendingBgWork();
+      const currentBg = backgroundRef.current;
+      if (
+        currentBg.mode === 'image' &&
+        currentBg.image &&
+        canvas.backgroundImage instanceof fabric.FabricImage
+      ) {
+        applyBackgroundImageAdjustments(
+          canvas.backgroundImage,
+          currentBg.image.adjustments,
+          'full'
+        );
+      }
+      const ext = format === 'jpeg' ? 'jpg' : format;
+      const preview = await exportCanvasToImage(canvas, {
+        format,
+        quality,
+        filename: `story-${Date.now()}.${ext}`,
+      });
+      syncSelectionAndLayers();
+      return preview;
+    },
+    [cancelPendingBgWork, syncSelectionAndLayers]
+  );
+
+  const exportPNG = useCallback(
+    async (): Promise<ExportPreviewPayload | null> => exportImage('png', 1),
+    [exportImage]
+  );
+
+  const exportProjectJSON = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return null;
-    cancelPendingBgWork();
-    const currentBg = backgroundRef.current;
-    if (
-      currentBg.mode === 'image' &&
-      currentBg.image &&
-      canvas.backgroundImage instanceof fabric.FabricImage
-    ) {
-      applyBackgroundImageAdjustments(
-        canvas.backgroundImage,
-        currentBg.image.adjustments,
-        'full'
+    if (!canvas) return;
+    const payload = {
+      version: 1,
+      aspectRatio: aspectRatioRef.current,
+      background: backgroundRef.current,
+      canvasJson: canvas.toObject(CUSTOM_SERIALIZED_PROPS),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `blanketeer-template-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  }, []);
+
+  const importProjectJSON = useCallback(
+    async (file: File) => {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as {
+        aspectRatio?: AspectRatioKey;
+        background?: BackgroundState;
+        canvasJson?: Record<string, unknown>;
+      };
+      if (!parsed.canvasJson || !parsed.aspectRatio || !parsed.background) {
+        throw new Error('Invalid project file');
+      }
+      await restoreSnapshot(
+        {
+          aspectRatio: parsed.aspectRatio,
+          background: parsed.background,
+          canvasJson: parsed.canvasJson,
+        },
+        true
       );
-    }
-    const preview = await exportCanvasToPNG(canvas, `story-${Date.now()}.png`);
-    syncSelectionAndLayers();
-    return preview;
-  }, [cancelPendingBgWork, syncSelectionAndLayers]);
+      historyRef.current = [
+        {
+          aspectRatio: parsed.aspectRatio,
+          background: structuredClone(parsed.background),
+          canvasJson: parsed.canvasJson,
+        },
+      ];
+      historyIndexRef.current = 0;
+      updateUndoRedoFlags();
+    },
+    [restoreSnapshot, updateUndoRedoFlags]
+  );
 
   const applyEditingSelectionStyle = useCallback(
     (
@@ -2757,6 +2994,8 @@ export function useFabricCanvas() {
     updateShapeProps,
     applyTwoColumnTemplate,
     applyDiagonalTemplate,
+    applySplitTemplate,
+    applyBentoTemplate,
     fillTemplateSlot,
     updateTemplateSlotCorner,
     applyImageCutout,
@@ -2790,13 +3029,17 @@ export function useFabricCanvas() {
     beginObjectPinch,
     updateObjectPinch,
     endObjectPinch,
+    photoPalette,
     textEditingState,
     applyEditingSelectionStyle,
     selectAllEditingText,
     exitTextEditing,
     showSafeArea,
     toggleSafeArea,
+    exportImage,
     exportPNG,
+    exportProjectJSON,
+    importProjectJSON,
     resetProject,
   };
 }

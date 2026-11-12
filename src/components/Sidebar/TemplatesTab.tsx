@@ -8,7 +8,7 @@ import type {
 import { cn } from '../../utils/cn';
 import { RangeSlider } from '../RangeSlider';
 
-type TemplateKind = 'two-column' | 'diagonal';
+type TemplateKind = 'two-column' | 'diagonal' | 'split' | 'bento';
 
 interface TemplatesTabProps {
   templateSlots: TemplateSlotSummary[];
@@ -20,6 +20,11 @@ interface TemplatesTabProps {
     direction: DiagonalDirection;
     cornerPercent: number;
   }) => void;
+  onApplySplitTemplate: (options: {
+    direction: 'horizontal' | 'vertical';
+    cornerPercent: number;
+  }) => void;
+  onApplyBentoTemplate: (options: { cornerPercent: number }) => void;
   onTriggerFillSlot: (slotId: string) => void;
   onSelectSlot: (slotId: string) => void;
 }
@@ -28,12 +33,15 @@ export function TemplatesTab({
   templateSlots,
   onApplyTwoColumnTemplate,
   onApplyDiagonalTemplate,
+  onApplySplitTemplate,
+  onApplyBentoTemplate,
   onTriggerFillSlot,
   onSelectSlot,
 }: TemplatesTabProps) {
   const [selectedKind, setSelectedKind] = useState<TemplateKind>('two-column');
   const [columnPlacement, setColumnPlacement] = useState<TemplatePlacement>('top');
   const [diagDirection, setDiagDirection] = useState<DiagonalDirection>('rtl');
+  const [splitDirection, setSplitDirection] = useState<'horizontal' | 'vertical'>('horizontal');
   const [rounded, setRounded] = useState(true);
   const [cornerPercent, setCornerPercent] = useState(6);
 
@@ -136,6 +144,103 @@ export function TemplatesTab({
               />
             </svg>
             <span className="text-xs font-medium">Diagonal</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedKind('split')}
+            className={cn(
+              'p-2.5 rounded-lg border flex flex-col items-center gap-1.5 transition-colors',
+              selectedKind === 'split'
+                ? 'bg-neutral-700 border-neutral-500 text-white'
+                : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-800'
+            )}
+          >
+            <svg width="28" height="32" viewBox="0 0 28 32" className="shrink-0">
+              <rect
+                x="1"
+                y="1"
+                width="26"
+                height="30"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity="0.35"
+                strokeWidth="1.5"
+              />
+              <rect
+                x="3.5"
+                y="3.5"
+                width="21"
+                height="11.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="3.5"
+                y="17"
+                width="21"
+                height="11.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+            </svg>
+            <span className="text-xs font-medium">Split 50/50</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedKind('bento')}
+            className={cn(
+              'p-2.5 rounded-lg border flex flex-col items-center gap-1.5 transition-colors',
+              selectedKind === 'bento'
+                ? 'bg-neutral-700 border-neutral-500 text-white'
+                : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-800'
+            )}
+          >
+            <svg width="28" height="32" viewBox="0 0 28 32" className="shrink-0">
+              <rect
+                x="1"
+                y="1"
+                width="26"
+                height="30"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity="0.35"
+                strokeWidth="1.5"
+              />
+              <rect
+                x="3.5"
+                y="3.5"
+                width="9.5"
+                height="25"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="15"
+                y="3.5"
+                width="9.5"
+                height="11.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="15"
+                y="17"
+                width="9.5"
+                height="11.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+            </svg>
+            <span className="text-xs font-medium">3-Photo Bento</span>
           </button>
         </div>
       </div>
@@ -280,6 +385,39 @@ export function TemplatesTab({
         </div>
       )}
 
+      {/* Split 50/50 Options */}
+      {selectedKind === 'split' && (
+        <div className="flex flex-col gap-3 border-t border-neutral-800/80 pt-3.5">
+          <div>
+            <span className="block text-xs lg:text-[11px] text-neutral-400 mb-1.5">
+              Split Direction
+            </span>
+            <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-neutral-800/80 border border-neutral-700">
+              {(
+                [
+                  { id: 'horizontal', label: 'Top / Bottom' },
+                  { id: 'vertical', label: 'Left / Right' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setSplitDirection(opt.id)}
+                  className={cn(
+                    'py-2 lg:py-1 rounded-md text-xs font-medium transition-colors',
+                    splitDirection === opt.id
+                      ? 'bg-neutral-700 text-white'
+                      : 'text-neutral-400 hover:text-neutral-100'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Shared Corner Options + Apply Button */}
       <div className="flex flex-col gap-3">
         <div>
@@ -349,9 +487,18 @@ export function TemplatesTab({
                 placement: columnPlacement,
                 cornerPercent: effectiveCornerPercent,
               });
-            } else {
+            } else if (selectedKind === 'diagonal') {
               onApplyDiagonalTemplate({
                 direction: diagDirection,
+                cornerPercent: effectiveCornerPercent,
+              });
+            } else if (selectedKind === 'split') {
+              onApplySplitTemplate({
+                direction: splitDirection,
+                cornerPercent: effectiveCornerPercent,
+              });
+            } else {
+              onApplyBentoTemplate({
                 cornerPercent: effectiveCornerPercent,
               });
             }
@@ -364,7 +511,11 @@ export function TemplatesTab({
               ? 'Update Slots'
               : selectedKind === 'two-column'
                 ? 'Add 2-Column Template'
-                : 'Add Diagonal Template'}
+                : selectedKind === 'diagonal'
+                  ? 'Add Diagonal Template'
+                  : selectedKind === 'split'
+                    ? 'Add Split Template'
+                    : 'Add Bento Template'}
           </span>
         </button>
       </div>

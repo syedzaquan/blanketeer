@@ -28,6 +28,7 @@ import { cn } from '../../utils/cn';
 
 interface BackgroundTabProps {
   background: BackgroundState;
+  photoPalette?: string[];
   onModeChange: (mode: BackgroundMode) => void;
   onColorChange: (color: string) => void;
   onGradientChange: (gradient: GradientConfig) => void;
@@ -246,6 +247,7 @@ const OVERLAY_ANGLE_PRESETS = [
 
 export function BackgroundTab({
   background,
+  photoPalette = [],
   onModeChange,
   onColorChange,
   onGradientChange,
@@ -375,6 +377,31 @@ export function BackgroundTab({
               ))}
             </div>
           </div>
+
+          {photoPalette.length > 0 && (
+            <div>
+              <p className="text-[11px] text-neutral-500 mb-1.5">
+                Photo Colors
+              </p>
+              <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
+                {photoPalette.map((swatch) => (
+                  <button
+                    key={swatch}
+                    type="button"
+                    onClick={() => onColorChange(swatch)}
+                    aria-label={`Set background ${swatch}`}
+                    className={cn(
+                      'w-full h-9 lg:h-7 rounded-md lg:rounded border transition-colors',
+                      background.color.toLowerCase() === swatch.toLowerCase()
+                        ? 'border-white ring-1 ring-white/50'
+                        : 'border-neutral-700 hover:border-neutral-500'
+                    )}
+                    style={{ backgroundColor: swatch }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

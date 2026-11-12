@@ -78,6 +78,7 @@ const STROKE_STYLES: { id: ImageStrokeStyle; label: string }[] = [
   { id: 'dotted', label: 'Dotted' },
   { id: 'stamp', label: 'Stamp' },
   { id: 'wavy', label: 'Wavy' },
+  { id: 'polaroid', label: 'Polaroid' },
 ];
 
 const SHADOW_SWATCHES = [
@@ -195,7 +196,10 @@ export function ImageStyleControls({
   const strokeWidth = selectedImage?.strokeWidth ?? 0;
   const strokeColor = selectedImage?.strokeColor ?? '#ffffff';
   const strokeStyle = selectedImage?.strokeStyle ?? 'solid';
-  const isFrameStyle = strokeStyle === 'stamp' || strokeStyle === 'wavy';
+  const isFrameStyle =
+    strokeStyle === 'stamp' ||
+    strokeStyle === 'wavy' ||
+    strokeStyle === 'polaroid';
   const hasStroke = strokeWidth > 0;
   const shadowEnabled = selectedImage?.shadowEnabled ?? false;
   const shadowColor = selectedImage?.shadowColor ?? '#000000';
@@ -657,7 +661,10 @@ export function ImageStyleControls({
             </span>
             <div className="flex flex-wrap gap-1.5 lg:gap-1">
               {STROKE_STYLES.map((opt) => {
-                const optIsFrame = opt.id === 'stamp' || opt.id === 'wavy';
+                const optIsFrame =
+                  opt.id === 'stamp' ||
+                  opt.id === 'wavy' ||
+                  opt.id === 'polaroid';
                 return (
                   <button
                     key={opt.id}

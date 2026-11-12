@@ -1,4 +1,5 @@
 import * as fabric from 'fabric';
+import type { ExportImageFormat } from '../types/editor';
 import {
   hasPendingFrauncesDecodes,
   isFrauncesFamily,
@@ -81,10 +82,20 @@ export async function sharePngBlob(
   }
 }
 
-export const exportCanvasToPNG = async (
+export const exportCanvasToImage = async (
   canvas: fabric.Canvas,
-  filename = `story-${Date.now()}.png`
+  options: {
+    format?: ExportImageFormat;
+    quality?: number;
+    filename?: string;
+  } = {}
 ): Promise<ExportPreviewPayload | null> => {
+  const format: ExportImageFormat = options.format ?? 'png';
+  const quality = format === 'png' ? 1 : (options.quality ?? 0.92);
+  const ext = format === 'jpeg' ? 'jpg' : format;
+  const filename = options.filename ?? `story-${Date.now()}.${ext}`;
+  const mimeType = `image/${format}`;
+
   const active = canvas.getActiveObject();
   if (active && 'isEditing' in active && (active as fabric.IText).isEditing) {
     (active as fabric.IText).exitEditing();
@@ -118,12 +129,12 @@ export const exportCanvasToPNG = async (
   }
 
   const dataURL = canvas.toDataURL({
-    format: 'png',
+    format,
     multiplier: 1, // Native resolution export
-    quality: 1,
+    quality,
   });
 
-  if (!dataURL || dataURL === 'data:,' || !dataURL.startsWith('data:image/png')) {
+  if (!dataURL || dataURL === 'data:,' || !dataURL.startsWith('data:image/')) {
     throw new Error('Canvas export produced empty image data');
   }
 
@@ -131,10 +142,22 @@ export const exportCanvasToPNG = async (
   const blobUrl = URL.createObjectURL(blob);
 
   if (isIOSDevice()) {
-    const shareOutcome = await sharePngBlob(blob, filename);
-    if (shareOutcome === 'shared' || shareOutcome === 'cancelled') {
-      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-      return null;
+    const file = new File([blob], filename, { type: mimeType });
+    if (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.share === 'function' &&
+      (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }))
+    ) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        return null;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+          return null;
+        }
+      }
     }
     return {
       blob,
@@ -148,3 +171,9 @@ export const exportCanvasToPNG = async (
   window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
   return null;
 };
+
+export const exportCanvasToPNG = async (
+  canvas: fabric.Canvas,
+  filename = `story-${Date.now()}.png`
+): Promise<ExportPreviewPayload | null> =>
+  exportCanvasToImage(canvas, { format: 'png', quality: 1, filename });

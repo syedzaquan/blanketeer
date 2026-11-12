@@ -7,8 +7,29 @@ import {
   ImagePlus,
   SlidersHorizontal,
   Trash2,
-  Type,
 } from 'lucide-react';
+
+function TypePlusIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M3 8V6h11v2" />
+      <path d="M8.5 6v13" />
+      <path d="M6 19h5" />
+      <path d="M19 3v6" />
+      <path d="M16 6h6" />
+    </svg>
+  );
+}
 import type { SelectedObjectState } from '../types/editor';
 
 interface ToolbarProps {
@@ -48,10 +69,9 @@ export function Toolbar({
               onClick={onAddText}
               aria-label="Add Text"
               title="Add Text"
-              className="flex items-center gap-1.5 px-3.5 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md text-sm lg:text-xs font-medium text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors shrink-0"
+              className="flex items-center justify-center px-3 py-2 lg:px-2 lg:py-1.5 rounded-lg lg:rounded-md text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors shrink-0"
             >
-              <Type className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-neutral-400" />
-              <span>Add Text</span>
+              <TypePlusIcon className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
             </button>
             <div className="w-px h-5 lg:h-3.5 bg-neutral-800 mx-0.5 shrink-0" />
             <button
@@ -59,10 +79,9 @@ export function Toolbar({
               onClick={onTriggerImageUpload}
               aria-label="Add Image"
               title="Add Image"
-              className="flex items-center gap-1.5 px-3.5 py-2 lg:px-2.5 lg:py-1 rounded-lg lg:rounded-md text-sm lg:text-xs font-medium text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors shrink-0"
+              className="flex items-center justify-center px-3 py-2 lg:px-2 lg:py-1.5 rounded-lg lg:rounded-md text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors shrink-0"
             >
-              <ImagePlus className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-neutral-400" />
-              <span>Add Image</span>
+              <ImagePlus className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
             </button>
           </>
         ) : (

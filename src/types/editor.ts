@@ -111,7 +111,15 @@ export interface TextEditingSelectionState {
 
 export type CutoutShape = 'none' | 'circle' | 'square' | 'rounded' | 'star' | 'heart';
 
-export type ImageStrokeStyle = 'solid' | 'dashed' | 'dotted' | 'stamp' | 'wavy';
+export type ImageStrokeStyle =
+  | 'solid'
+  | 'dashed'
+  | 'dotted'
+  | 'stamp'
+  | 'wavy'
+  | 'polaroid';
+
+export type ExportImageFormat = 'png' | 'jpeg' | 'webp';
 
 export interface SelectedTextProps {
   kind: 'text';
@@ -136,6 +144,7 @@ export interface SelectedTextProps {
   pillRadius: number;
   pillPaddingX: number;
   pillPaddingY: number;
+  textShadowEnabled: boolean;
   opacity: number;
   angle: number;
   flipX: boolean;

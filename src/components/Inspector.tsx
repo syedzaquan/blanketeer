@@ -13,10 +13,12 @@ import {
   FlipVertical2,
   ImagePlus,
   Italic,
+  Lock,
   RotateCcw,
   Strikethrough,
   Trash2,
   Underline,
+  Unlock,
   X,
 } from 'lucide-react';
 import {
@@ -48,11 +50,13 @@ import { RangeSlider } from './RangeSlider';
 interface InspectorProps {
   selectedObject: SelectedObjectState | null;
   availableFonts: FontOption[];
+  photoPalette?: string[];
   aspectRatio: AspectRatioKey;
   background: BackgroundState;
   layerCount: number;
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  onToggleLock: () => void;
   onUpdateText: (
     patch: Partial<{
       text: string;
@@ -74,6 +78,7 @@ interface InspectorProps {
       pillRadius: number;
       pillPaddingX: number;
       pillPaddingY: number;
+      textShadowEnabled: boolean;
     }>
   ) => void;
   onApplyTextPreset: (preset: TextStylePresetId) => void;
@@ -117,11 +122,13 @@ const WEIGHT_PRESETS = [
 export function Inspector({
   selectedObject,
   availableFonts,
+  photoPalette = [],
   aspectRatio,
   background,
   layerCount,
   mobileOpen,
   onCloseMobile,
+  onToggleLock,
   onUpdateText,
   onApplyTextPreset,
   onApplyCutout,
@@ -226,6 +233,24 @@ export function Inspector({
         </div>
 
         <div className="flex items-center gap-1.5 lg:gap-1">
+          <button
+            type="button"
+            onClick={onToggleLock}
+            aria-label={selectedObject.locked ? 'Unlock layer' : 'Lock layer'}
+            title={selectedObject.locked ? 'Unlock layer' : 'Lock layer'}
+            className={cn(
+              'p-2.5 lg:p-1.5 rounded-lg lg:rounded-md border transition-colors',
+              selectedObject.locked
+                ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                : 'bg-neutral-800/80 hover:bg-neutral-700 border-neutral-700 text-neutral-300'
+            )}
+          >
+            {selectedObject.locked ? (
+              <Lock className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+            ) : (
+              <Unlock className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+            )}
+          </button>
           <button
             type="button"
             onClick={onDuplicate}
@@ -450,6 +475,32 @@ export function Inspector({
                     />
                   ))}
                 </div>
+
+                {photoPalette.length > 0 && (
+                  <div>
+                    <span className="block text-[10px] text-neutral-500 mb-1">
+                      Photo Colors
+                    </span>
+                    <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
+                      {photoPalette.map((swatch) => (
+                        <button
+                          key={swatch}
+                          type="button"
+                          onClick={() => onUpdateText({ textBgColor: swatch })}
+                          aria-label={`Set highlight color ${swatch}`}
+                          className={cn(
+                            'h-7 lg:h-5 rounded-md lg:rounded border transition-colors',
+                            selectedObject.textBgColor.toLowerCase() ===
+                              swatch.toLowerCase()
+                              ? 'border-white ring-1 ring-white/50'
+                              : 'border-neutral-700 hover:border-neutral-500'
+                          )}
+                          style={{ backgroundColor: swatch }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {selectedObject.bgStyle === 'pill' && (
                   <>
@@ -827,6 +878,63 @@ export function Inspector({
               </div>
             )}
 
+            {/* Text Case & Shadow */}
+            <div className="grid grid-cols-2 gap-2 lg:gap-1.5">
+              <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdateText({ text: selectedObject.text.toUpperCase() })
+                  }
+                  title="Uppercase"
+                  className="py-2 lg:py-1 rounded text-xs lg:text-[11px] font-medium text-neutral-300 hover:text-white hover:bg-neutral-700/70 transition-colors"
+                >
+                  AA
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdateText({
+                      text: selectedObject.text.replace(/\b\w+/g, (w) =>
+                        w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+                      ),
+                    })
+                  }
+                  title="Title Case"
+                  className="py-2 lg:py-1 rounded text-xs lg:text-[11px] font-medium text-neutral-300 hover:text-white hover:bg-neutral-700/70 transition-colors"
+                >
+                  Aa
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdateText({ text: selectedObject.text.toLowerCase() })
+                  }
+                  title="Lowercase"
+                  className="py-2 lg:py-1 rounded text-xs lg:text-[11px] font-medium text-neutral-300 hover:text-white hover:bg-neutral-700/70 transition-colors"
+                >
+                  aa
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateText({
+                    textShadowEnabled: !selectedObject.textShadowEnabled,
+                  })
+                }
+                aria-pressed={selectedObject.textShadowEnabled}
+                className={cn(
+                  'py-2 lg:py-1 px-2.5 rounded-lg lg:rounded-md border text-xs lg:text-[11px] font-medium transition-colors',
+                  selectedObject.textShadowEnabled
+                    ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                    : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:text-white'
+                )}
+              >
+                Shadow {selectedObject.textShadowEnabled ? 'On' : 'Off'}
+              </button>
+            </div>
           </div>
 
           {/* Text Color */}
@@ -866,6 +974,30 @@ export function Inspector({
                 />
               ))}
             </div>
+            {photoPalette.length > 0 && (
+              <div>
+                <span className="block text-[10px] text-neutral-500 mb-1">
+                  Photo Colors
+                </span>
+                <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
+                  {photoPalette.map((swatch) => (
+                    <button
+                      key={swatch}
+                      type="button"
+                      onClick={() => onUpdateText({ fill: swatch })}
+                      aria-label={`Set text color ${swatch}`}
+                      className={cn(
+                        'h-7 lg:h-5 rounded-md lg:rounded border transition-colors',
+                        selectedObject.fill.toLowerCase() === swatch.toLowerCase()
+                          ? 'border-white ring-1 ring-white/50'
+                          : 'border-neutral-700 hover:border-neutral-500'
+                      )}
+                      style={{ backgroundColor: swatch }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Spacing Controls */}
@@ -997,6 +1129,30 @@ export function Inspector({
                 />
               ))}
             </div>
+            {photoPalette.length > 0 && (
+              <div>
+                <span className="block text-[10px] text-neutral-500 mb-1">
+                  Photo Colors
+                </span>
+                <div className="grid grid-cols-5 gap-2 lg:gap-1.5">
+                  {photoPalette.map((swatch) => (
+                    <button
+                      key={swatch}
+                      type="button"
+                      onClick={() => onUpdateShape({ fill: swatch })}
+                      aria-label={`Set shape fill ${swatch}`}
+                      className={cn(
+                        'h-7 lg:h-5 rounded-md lg:rounded border transition-colors',
+                        selectedObject.fill.toLowerCase() === swatch.toLowerCase()
+                          ? 'border-white ring-1 ring-white/50'
+                          : 'border-neutral-700 hover:border-neutral-500'
+                      )}
+                      style={{ backgroundColor: swatch }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
