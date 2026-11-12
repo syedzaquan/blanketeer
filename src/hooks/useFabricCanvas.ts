@@ -7,6 +7,7 @@ import {
   type BackgroundMode,
   type BackgroundState,
   type CutoutShape,
+  type DiagonalDirection,
   type GradientConfig,
   type ImageStrokeStyle,
   type LayerItem,
@@ -1309,6 +1310,68 @@ export function useFabricCanvas() {
     [commitHistoryNow, syncSelectionAndLayers]
   );
 
+  const applyDiagonalTemplate = useCallback(
+    (options: { direction: DiagonalDirection; cornerPercent: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const outerPad = 16;
+      const gap = 16;
+
+      const slotWidth = Math.round((width - outerPad * 2 - gap) / 2);
+      const slotHeight = Math.round((height - outerPad * 2 - gap) / 2);
+      const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
+
+      const existingSlots = canvas
+        .getObjects()
+        .filter((obj): obj is TemplateSlotRect => obj instanceof TemplateSlotRect);
+      if (existingSlots.length > 0) {
+        existingSlots.forEach((s) => canvas.remove(s));
+      }
+
+      const leftX = outerPad + slotWidth / 2;
+      const rightX = outerPad + slotWidth + gap + slotWidth / 2;
+      const topY = outerPad + slotHeight / 2;
+      const bottomY = outerPad + slotHeight + gap + slotHeight / 2;
+
+      const isLtr = options.direction === 'ltr';
+
+      const slot1 = new TemplateSlotRect({
+        left: leftX,
+        top: isLtr ? topY : bottomY,
+        width: slotWidth,
+        height: slotHeight,
+        originX: 'center',
+        originY: 'center',
+        slotIndex: 1,
+        slotCornerPercent: cornerPercent,
+        editorName: 'Photo 1',
+      });
+      ensureObjectMeta(slot1);
+
+      const slot2 = new TemplateSlotRect({
+        left: rightX,
+        top: isLtr ? bottomY : topY,
+        width: slotWidth,
+        height: slotHeight,
+        originX: 'center',
+        originY: 'center',
+        slotIndex: 2,
+        slotCornerPercent: cornerPercent,
+        editorName: 'Photo 2',
+      });
+      ensureObjectMeta(slot2);
+
+      canvas.insertAt(0, slot1, slot2);
+      canvas.setActiveObject(slot1);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [commitHistoryNow, syncSelectionAndLayers]
+  );
+
   const fillTemplateSlot = useCallback(
     async (slotId: string, file: File) => {
       const canvas = canvasRef.current;
@@ -2189,6 +2252,7 @@ export function useFabricCanvas() {
     uploadCustomFont,
     addImageFromFile,
     applyTwoColumnTemplate,
+    applyDiagonalTemplate,
     fillTemplateSlot,
     updateTemplateSlotCorner,
     applyImageCutout,

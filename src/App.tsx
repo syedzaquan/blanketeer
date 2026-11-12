@@ -67,6 +67,7 @@ export function App() {
     uploadCustomFont,
     addImageFromFile,
     applyTwoColumnTemplate,
+    applyDiagonalTemplate,
     fillTemplateSlot,
     updateTemplateSlotCorner,
     applyImageCutout,
@@ -169,6 +170,7 @@ export function App() {
         <TemplatesTab
           templateSlots={templateSlots}
           onApplyTwoColumnTemplate={applyTwoColumnTemplate}
+          onApplyDiagonalTemplate={applyDiagonalTemplate}
           onTriggerFillSlot={triggerFillSlot}
           onSelectSlot={selectLayerById}
         />

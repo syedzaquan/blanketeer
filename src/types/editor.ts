@@ -203,6 +203,8 @@ export interface LayerItem {
 
 export type TemplatePlacement = 'top' | 'bottom';
 
+export type DiagonalDirection = 'ltr' | 'rtl';
+
 export interface TemplateSlotSummary {
   id: string;
   label: string;

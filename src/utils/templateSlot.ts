@@ -177,4 +177,3 @@ export async function coverCropFileToDataURL(
     ? canvas.toDataURL('image/png')
     : canvas.toDataURL('image/jpeg', 0.92);
 }
-
