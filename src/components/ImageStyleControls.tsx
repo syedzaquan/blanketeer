@@ -16,6 +16,7 @@ import type {
   SelectedImageProps,
 } from '../types/editor';
 import { cn } from '../utils/cn';
+import { RangeSlider } from './RangeSlider';
 
 export type ImagePropsPatch = Partial<{
   width: number;
@@ -424,10 +425,9 @@ export function ImageStyleControls({
                   {selectedImage?.angle ?? 0}°
                 </span>
               </div>
-              <input
+              <RangeSlider
                 id={`${idPrefix}-rotation`}
                 aria-label="Image rotation"
-                type="range"
                 min={-180}
                 max={180}
                 step={1}
@@ -439,9 +439,8 @@ export function ImageStyleControls({
                       : selectedImage.angle
                     : 0
                 }
-                onChange={(e) =>
-                  onUpdateImageProps({ angle: Number(e.target.value) })
-                }
+                defaultValue={0}
+                onValueChange={(angle) => onUpdateImageProps({ angle })}
                 className="w-full"
               />
             </div>
@@ -512,17 +511,15 @@ export function ImageStyleControls({
                 />
               </div>
             </div>
-            <input
+            <RangeSlider
               id={`${idPrefix}-squircle-radius-slider`}
               aria-label="Squircle border radius slider"
-              type="range"
               min={0}
               max={50}
               step={1}
               value={selectedImage.cutoutRadius}
-              onChange={(e) =>
-                onApplyCutout('rounded', Number(e.target.value))
-              }
+              defaultValue={16}
+              onValueChange={(val) => onApplyCutout('rounded', val)}
               className="w-full"
             />
           </div>
@@ -587,18 +584,16 @@ export function ImageStyleControls({
                 />
               </div>
             </div>
-            <input
+            <RangeSlider
               id={`${idPrefix}-stroke-width-slider`}
               aria-label="Image border width slider"
-              type="range"
               min={0}
               max={64}
               step={1}
               disabled={!selectedImage}
               value={strokeWidth}
-              onChange={(e) =>
-                onUpdateImageProps({ strokeWidth: Number(e.target.value) })
-              }
+              defaultValue={isFrameStyle ? 24 : 0}
+              onValueChange={(val) => onUpdateImageProps({ strokeWidth: val })}
               className="w-full"
             />
           </div>
@@ -750,18 +745,16 @@ export function ImageStyleControls({
                 />
               </div>
             </div>
-            <input
+            <RangeSlider
               id={`${idPrefix}-shadow-blur-slider`}
               aria-label="Drop shadow blur slider"
-              type="range"
               min={0}
               max={80}
               step={1}
               disabled={!selectedImage}
               value={shadowBlur}
-              onChange={(e) =>
-                onUpdateImageProps({ shadowBlur: Number(e.target.value) })
-              }
+              defaultValue={24}
+              onValueChange={(val) => onUpdateImageProps({ shadowBlur: val })}
               className="w-full"
             />
           </div>
@@ -787,18 +780,16 @@ export function ImageStyleControls({
                 />
               </div>
             </div>
-            <input
+            <RangeSlider
               id={`${idPrefix}-shadow-opacity-slider`}
               aria-label="Drop shadow opacity slider"
-              type="range"
               min={0}
               max={100}
               step={1}
               disabled={!selectedImage}
               value={shadowOpacity}
-              onChange={(e) =>
-                onUpdateImageProps({ shadowOpacity: Number(e.target.value) })
-              }
+              defaultValue={45}
+              onValueChange={(val) => onUpdateImageProps({ shadowOpacity: val })}
               className="w-full"
             />
           </div>
@@ -814,17 +805,17 @@ export function ImageStyleControls({
                 </label>
                 <span className="font-mono text-neutral-300">{shadowOffsetX}</span>
               </div>
-              <input
+              <RangeSlider
                 id={`${idPrefix}-shadow-x`}
                 aria-label="Drop shadow offset X"
-                type="range"
                 min={-60}
                 max={60}
                 step={1}
                 disabled={!selectedImage}
                 value={shadowOffsetX}
-                onChange={(e) =>
-                  onUpdateImageProps({ shadowOffsetX: Number(e.target.value) })
+                defaultValue={0}
+                onValueChange={(val) =>
+                  onUpdateImageProps({ shadowOffsetX: val })
                 }
                 className="w-full"
               />
@@ -840,17 +831,17 @@ export function ImageStyleControls({
                 </label>
                 <span className="font-mono text-neutral-300">{shadowOffsetY}</span>
               </div>
-              <input
+              <RangeSlider
                 id={`${idPrefix}-shadow-y`}
                 aria-label="Drop shadow offset Y"
-                type="range"
                 min={-60}
                 max={60}
                 step={1}
                 disabled={!selectedImage}
                 value={shadowOffsetY}
-                onChange={(e) =>
-                  onUpdateImageProps({ shadowOffsetY: Number(e.target.value) })
+                defaultValue={12}
+                onValueChange={(val) =>
+                  onUpdateImageProps({ shadowOffsetY: val })
                 }
                 className="w-full"
               />

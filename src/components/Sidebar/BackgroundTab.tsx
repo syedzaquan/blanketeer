@@ -23,6 +23,7 @@ import {
   PRESET_COLOR_SWATCHES,
   buildGradientCssPreview,
 } from '../../utils/canvasHelpers';
+import { RangeSlider } from '../RangeSlider';
 import { cn } from '../../utils/cn';
 
 interface BackgroundTabProps {
@@ -431,15 +432,15 @@ export function BackgroundTab({
                 {background.gradient.angle}°
               </span>
             </div>
-            <input
-              type="range"
+            <RangeSlider
               min={0}
               max={360}
               value={background.gradient.angle}
-              onChange={(e) =>
+              defaultValue={155}
+              onValueChange={(angle) =>
                 onGradientChange({
                   ...background.gradient,
-                  angle: Number(e.target.value),
+                  angle,
                 })
               }
               className="w-full"
@@ -547,15 +548,13 @@ export function BackgroundTab({
                       {background.image.zoom.toFixed(2)}×
                     </span>
                   </div>
-                  <input
-                    type="range"
+                  <RangeSlider
                     min={0.5}
                     max={3}
                     step={0.05}
                     value={background.image.zoom}
-                    onChange={(e) =>
-                      onUpdateBgImageConfig({ zoom: Number(e.target.value) })
-                    }
+                    defaultValue={1}
+                    onValueChange={(zoom) => onUpdateBgImageConfig({ zoom })}
                     className="w-full"
                   />
                 </div>
@@ -567,15 +566,13 @@ export function BackgroundTab({
                       {Math.round(background.image.panX)}px
                     </span>
                   </div>
-                  <input
-                    type="range"
+                  <RangeSlider
                     min={-600}
                     max={600}
                     step={5}
                     value={background.image.panX}
-                    onChange={(e) =>
-                      onUpdateBgImageConfig({ panX: Number(e.target.value) })
-                    }
+                    defaultValue={0}
+                    onValueChange={(panX) => onUpdateBgImageConfig({ panX })}
                     className="w-full"
                   />
                 </div>
@@ -587,15 +584,13 @@ export function BackgroundTab({
                       {Math.round(background.image.panY)}px
                     </span>
                   </div>
-                  <input
-                    type="range"
+                  <RangeSlider
                     min={-800}
                     max={800}
                     step={5}
                     value={background.image.panY}
-                    onChange={(e) =>
-                      onUpdateBgImageConfig({ panY: Number(e.target.value) })
-                    }
+                    defaultValue={0}
+                    onValueChange={(panY) => onUpdateBgImageConfig({ panY })}
                     className="w-full"
                   />
                 </div>
@@ -711,18 +706,16 @@ export function BackgroundTab({
                               </span>
                             </div>
                           </div>
-                          <input
+                          <RangeSlider
                             id="bg-overlay-start-alpha"
                             aria-label="Overlay start color alpha"
-                            type="range"
                             min={0}
                             max={100}
                             step={1}
                             value={overlayGradient.startAlpha}
-                            onChange={(e) =>
-                              updateOverlayGradient({
-                                startAlpha: Number(e.target.value),
-                              })
+                            defaultValue={DEFAULT_OVERLAY_GRADIENT.startAlpha}
+                            onValueChange={(startAlpha) =>
+                              updateOverlayGradient({ startAlpha })
                             }
                             className="w-full"
                           />
@@ -748,18 +741,16 @@ export function BackgroundTab({
                               </span>
                             </div>
                           </div>
-                          <input
+                          <RangeSlider
                             id="bg-overlay-end-alpha"
                             aria-label="Overlay end color alpha"
-                            type="range"
                             min={0}
                             max={100}
                             step={1}
                             value={overlayGradient.endAlpha}
-                            onChange={(e) =>
-                              updateOverlayGradient({
-                                endAlpha: Number(e.target.value),
-                              })
+                            defaultValue={DEFAULT_OVERLAY_GRADIENT.endAlpha}
+                            onValueChange={(endAlpha) =>
+                              updateOverlayGradient({ endAlpha })
                             }
                             className="w-full"
                           />
@@ -779,18 +770,16 @@ export function BackgroundTab({
                           {overlayGradient.opacity}%
                         </span>
                       </div>
-                      <input
+                      <RangeSlider
                         id="bg-overlay-opacity"
                         aria-label="Background Gradient Opacity"
-                        type="range"
                         min={0}
                         max={100}
                         step={1}
                         value={overlayGradient.opacity}
-                        onChange={(e) =>
-                          updateOverlayGradient({
-                            opacity: Number(e.target.value),
-                          })
+                        defaultValue={DEFAULT_OVERLAY_GRADIENT.opacity}
+                        onValueChange={(opacity) =>
+                          updateOverlayGradient({ opacity })
                         }
                         className="w-full"
                       />
@@ -808,16 +797,16 @@ export function BackgroundTab({
                           {overlayGradient.angle}°
                         </span>
                       </div>
-                      <input
+                      <RangeSlider
                         id="bg-overlay-angle"
                         aria-label="Background Gradient Angle"
-                        type="range"
                         min={0}
                         max={360}
                         step={1}
                         value={overlayGradient.angle}
-                        onChange={(e) =>
-                          updateOverlayGradient({ angle: Number(e.target.value) })
+                        defaultValue={DEFAULT_OVERLAY_GRADIENT.angle}
+                        onValueChange={(angle) =>
+                          updateOverlayGradient({ angle })
                         }
                         className="w-full"
                       />
@@ -854,18 +843,16 @@ export function BackgroundTab({
                           {overlayGradient.coverage}%
                         </span>
                       </div>
-                      <input
+                      <RangeSlider
                         id="bg-overlay-coverage"
                         aria-label="Background Gradient Height"
-                        type="range"
                         min={10}
                         max={100}
                         step={1}
                         value={overlayGradient.coverage}
-                        onChange={(e) =>
-                          updateOverlayGradient({
-                            coverage: Number(e.target.value),
-                          })
+                        defaultValue={DEFAULT_OVERLAY_GRADIENT.coverage}
+                        onValueChange={(coverage) =>
+                          updateOverlayGradient({ coverage })
                         }
                         className="w-full"
                       />
@@ -883,18 +870,16 @@ export function BackgroundTab({
                           {overlayGradient.midpoint}%
                         </span>
                       </div>
-                      <input
+                      <RangeSlider
                         id="bg-overlay-midpoint"
                         aria-label="Background Gradient Midpoint"
-                        type="range"
                         min={5}
                         max={95}
                         step={1}
                         value={overlayGradient.midpoint}
-                        onChange={(e) =>
-                          updateOverlayGradient({
-                            midpoint: Number(e.target.value),
-                          })
+                        defaultValue={DEFAULT_OVERLAY_GRADIENT.midpoint}
+                        onValueChange={(midpoint) =>
+                          updateOverlayGradient({ midpoint })
                         }
                         className="w-full"
                       />
@@ -961,16 +946,16 @@ export function BackgroundTab({
                           {val > 0 ? `+${val}` : val}
                         </span>
                       </div>
-                      <input
+                      <RangeSlider
                         id={ctrl.id}
                         aria-label={`Background ${ctrl.label}`}
-                        type="range"
                         min={-100}
                         max={100}
                         step={1}
                         value={val}
-                        onChange={(e) =>
-                          updateAdjustment(ctrl.key, Number(e.target.value))
+                        defaultValue={0}
+                        onValueChange={(next) =>
+                          updateAdjustment(ctrl.key, next)
                         }
                         className="w-full"
                       />

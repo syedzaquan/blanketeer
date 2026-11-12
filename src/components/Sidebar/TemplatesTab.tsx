@@ -6,6 +6,7 @@ import type {
   TemplateSlotSummary,
 } from '../../types/editor';
 import { cn } from '../../utils/cn';
+import { RangeSlider } from '../RangeSlider';
 
 type TemplateKind = 'two-column' | 'diagonal';
 
@@ -326,15 +327,15 @@ export function TemplatesTab({
                 {cornerPercent}%
               </span>
             </div>
-            <input
+            <RangeSlider
               id="template-corner-radius"
               aria-label="Template corner radius"
-              type="range"
               min={2}
               max={20}
               step={1}
               value={cornerPercent}
-              onChange={(e) => setCornerPercent(Number(e.target.value))}
+              defaultValue={8}
+              onValueChange={setCornerPercent}
               className="w-full"
             />
           </div>

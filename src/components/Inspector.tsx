@@ -42,6 +42,7 @@ import {
   ImageStyleControls,
   type ImagePropsPatch,
 } from './ImageStyleControls';
+import { RangeSlider } from './RangeSlider';
 
 interface InspectorProps {
   selectedObject: SelectedObjectState | null;
@@ -339,13 +340,13 @@ export function Inspector({
                           {selectedObject.pillRadius}px
                         </span>
                       </div>
-                      <input
-                        type="range"
+                      <RangeSlider
                         min={0}
                         max={48}
                         value={selectedObject.pillRadius}
-                        onChange={(e) =>
-                          onUpdateText({ pillRadius: Number(e.target.value) })
+                        defaultValue={20}
+                        onValueChange={(pillRadius) =>
+                          onUpdateText({ pillRadius })
                         }
                         className="w-full"
                       />
@@ -358,15 +359,13 @@ export function Inspector({
                             {selectedObject.pillPaddingX}
                           </span>
                         </div>
-                        <input
-                          type="range"
+                        <RangeSlider
                           min={6}
                           max={60}
                           value={selectedObject.pillPaddingX}
-                          onChange={(e) =>
-                            onUpdateText({
-                              pillPaddingX: Number(e.target.value),
-                            })
+                          defaultValue={24}
+                          onValueChange={(pillPaddingX) =>
+                            onUpdateText({ pillPaddingX })
                           }
                           className="w-full"
                         />
@@ -378,15 +377,13 @@ export function Inspector({
                             {selectedObject.pillPaddingY}
                           </span>
                         </div>
-                        <input
-                          type="range"
+                        <RangeSlider
                           min={0}
                           max={32}
                           value={selectedObject.pillPaddingY}
-                          onChange={(e) =>
-                            onUpdateText({
-                              pillPaddingY: Number(e.target.value),
-                            })
+                          defaultValue={8}
+                          onValueChange={(pillPaddingY) =>
+                            onUpdateText({ pillPaddingY })
                           }
                           className="w-full"
                         />
@@ -493,14 +490,12 @@ export function Inspector({
                   <span className="text-xs lg:text-[10px] text-neutral-500">px</span>
                 </div>
               </div>
-              <input
-                type="range"
+              <RangeSlider
                 min={16}
                 max={Math.max(220, selectedObject.fontSize)}
                 value={selectedObject.fontSize}
-                onChange={(e) =>
-                  onUpdateText({ fontSize: Number(e.target.value) })
-                }
+                defaultValue={64}
+                onValueChange={(fontSize) => onUpdateText({ fontSize })}
                 className="hidden lg:block w-full"
               />
             </div>
@@ -519,17 +514,15 @@ export function Inspector({
                     {selectedObject.fontWeight}
                   </span>
                 </div>
-                <input
+                <RangeSlider
                   id="inspector-font-weight"
                   aria-label="Font Weight"
-                  type="range"
                   min={100}
                   max={900}
                   step={10}
                   value={Math.min(900, Math.max(100, selectedObject.fontWeight))}
-                  onChange={(e) =>
-                    onUpdateText({ fontWeight: Number(e.target.value) })
-                  }
+                  defaultValue={600}
+                  onValueChange={(fontWeight) => onUpdateText({ fontWeight })}
                   className="w-full"
                 />
                 <div className="grid grid-cols-5 gap-1 mt-1 p-0.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700">
@@ -646,17 +639,18 @@ export function Inspector({
                       {selectedObject.fontOpsz}
                     </span>
                   </div>
-                  <input
+                  <RangeSlider
                     id="inspector-font-opsz"
                     aria-label="Optical Size"
-                    type="range"
                     min={9}
                     max={144}
                     step={1}
                     value={selectedObject.fontOpsz}
-                    onChange={(e) =>
-                      onUpdateText({ fontOpsz: Number(e.target.value) })
-                    }
+                    defaultValue={Math.min(
+                      144,
+                      Math.max(9, Math.round(selectedObject.fontSize))
+                    )}
+                    onValueChange={(fontOpsz) => onUpdateText({ fontOpsz })}
                     className="w-full"
                   />
                 </div>
@@ -673,17 +667,15 @@ export function Inspector({
                       {String(selectedObject.fontSoft).padStart(3, '0')}
                     </span>
                   </div>
-                  <input
+                  <RangeSlider
                     id="inspector-font-soft"
                     aria-label="Softness"
-                    type="range"
                     min={0}
                     max={100}
                     step={1}
                     value={selectedObject.fontSoft}
-                    onChange={(e) =>
-                      onUpdateText({ fontSoft: Number(e.target.value) })
-                    }
+                    defaultValue={100}
+                    onValueChange={(fontSoft) => onUpdateText({ fontSoft })}
                     className="w-full"
                   />
                 </div>
@@ -700,17 +692,15 @@ export function Inspector({
                       {selectedObject.fontWonk >= 0.5 ? '1 (On)' : '0 (Off)'}
                     </span>
                   </div>
-                  <input
+                  <RangeSlider
                     id="inspector-font-wonk"
                     aria-label="Wonky"
-                    type="range"
                     min={0}
                     max={1}
                     step={1}
                     value={selectedObject.fontWonk >= 0.5 ? 1 : 0}
-                    onChange={(e) =>
-                      onUpdateText({ fontWonk: Number(e.target.value) })
-                    }
+                    defaultValue={0}
+                    onValueChange={(fontWonk) => onUpdateText({ fontWonk })}
                     className="w-full"
                   />
                 </div>
@@ -864,17 +854,15 @@ export function Inspector({
                   {selectedObject.lineHeight.toFixed(2)}
                 </span>
               </div>
-              <input
+              <RangeSlider
                 id="inspector-line-height"
                 aria-label="Line Height"
-                type="range"
                 min={0.5}
                 max={3.0}
                 step={0.05}
                 value={selectedObject.lineHeight}
-                onChange={(e) =>
-                  onUpdateText({ lineHeight: Number(e.target.value) })
-                }
+                defaultValue={1.0}
+                onValueChange={(lineHeight) => onUpdateText({ lineHeight })}
                 className="w-full"
               />
             </div>
@@ -891,17 +879,15 @@ export function Inspector({
                   {selectedObject.charSpacing}
                 </span>
               </div>
-              <input
+              <RangeSlider
                 id="inspector-char-spacing"
                 aria-label="Letter Spacing"
-                type="range"
                 min={-200}
                 max={1000}
                 step={10}
                 value={selectedObject.charSpacing}
-                onChange={(e) =>
-                  onUpdateText({ charSpacing: Number(e.target.value) })
-                }
+                defaultValue={0}
+                onValueChange={(charSpacing) => onUpdateText({ charSpacing })}
                 className="w-full"
               />
             </div>
@@ -955,16 +941,16 @@ export function Inspector({
                 {selectedObject.cornerPercent}%
               </span>
             </div>
-            <input
+            <RangeSlider
               id="inspector-slot-corner"
               aria-label="Slot corner radius"
-              type="range"
               min={0}
               max={25}
               step={1}
               value={selectedObject.cornerPercent}
-              onChange={(e) =>
-                onUpdateSlotCorner(selectedObject.id, Number(e.target.value))
+              defaultValue={0}
+              onValueChange={(val) =>
+                onUpdateSlotCorner(selectedObject.id, val)
               }
               className="w-full"
             />
@@ -1027,15 +1013,13 @@ export function Inspector({
               {Math.round(selectedObject.opacity * 100)}%
             </span>
           </div>
-          <input
-            type="range"
+          <RangeSlider
             min={0.05}
             max={1}
             step={0.05}
             value={selectedObject.opacity}
-            onChange={(e) =>
-              onUpdateCommon({ opacity: Number(e.target.value) })
-            }
+            defaultValue={1}
+            onValueChange={(opacity) => onUpdateCommon({ opacity })}
             className="w-full"
           />
         </div>
@@ -1047,8 +1031,7 @@ export function Inspector({
               {selectedObject.angle}°
             </span>
           </div>
-          <input
-            type="range"
+          <RangeSlider
             min={-180}
             max={180}
             step={1}
@@ -1057,7 +1040,8 @@ export function Inspector({
                 ? selectedObject.angle - 360
                 : selectedObject.angle
             }
-            onChange={(e) => onUpdateCommon({ angle: Number(e.target.value) })}
+            defaultValue={0}
+            onValueChange={(angle) => onUpdateCommon({ angle })}
             className="w-full"
           />
         </div>
