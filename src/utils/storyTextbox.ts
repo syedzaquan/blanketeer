@@ -221,7 +221,7 @@ export class StoryTextbox extends fabric.Textbox {
     // Seed custom axis values before super() calls initDimensions() during construction.
     super(text, {
       ...textboxOptions,
-      lineHeight: textboxOptions.lineHeight ?? 0.85,
+      lineHeight: textboxOptions.lineHeight ?? 1.0,
       ...(resolvedWeight !== undefined ? { fontWeight: resolvedWeight } : {}),
       fontOpsz: resolvedOpsz,
       fontSoft,

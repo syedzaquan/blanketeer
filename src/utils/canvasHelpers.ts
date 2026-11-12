@@ -289,7 +289,7 @@ export function extractSelectedState(
       textAlign:
         (story.textAlign as 'left' | 'center' | 'right' | 'justify') || 'center',
       fill: typeof story.fill === 'string' ? story.fill : '#ffffff',
-      lineHeight: Number((story.lineHeight || 0.85).toFixed(2)),
+      lineHeight: Number((story.lineHeight || 1.0).toFixed(2)),
       charSpacing: Math.round(story.charSpacing || 0),
       bgStyle: story.bgStyle || 'none',
       textBgColor: story.textBgColor || '#ffffff',

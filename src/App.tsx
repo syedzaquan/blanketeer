@@ -56,6 +56,7 @@ export function App() {
     redo,
     resetProject,
     addText,
+    applyTextPreset,
     updateTextProps,
     uploadCustomFont,
     addImageFromFile,
@@ -120,7 +121,8 @@ export function App() {
         <TextTab
           availableFonts={availableFonts}
           selectedObject={selectedObject}
-          onAddText={(preset) => void addText(preset)}
+          onAddText={(preset, fontFamily) => void addText(preset, fontFamily)}
+          onApplyTextPreset={(preset) => void applyTextPreset(preset)}
           onApplyFont={(family) => void updateTextProps({ fontFamily: family })}
           onUploadCustomFont={(file) => void uploadCustomFont(file)}
         />
@@ -269,7 +271,7 @@ export function App() {
             <Toolbar
               selectedObject={selectedObject}
               onOpenMobileInspector={() => setMobileSheet('inspector')}
-              onAddText={() => void addText('headline')}
+              onAddText={() => void addText('heading')}
               onTriggerImageUpload={() => quickImageInputRef.current?.click()}
               onBringForward={bringForward}
               onSendBackward={sendBackward}
@@ -328,6 +330,7 @@ export function App() {
           mobileOpen={showMobileInspector}
           onCloseMobile={() => setMobileSheet('none')}
           onUpdateText={(patch) => void updateTextProps(patch)}
+          onApplyTextPreset={(preset) => void applyTextPreset(preset)}
           onApplyCutout={applyImageCutout}
           onUpdateImageProps={updateImageProps}
           onUpdateCommon={updateActiveCommonProps}

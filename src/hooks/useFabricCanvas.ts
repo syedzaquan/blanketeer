@@ -48,6 +48,10 @@ import {
   snapToSupportedWeight,
   type FontOption,
 } from '../utils/fonts';
+import {
+  TEXT_STYLE_PRESETS_BY_ID,
+  type TextStylePresetId,
+} from '../utils/textPresets';
 import { applyCutoutMask } from '../utils/imageCutouts';
 import {
   clearSavedProject,
@@ -198,7 +202,7 @@ function createStarterTextbox(canvasWidth: number, canvasHeight: number): StoryT
     fontSoft: 100,
     fill: '#ffffff',
     textAlign: 'center',
-    lineHeight: 0.85,
+    lineHeight: 1.0,
     bgStyle: 'none',
     textBgColor: '#ffffff',
     editorName: 'Headline',
@@ -958,73 +962,35 @@ export function useFabricCanvas() {
   }, [applyCanvasBackground, cancelPendingBgWork, commitHistoryNow]);
 
   const addText = useCallback(
-    async (presetType: 'headline' | 'pill' | 'body' = 'headline') => {
+    async (presetType: TextStylePresetId = 'heading', fontFamily?: string) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const cfg = TEXT_STYLE_PRESETS_BY_ID[presetType];
+      const targetFamily = fontFamily || 'Fedro';
+      const targetWeight = isFrauncesFamily(targetFamily)
+        ? cfg.fontWeight
+        : snapToSupportedWeight(cfg.fontWeight, targetFamily, fontsRef.current);
 
-      const configs = {
-        headline: {
-          text: 'Editorial Heading',
-          fontFamily: 'Fedro',
-          fontSize: 84,
-          fontWeight: 700,
-          fill: '#ffffff',
-          bgStyle: 'none' as TextBackgroundStyle,
-          textBgColor: '#ffffff',
-          boxWidth: 740,
-          lineHeight: 0.85,
-          charSpacing: 0,
-          name: 'Headline',
-        },
-        pill: {
-          text: 'Story Highlight',
-          fontFamily: 'Inter',
-          fontSize: 48,
-          fontWeight: 700,
-          fill: '#18181b',
-          bgStyle: 'pill' as TextBackgroundStyle,
-          textBgColor: '#ffffff',
-          boxWidth: 620,
-          lineHeight: 0.85,
-          charSpacing: 0,
-          name: 'Pill Text',
-        },
-        body: {
-          text: 'Write your caption or quote here. Drag side handles to wrap lines.',
-          fontFamily: 'Fedro',
-          fontSize: 44,
-          fontWeight: 400,
-          fill: '#f4f4f5',
-          bgStyle: 'none' as TextBackgroundStyle,
-          textBgColor: '#18181b',
-          boxWidth: 720,
-          lineHeight: 0.85,
-          charSpacing: 10,
-          name: 'Body Text',
-        },
-      };
-
-      const cfg = configs[presetType];
-      const fontOption = fontsRef.current.find((f) => f.family === cfg.fontFamily);
+      const fontOption = fontsRef.current.find((f) => f.family === targetFamily);
       if (fontOption) {
-        await loadFont(fontOption, cfg.fontWeight, 'normal');
+        await loadFont(fontOption, targetWeight, 'normal');
         if (isFrauncesFamily(fontOption.family)) {
           await ensureFrauncesFontData();
         }
         fabric.cache.clearFontCache(fontOption.family);
       }
 
-      const textbox = new StoryTextbox(cfg.text, {
+      const textbox = new StoryTextbox(cfg.defaultText, {
         left: width / 2,
         top: height / 2,
         width: cfg.boxWidth,
         originX: 'center',
         originY: 'center',
-        fontFamily: cfg.fontFamily,
+        fontFamily: targetFamily,
         fontSize: cfg.fontSize,
-        fontWeight: cfg.fontWeight,
+        fontWeight: targetWeight,
         fontOpsz: Math.min(144, Math.max(9, Math.round(cfg.fontSize))),
         fontSoft: 100,
         fontWonk: 0,
@@ -1032,12 +998,12 @@ export function useFabricCanvas() {
         textAlign: 'center',
         lineHeight: cfg.lineHeight,
         charSpacing: cfg.charSpacing,
-        bgStyle: cfg.bgStyle,
-        textBgColor: cfg.textBgColor,
+        bgStyle: 'none',
+        textBgColor: '#ffffff',
         pillRadius: 24,
         pillPaddingX: 28,
         pillPaddingY: 10,
-        editorName: cfg.name,
+        editorName: cfg.editorName,
       });
 
       canvas.add(textbox);
@@ -1134,6 +1100,36 @@ export function useFabricCanvas() {
       scheduleHistoryCommit(250);
     },
     [scheduleHistoryCommit, syncSelectionAndLayers]
+  );
+
+  const applyTextPreset = useCallback(
+    async (presetId: TextStylePresetId) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const active = canvas.getActiveObject();
+      if (!(active instanceof StoryTextbox || active instanceof fabric.Textbox)) {
+        await addText(presetId);
+        return;
+      }
+
+      const preset = TEXT_STYLE_PRESETS_BY_ID[presetId];
+      const family = active.fontFamily || 'Fedro';
+      const nextWeight = isFrauncesFamily(family)
+        ? preset.fontWeight
+        : snapToSupportedWeight(preset.fontWeight, family, fontsRef.current);
+
+      await updateTextProps({
+        fontSize: preset.fontSize,
+        fontWeight: nextWeight,
+        fill: preset.fill,
+        lineHeight: preset.lineHeight,
+        charSpacing: preset.charSpacing,
+        ...(isFrauncesFamily(family)
+          ? { fontOpsz: Math.min(144, Math.max(9, Math.round(preset.fontSize))) }
+          : {}),
+      });
+    },
+    [addText, updateTextProps]
   );
 
   const uploadCustomFont = useCallback(
@@ -2004,6 +2000,7 @@ export function useFabricCanvas() {
     undo,
     redo,
     addText,
+    applyTextPreset,
     updateTextProps,
     uploadCustomFont,
     addImageFromFile,

@@ -29,6 +29,11 @@ import { PRESET_COLOR_SWATCHES } from '../utils/canvasHelpers';
 import { cn } from '../utils/cn';
 import { getFontWeightOptions, type FontOption } from '../utils/fonts';
 import {
+  TEXT_STYLE_PRESETS,
+  findMatchingTextPreset,
+  type TextStylePresetId,
+} from '../utils/textPresets';
+import {
   ImageStyleControls,
   type ImagePropsPatch,
 } from './ImageStyleControls';
@@ -64,6 +69,7 @@ interface InspectorProps {
       pillPaddingY: number;
     }>
   ) => void;
+  onApplyTextPreset: (preset: TextStylePresetId) => void;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
   onUpdateImageProps: (patch: ImagePropsPatch) => void;
   onUpdateCommon: (
@@ -111,6 +117,7 @@ export function Inspector({
   mobileOpen,
   onCloseMobile,
   onUpdateText,
+  onApplyTextPreset,
   onApplyCutout,
   onUpdateImageProps,
   onUpdateCommon,
@@ -257,6 +264,42 @@ export function Inspector({
             <h3 className="text-xs font-medium text-neutral-300">
               Typography
             </h3>
+
+            <div>
+              <span className="block text-xs lg:text-[11px] text-neutral-400 mb-1.5 lg:mb-1">
+                Style
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {TEXT_STYLE_PRESETS.map((preset) => {
+                  const activePresetId = findMatchingTextPreset(
+                    selectedObject.fontSize,
+                    selectedObject.fontWeight,
+                    selectedObject.fill
+                  );
+                  const isActive = activePresetId === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => onApplyTextPreset(preset.id)}
+                      className={cn(
+                        'px-2.5 py-2 lg:py-1.5 rounded-lg lg:rounded-md border text-left transition-colors flex items-center justify-between gap-1.5',
+                        isActive
+                          ? 'bg-neutral-700 border-neutral-500 text-white'
+                          : 'bg-neutral-800/80 border-neutral-700 text-neutral-200 hover:bg-neutral-700/70'
+                      )}
+                    >
+                      <span className="text-xs font-medium truncate">
+                        {preset.label}
+                      </span>
+                      <span className="text-[10px] font-mono text-neutral-400 shrink-0">
+                        {preset.fontSize}px
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <div>
               <label className="block text-xs lg:text-[11px] text-neutral-400 mb-1.5 lg:mb-1">
