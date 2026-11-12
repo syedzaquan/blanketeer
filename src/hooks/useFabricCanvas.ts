@@ -218,18 +218,29 @@ function createStarterTextbox(canvasWidth: number, canvasHeight: number): StoryT
   });
 }
 
-function applyControlStyling(): void {
+function computeControlSizes(cssScale = 0.26): { cornerSize: number; touchCornerSize: number } {
+  const safeScale = Math.max(0.1, cssScale);
+  return {
+    // Keep visual corner dots ~8px and touch hit zones ~44px on screen regardless of CSS zoom.
+    cornerSize: Math.round(Math.min(34, Math.max(16, 8 / safeScale))),
+    touchCornerSize: Math.round(Math.min(200, Math.max(44, 44 / safeScale))),
+  };
+}
+
+function applyControlStyling(cssScale = 0.26): { cornerSize: number; touchCornerSize: number } {
+  const sizes = computeControlSizes(cssScale);
   Object.assign(fabric.InteractiveFabricObject.ownDefaults, {
     cornerColor: '#ffffff',
     cornerStrokeColor: '#8b5cf6',
     borderColor: '#8b5cf6',
     cornerStyle: 'circle',
-    cornerSize: 20,
-    touchCornerSize: 34,
+    cornerSize: sizes.cornerSize,
+    touchCornerSize: sizes.touchCornerSize,
     transparentCorners: false,
     borderScaleFactor: 2.5,
     padding: 0,
   });
+  return sizes;
 }
 
 function applyLockState(obj: fabric.FabricObject, locked: boolean): void {
@@ -1822,7 +1833,27 @@ export function useFabricCanvas() {
   }, [syncSelectionAndLayers]);
 
   const recalculateOffset = useCallback(() => {
-    canvasRef.current?.calcOffset();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.calcOffset();
+
+    const rect = canvas.getElement().getBoundingClientRect();
+    if (rect.width <= 0) return;
+
+    const cssScale = rect.width / (canvas.width || 1080);
+    const { cornerSize, touchCornerSize } = applyControlStyling(cssScale);
+
+    let changed = false;
+    for (const obj of canvas.getObjects()) {
+      if (obj.cornerSize !== cornerSize || obj.touchCornerSize !== touchCornerSize) {
+        obj.set({ cornerSize, touchCornerSize });
+        obj.setCoords();
+        changed = true;
+      }
+    }
+    if (changed && canvas.getActiveObject()) {
+      canvas.requestRenderAll();
+    }
   }, []);
 
   const canPanCanvasAt = useCallback(

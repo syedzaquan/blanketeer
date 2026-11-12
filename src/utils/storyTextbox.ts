@@ -132,30 +132,31 @@ function createStoryTextboxControls(): Record<string, fabric.Control> {
 
   const configureCorner = (ctrl: fabric.Control): fabric.Control => {
     ctrl.actionHandler = uniformCornerScale as fabric.TransformActionHandler;
-    ctrl.touchSizeX = 30;
-    ctrl.touchSizeY = 30;
+    // Inherit object.touchCornerSize so touch targets stay ~44px on screen across zoom levels.
+    ctrl.touchSizeX = 0;
+    ctrl.touchSizeY = 0;
     return ctrl;
   };
 
   const configureWidthBar = (ctrl: fabric.Control): fabric.Control => {
     ctrl.actionHandler = fabric.controlsUtils.changeWidth;
-    ctrl.sizeX = 12;
-    ctrl.sizeY = 38;
-    ctrl.touchSizeX = 44;
-    ctrl.touchSizeY = 28;
+    ctrl.sizeX = 14;
+    ctrl.sizeY = 42;
+    ctrl.touchSizeX = 0;
+    ctrl.touchSizeY = 0;
     ctrl.render = renderWidthPillControl;
     return ctrl;
   };
 
   // Exclude mt/mb vertical-stretch handles so text glyphs can never be thinned/distorted.
-  // Place ml/mr after corners because Fabric hit-tests controls in reverse insertion order.
+  // Place corners after ml/mr because Fabric hit-tests controls in reverse insertion order.
   return {
+    ml: configureWidthBar(base.ml),
+    mr: configureWidthBar(base.mr),
     tl: configureCorner(base.tl),
     tr: configureCorner(base.tr),
     bl: configureCorner(base.bl),
     br: configureCorner(base.br),
-    ml: configureWidthBar(base.ml),
-    mr: configureWidthBar(base.mr),
     mtr: base.mtr,
   };
 }
