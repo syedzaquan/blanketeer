@@ -343,9 +343,16 @@ export class StoryTextbox extends fabric.Textbox {
   }
 
   override _renderTextFill(ctx: CanvasRenderingContext2D): void {
+    const hasCharStyles = Boolean(
+      this.styles &&
+        Object.values(this.styles).some(
+          (line) => line && Object.keys(line).length > 0
+        )
+    );
     const useFrauncesSvg =
       isFrauncesFamily(this.fontFamily) &&
       !this.isEditing &&
+      !hasCharStyles &&
       typeof this.fill === 'string' &&
       this.fill.length > 0 &&
       !this.path;
@@ -546,6 +553,14 @@ export class StoryTextbox extends fabric.Textbox {
     ctx.restore();
     ctx.fillStyle = originalFill;
     this._removeShadow(ctx);
+  }
+
+  override initHiddenTextarea(): void {
+    super.initHiddenTextarea();
+    if (this.hiddenTextarea) {
+      // Keep >=16px so iOS Safari does not auto-zoom the page when focusing text editing.
+      this.hiddenTextarea.style.fontSize = '16px';
+    }
   }
 
   _render(ctx: CanvasRenderingContext2D): void {

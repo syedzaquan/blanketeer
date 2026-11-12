@@ -9,8 +9,10 @@ import {
 } from 'react';
 import { ImagePlus, Minus, Plus, RotateCcw, Scan } from 'lucide-react';
 import { useWindowSize } from '../hooks/useWindowSize';
+import type { TextEditingSelectionState } from '../types/editor';
 import { cn } from '../utils/cn';
 import { MobileFontSizeSlider } from './MobileFontSizeSlider';
+import { TextEditingPopover } from './TextEditingPopover';
 
 interface CanvasViewportProps {
   canvasElRef: RefObject<HTMLCanvasElement | null>;
@@ -41,6 +43,18 @@ interface CanvasViewportProps {
     touch2: { x: number; y: number }
   ) => void;
   onEndObjectPinch?: () => void;
+  textEditingState?: TextEditingSelectionState | null;
+  onApplyEditingStyle?: (
+    patch: Partial<{
+      bold: boolean;
+      italic: boolean;
+      underline: boolean;
+      fill: string;
+      textBackgroundColor: string;
+    }>
+  ) => void;
+  onSelectAllEditingText?: () => void;
+  onExitTextEditing?: () => void;
 }
 
 const DEFAULT_CANVAS_SCALE = 0.26;
@@ -99,6 +113,10 @@ export function CanvasViewport({
   onBeginObjectPinch,
   onUpdateObjectPinch,
   onEndObjectPinch,
+  textEditingState,
+  onApplyEditingStyle,
+  onSelectAllEditingText,
+  onExitTextEditing,
 }: CanvasViewportProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const frameBoxRef = useRef<HTMLDivElement | null>(null);
@@ -957,6 +975,19 @@ export function CanvasViewport({
           </p>
         </div>
       )}
+
+      {/* Floating Inline Text Formatting Popover */}
+      {textEditingState?.isEditing &&
+        onApplyEditingStyle &&
+        onSelectAllEditingText &&
+        onExitTextEditing && (
+          <TextEditingPopover
+            editingState={textEditingState}
+            onApplyStyle={onApplyEditingStyle}
+            onSelectAll={onSelectAllEditingText}
+            onDone={onExitTextEditing}
+          />
+        )}
     </div>
   );
 }

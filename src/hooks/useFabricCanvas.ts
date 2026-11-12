@@ -15,6 +15,7 @@ import {
   type TemplatePlacement,
   type TemplateSlotSummary,
   type TextBackgroundStyle,
+  type TextEditingSelectionState,
 } from '../types/editor';
 import {
   DEFAULT_BG_ADJUSTMENTS,
@@ -268,6 +269,8 @@ export function useFabricCanvas() {
   const [selectedObject, setSelectedObject] = useState<SelectedObjectState | null>(null);
   const [layers, setLayers] = useState<LayerItem[]>([]);
   const [templateSlots, setTemplateSlots] = useState<TemplateSlotSummary[]>([]);
+  const [textEditingState, setTextEditingState] =
+    useState<TextEditingSelectionState | null>(null);
   const [availableFonts, setAvailableFonts] = useState<FontOption[]>(SUPPORTED_FONTS);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -298,6 +301,78 @@ export function useFabricCanvas() {
   const customFontsRef = useRef<SavedCustomFont[]>([]);
   const historyTimerRef = useRef<number | null>(null);
   const bgUpdateRafRef = useRef<number | null>(null);
+
+  const syncTextEditingState = useCallback(() => {
+    const canvas = canvasRef.current;
+    const active = canvas?.getActiveObject();
+    if (
+      !canvas ||
+      !(active instanceof StoryTextbox || active instanceof fabric.Textbox) ||
+      !active.isEditing
+    ) {
+      setTextEditingState(null);
+      return;
+    }
+
+    const start = active.selectionStart ?? 0;
+    const end = active.selectionEnd ?? start;
+    const hasSelection = end > start;
+    const fallbackFill = typeof active.fill === 'string' ? active.fill : '#ffffff';
+
+    let bold = Number(active.fontWeight ?? 400) >= 700;
+    let italic = active.fontStyle === 'italic';
+    let underline = Boolean(active.underline);
+    let fill = fallbackFill;
+    let textBackgroundColor = '';
+
+    if (hasSelection) {
+      const charStyles = active.getSelectionStyles(start, end, true);
+      if (charStyles.length > 0) {
+        bold = charStyles.every(
+          (s) => Number(s.fontWeight ?? active.fontWeight ?? 400) >= 700
+        );
+        italic = charStyles.every(
+          (s) => (s.fontStyle ?? active.fontStyle) === 'italic'
+        );
+        underline = charStyles.every((s) =>
+          Boolean(s.underline ?? active.underline)
+        );
+        const firstFill = charStyles[0]?.fill;
+        if (typeof firstFill === 'string' && firstFill) {
+          fill = firstFill;
+        }
+        const firstBg = charStyles[0]?.textBackgroundColor;
+        if (typeof firstBg === 'string') {
+          textBackgroundColor = firstBg;
+        }
+      }
+    }
+
+    const canvasRect = canvas.getElement().getBoundingClientRect();
+    const scale = canvas.width ? canvasRect.width / canvas.width : 1;
+    const br = active.getBoundingRect();
+
+    setTextEditingState({
+      isEditing: true,
+      hasSelection,
+      selectionStart: start,
+      selectionEnd: end,
+      bold,
+      italic,
+      underline,
+      fill,
+      textBackgroundColor,
+      boxRect:
+        canvasRect.width > 0
+          ? {
+              left: canvasRect.left + br.left * scale,
+              top: canvasRect.top + br.top * scale,
+              width: br.width * scale,
+              height: br.height * scale,
+            }
+          : null,
+    });
+  }, []);
   const bgFullResTimerRef = useRef<number | null>(null);
   const objectPinchRef = useRef<ObjectPinchSession | null>(null);
 
@@ -757,18 +832,102 @@ export function useFabricCanvas() {
       );
     };
 
+    let prevActiveIdBeforeDown: string | null = null;
+    let tapDownInfo: {
+      target: fabric.FabricObject;
+      x: number;
+      y: number;
+    } | null = null;
+
+    const getPointerClientXY = (e: Event): { x: number; y: number } | null => {
+      if ('changedTouches' in e && (e as TouchEvent).changedTouches?.length) {
+        const t = (e as TouchEvent).changedTouches[0];
+        return { x: t.clientX, y: t.clientY };
+      }
+      if ('touches' in e && (e as TouchEvent).touches?.length) {
+        const t = (e as TouchEvent).touches[0];
+        return { x: t.clientX, y: t.clientY };
+      }
+      if ('clientX' in e) {
+        return { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
+      }
+      return null;
+    };
+
+    const handleMouseDownBefore = () => {
+      const active = canvas.getActiveObject();
+      prevActiveIdBeforeDown = active ? ensureObjectMeta(active).editorId ?? null : null;
+      tapDownInfo = null;
+    };
+
+    const handleMouseDown = (opt: { e: fabric.TPointerEvent; target?: fabric.FabricObject }) => {
+      const target = opt.target;
+      if (
+        !target ||
+        !prevActiveIdBeforeDown ||
+        ensureObjectMeta(target).editorId !== prevActiveIdBeforeDown
+      ) {
+        return;
+      }
+      if (!(target instanceof StoryTextbox || target instanceof fabric.Textbox)) {
+        return;
+      }
+      if (target.isEditing || target.__corner || ensureObjectMeta(target).locked) {
+        return;
+      }
+      const xy = getPointerClientXY(opt.e);
+      if (xy) {
+        tapDownInfo = { target, x: xy.x, y: xy.y };
+      }
+    };
+
+    const handleMouseUp = (opt: { e: fabric.TPointerEvent }) => {
+      clearSnapGuides();
+      const pending = tapDownInfo;
+      tapDownInfo = null;
+      if (!pending) return;
+
+      const xy = getPointerClientXY(opt.e);
+      if (!xy || Math.hypot(xy.x - pending.x, xy.y - pending.y) > 6) {
+        return;
+      }
+      const active = canvas.getActiveObject();
+      if (
+        active === pending.target &&
+        (active instanceof StoryTextbox || active instanceof fabric.Textbox) &&
+        !active.isEditing &&
+        !ensureObjectMeta(active).locked
+      ) {
+        active.enterEditing(opt.e);
+        active.setCursorByClick(opt.e);
+        canvas.requestRenderAll();
+      }
+    };
+
     canvas.on('selection:created', handleSelection);
     canvas.on('selection:updated', handleSelection);
     canvas.on('selection:cleared', () => {
       clearSnapGuides();
+      setTextEditingState(null);
       handleSelection();
     });
+    canvas.on('mouse:down:before', handleMouseDownBefore);
+    canvas.on('mouse:down', handleMouseDown);
+    canvas.on('mouse:up', handleMouseUp);
     canvas.on('object:moving', handleObjectMoving);
     canvas.on('object:rotating', handleObjectRotating);
     canvas.on('object:scaling', handleObjectScaling);
     canvas.on('object:modified', handleObjectModified);
-    canvas.on('mouse:up', clearSnapGuides);
-    canvas.on('text:changed', handleTextChanged);
+    canvas.on('text:editing:entered', syncTextEditingState);
+    canvas.on('text:selection:changed', syncTextEditingState);
+    canvas.on('text:editing:exited', () => {
+      setTextEditingState(null);
+      commitHistoryNow();
+    });
+    canvas.on('text:changed', () => {
+      handleTextChanged();
+      syncTextEditingState();
+    });
     canvas.on('object:added', handleStackChange);
     canvas.on('object:removed', handleStackChange);
     canvas.on('after:render', handleAfterRender);
@@ -803,6 +962,7 @@ export function useFabricCanvas() {
     restoreSnapshot,
     scheduleHistoryCommit,
     syncSelectionAndLayers,
+    syncTextEditingState,
     updateUndoRedoFlags,
   ]);
 
@@ -1863,7 +2023,8 @@ export function useFabricCanvas() {
     if (changed && canvas.getActiveObject()) {
       canvas.requestRenderAll();
     }
-  }, []);
+    syncTextEditingState();
+  }, [syncTextEditingState]);
 
   const canPanCanvasAt = useCallback(
     (e: MouseEvent | TouchEvent | PointerEvent): boolean => {
@@ -2174,6 +2335,94 @@ export function useFabricCanvas() {
     return preview;
   }, [cancelPendingBgWork, syncSelectionAndLayers]);
 
+  const applyEditingSelectionStyle = useCallback(
+    (
+      patch: Partial<{
+        bold: boolean;
+        italic: boolean;
+        underline: boolean;
+        fill: string;
+        textBackgroundColor: string;
+      }>
+    ) => {
+      const canvas = canvasRef.current;
+      const active = canvas?.getActiveObject();
+      if (
+        !canvas ||
+        !(active instanceof StoryTextbox || active instanceof fabric.Textbox) ||
+        !active.isEditing
+      ) {
+        return;
+      }
+
+      const stylePatch: Record<string, unknown> = {};
+      if (patch.bold !== undefined) {
+        stylePatch.fontWeight = patch.bold ? 700 : 400;
+      }
+      if (patch.italic !== undefined) {
+        stylePatch.fontStyle = patch.italic ? 'italic' : 'normal';
+      }
+      if (patch.underline !== undefined) {
+        stylePatch.underline = patch.underline;
+      }
+      if (patch.fill !== undefined) {
+        stylePatch.fill = patch.fill;
+      }
+      if (patch.textBackgroundColor !== undefined) {
+        stylePatch.textBackgroundColor = patch.textBackgroundColor;
+      }
+
+      const start = active.selectionStart ?? 0;
+      const end = active.selectionEnd ?? start;
+      if (end > start) {
+        active.setSelectionStyles(stylePatch, start, end);
+      } else {
+        active.set(stylePatch);
+      }
+
+      active.dirty = true;
+      active.initDimensions();
+      active.setCoords();
+      canvas.requestRenderAll();
+      active.hiddenTextarea?.focus({ preventScroll: true });
+      syncTextEditingState();
+      syncSelectionAndLayers();
+      scheduleHistoryCommit(250);
+    },
+    [scheduleHistoryCommit, syncSelectionAndLayers, syncTextEditingState]
+  );
+
+  const selectAllEditingText = useCallback(() => {
+    const canvas = canvasRef.current;
+    const active = canvas?.getActiveObject();
+    if (
+      !canvas ||
+      !(active instanceof StoryTextbox || active instanceof fabric.Textbox) ||
+      !active.isEditing
+    ) {
+      return;
+    }
+    active.selectAll();
+    active.hiddenTextarea?.focus({ preventScroll: true });
+    canvas.requestRenderAll();
+    syncTextEditingState();
+  }, [syncTextEditingState]);
+
+  const exitTextEditing = useCallback(() => {
+    const canvas = canvasRef.current;
+    const active = canvas?.getActiveObject();
+    if (
+      !canvas ||
+      !(active instanceof StoryTextbox || active instanceof fabric.Textbox) ||
+      !active.isEditing
+    ) {
+      return;
+    }
+    active.exitEditing();
+    canvas.requestRenderAll();
+    setTextEditingState(null);
+  }, []);
+
   const resetProject = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -2383,6 +2632,10 @@ export function useFabricCanvas() {
     beginObjectPinch,
     updateObjectPinch,
     endObjectPinch,
+    textEditingState,
+    applyEditingSelectionStyle,
+    selectAllEditingText,
+    exitTextEditing,
     showSafeArea,
     toggleSafeArea,
     exportPNG,

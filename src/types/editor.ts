@@ -96,6 +96,19 @@ export interface BackgroundState {
 
 export type TextBackgroundStyle = 'none' | 'solid' | 'pill';
 
+export interface TextEditingSelectionState {
+  isEditing: boolean;
+  hasSelection: boolean;
+  selectionStart: number;
+  selectionEnd: number;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  fill: string;
+  textBackgroundColor: string;
+  boxRect: { left: number; top: number; width: number; height: number } | null;
+}
+
 export type CutoutShape = 'none' | 'circle' | 'square' | 'rounded' | 'star' | 'heart';
 
 export type ImageStrokeStyle = 'solid' | 'dashed' | 'dotted' | 'stamp' | 'wavy';

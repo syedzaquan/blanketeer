@@ -101,6 +101,10 @@ export function App() {
     beginObjectPinch,
     updateObjectPinch,
     endObjectPinch,
+    textEditingState,
+    applyEditingSelectionStyle,
+    selectAllEditingText,
+    exitTextEditing,
     exportPNG,
   } = useFabricCanvas();
 
@@ -318,6 +322,10 @@ export function App() {
             onBeginObjectPinch={beginObjectPinch}
             onUpdateObjectPinch={updateObjectPinch}
             onEndObjectPinch={endObjectPinch}
+            textEditingState={textEditingState}
+            onApplyEditingStyle={applyEditingSelectionStyle}
+            onSelectAllEditingText={selectAllEditingText}
+            onExitTextEditing={exitTextEditing}
           />
 
           <div className={cn(hasMobileSheet ? 'hidden lg:contents' : 'shrink-0 lg:contents')}>
