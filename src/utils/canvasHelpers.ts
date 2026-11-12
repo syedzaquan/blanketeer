@@ -4,11 +4,13 @@ import type {
   BackgroundOverlayGradient,
   BasicShapeKind,
   GradientConfig,
+  ImageFilterConfig,
   LayerItem,
   SelectedObjectState,
   TemplateSlotSummary,
 } from '../types/editor';
 import type { ImageWithCutoutMeta } from './imageCutouts';
+import { normalizeImageFilterConfig } from './imageFilters';
 import { StoryTextbox } from './storyTextbox';
 import { TemplateSlotRect } from './templateSlot';
 
@@ -36,6 +38,7 @@ export const CUSTOM_SERIALIZED_PROPS = [
   'imageShadowBlur',
   'imageShadowOffsetX',
   'imageShadowOffsetY',
+  'imageFilter',
   'isTemplateSlot',
   'slotIndex',
   'slotCornerPercent',
@@ -315,7 +318,9 @@ export function extractSelectedState(
   }
 
   if (obj instanceof fabric.FabricImage) {
-    const imgMeta = obj as ImageWithCutoutMeta;
+    const imgMeta = obj as ImageWithCutoutMeta & {
+      imageFilter?: Partial<ImageFilterConfig>;
+    };
     const natW = imgMeta.width || 0;
     const natH = imgMeta.height || 0;
     const sx = Math.abs(imgMeta.scaleX ?? 1);
@@ -340,6 +345,7 @@ export function extractSelectedState(
       shadowBlur: Math.round(imgMeta.imageShadowBlur ?? 24),
       shadowOffsetX: Math.round(imgMeta.imageShadowOffsetX ?? 0),
       shadowOffsetY: Math.round(imgMeta.imageShadowOffsetY ?? 12),
+      filter: normalizeImageFilterConfig(imgMeta.imageFilter),
       opacity: Number((imgMeta.opacity ?? 1).toFixed(2)),
       angle: Math.round(imgMeta.angle || 0),
       scaleX: Number((imgMeta.scaleX ?? 1).toFixed(2)),

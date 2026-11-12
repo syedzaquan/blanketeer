@@ -1,6 +1,10 @@
 import * as fabric from 'fabric';
 import type { ImageProps, SerializedImageProps, TOptions } from 'fabric';
-import type { CutoutShape, ImageStrokeStyle } from '../types/editor';
+import type {
+  CutoutShape,
+  ImageFilterConfig,
+  ImageStrokeStyle,
+} from '../types/editor';
 
 type DrawContext = Parameters<fabric.FabricImage['drawObject']>[2];
 
@@ -19,6 +23,7 @@ export interface StoryImageExtraProps {
   imageShadowBlur?: number;
   imageShadowOffsetX?: number;
   imageShadowOffsetY?: number;
+  imageFilter?: ImageFilterConfig;
   locked?: boolean;
 }
 
@@ -339,6 +344,7 @@ export class StoryImage extends fabric.FabricImage {
   declare imageShadowBlur: number;
   declare imageShadowOffsetX: number;
   declare imageShadowOffsetY: number;
+  declare imageFilter?: ImageFilterConfig;
   declare locked?: boolean;
 
   constructor(
@@ -685,6 +691,7 @@ export class StoryImage extends fabric.FabricImage {
       'imageShadowBlur',
       'imageShadowOffsetX',
       'imageShadowOffsetY',
+      'imageFilter',
       'locked',
       ...propertiesToInclude,
     ] as unknown as K[];

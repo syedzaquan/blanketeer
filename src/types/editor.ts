@@ -152,6 +152,30 @@ export interface SelectedTextProps {
   locked: boolean;
 }
 
+export type ImageFilterPreset =
+  | 'none'
+  | 'bw'
+  | 'noir'
+  | 'vivid'
+  | 'warm'
+  | 'cool'
+  | 'fade'
+  | 'sepia';
+
+export interface ImageFilterConfig {
+  preset: ImageFilterPreset;
+  intensity: number;
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  warmth: number;
+  blur: number;
+  shadows: number;
+  highlights: number;
+  dehaze: number;
+  blackPoint: number;
+}
+
 export interface SelectedImageProps {
   kind: 'image';
   id: string;
@@ -172,6 +196,7 @@ export interface SelectedImageProps {
   shadowBlur: number;
   shadowOffsetX: number;
   shadowOffsetY: number;
+  filter: ImageFilterConfig;
   opacity: number;
   angle: number;
   scaleX: number;

@@ -11,6 +11,7 @@ import {
   type DiagonalDirection,
   type ExportImageFormat,
   type GradientConfig,
+  type ImageFilterConfig,
   type ImageStrokeStyle,
   type LayerItem,
   type OverflowControlKey,
@@ -79,6 +80,11 @@ import {
   type ResizeSnapTransform,
 } from '../utils/snapGuides';
 import { StoryImage, buildImageShadow } from '../utils/storyImage';
+import {
+  DEFAULT_IMAGE_FILTER,
+  applyStoryImageFilters,
+  normalizeImageFilterConfig,
+} from '../utils/imageFilters';
 import { StoryTextbox } from '../utils/storyTextbox';
 import {
   TemplateSlotRect,
@@ -595,6 +601,12 @@ export function useFabricCanvas() {
             obj.dirty = true;
             obj.initDimensions();
             obj.setCoords();
+          }
+          if (obj instanceof fabric.FabricImage) {
+            const imgWithFilter = obj as StoryImage;
+            if (imgWithFilter.imageFilter) {
+              applyStoryImageFilters(imgWithFilter, imgWithFilter.imageFilter, 'full');
+            }
           }
         });
 
@@ -1513,6 +1525,7 @@ export function useFabricCanvas() {
       imageShadowBlur?: number;
       imageShadowOffsetX?: number;
       imageShadowOffsetY?: number;
+      imageFilter?: ImageFilterConfig;
     };
     meta.editorName = name;
     meta.cutoutShape = 'none';
@@ -1527,6 +1540,7 @@ export function useFabricCanvas() {
     meta.imageShadowBlur = 24;
     meta.imageShadowOffsetX = 0;
     meta.imageShadowOffsetY = 12;
+    meta.imageFilter = { ...DEFAULT_IMAGE_FILTER };
   };
 
   const addImageFromFile = useCallback(
@@ -2085,6 +2099,8 @@ export function useFabricCanvas() {
         shadowBlur: number;
         shadowOffsetX: number;
         shadowOffsetY: number;
+        filter: Partial<ImageFilterConfig>;
+        filterQuality: AdjustmentQuality;
       }>
     ) => {
       const canvas = canvasRef.current;
@@ -2201,11 +2217,26 @@ export function useFabricCanvas() {
         );
       }
 
+      if (patch.filter !== undefined) {
+        const nextFilter = normalizeImageFilterConfig({
+          ...(storyImg.imageFilter ?? DEFAULT_IMAGE_FILTER),
+          ...patch.filter,
+        });
+        storyImg.imageFilter = nextFilter;
+        applyStoryImageFilters(
+          storyImg,
+          nextFilter,
+          patch.filterQuality ?? 'full'
+        );
+      }
+
       storyImg.set('dirty', true);
       storyImg.setCoords();
       canvas.requestRenderAll();
       syncSelectionAndLayers();
-      scheduleHistoryCommit(200);
+      if (patch.filterQuality !== 'preview') {
+        scheduleHistoryCommit(200);
+      }
     },
     [scheduleHistoryCommit, syncSelectionAndLayers]
   );

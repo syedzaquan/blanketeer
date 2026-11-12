@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import {
+  ChevronDown,
+  ChevronUp,
   Circle,
   FlipHorizontal2,
   FlipVertical2,
@@ -7,14 +9,22 @@ import {
   Link2,
   Link2Off,
   RotateCcw,
+  SlidersHorizontal,
   Square,
   Star,
 } from 'lucide-react';
 import type {
   CutoutShape,
+  ImageFilterConfig,
   ImageStrokeStyle,
   SelectedImageProps,
 } from '../types/editor';
+import type { AdjustmentQuality } from '../utils/backgroundFilters';
+import {
+  DEFAULT_IMAGE_FILTER,
+  IMAGE_FILTER_PRESETS,
+  isNeutralImageFilter,
+} from '../utils/imageFilters';
 import { cn } from '../utils/cn';
 import { RangeSlider } from './RangeSlider';
 
@@ -34,6 +44,8 @@ export type ImagePropsPatch = Partial<{
   shadowBlur: number;
   shadowOffsetX: number;
   shadowOffsetY: number;
+  filter: Partial<ImageFilterConfig>;
+  filterQuality: AdjustmentQuality;
 }>;
 
 interface ImageStyleControlsProps {
@@ -207,6 +219,16 @@ export function ImageStyleControls({
   const shadowBlur = selectedImage?.shadowBlur ?? 24;
   const shadowOffsetX = selectedImage?.shadowOffsetX ?? 0;
   const shadowOffsetY = selectedImage?.shadowOffsetY ?? 12;
+  const imageFilter = selectedImage?.filter ?? DEFAULT_IMAGE_FILTER;
+  const isFilterActive = !isNeutralImageFilter(imageFilter);
+  const [showFineTuneFilters, setShowFineTuneFilters] = useState(false);
+
+  const commitFilterFull = () => {
+    onUpdateImageProps({
+      filter: imageFilter,
+      filterQuality: 'full',
+    });
+  };
 
   return (
     <>
@@ -894,6 +916,172 @@ export function ImageStyleControls({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Post-Process Filters */}
+      <div className="border-t border-neutral-800/80 pt-3.5">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-medium text-neutral-300">Filters</h3>
+          {isFilterActive && (
+            <button
+              type="button"
+              disabled={!selectedImage}
+              onClick={() =>
+                onUpdateImageProps({
+                  filter: { ...DEFAULT_IMAGE_FILTER },
+                  filterQuality: 'full',
+                })
+              }
+              className="text-[11px] font-medium text-neutral-400 hover:text-white transition-colors"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        {/* 1-Tap Look Presets */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 -mx-0.5 px-0.5">
+          {IMAGE_FILTER_PRESETS.map((preset) => {
+            const active = imageFilter.preset === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                disabled={!selectedImage}
+                onClick={() =>
+                  onUpdateImageProps({
+                    filter: {
+                      preset: preset.id,
+                      intensity: preset.id === 'none' ? 100 : imageFilter.intensity || 100,
+                    },
+                    filterQuality: 'full',
+                  })
+                }
+                className={cn(
+                  'shrink-0 flex flex-col items-center gap-1 p-1.5 rounded-lg transition-colors min-w-[54px]',
+                  active
+                    ? 'bg-neutral-700 text-white'
+                    : 'bg-neutral-800/60 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
+                )}
+              >
+                <span
+                  className="w-7 h-5 rounded"
+                  style={{ background: preset.swatchStyle }}
+                />
+                <span className="text-[10px] font-medium leading-none">
+                  {preset.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Preset Intensity */}
+        {imageFilter.preset !== 'none' && (
+          <div className="mt-2.5">
+            <div className="flex items-center justify-between text-[11px] mb-1">
+              <label
+                htmlFor={`${idPrefix}-filter-intensity`}
+                className="text-neutral-400"
+              >
+                Intensity
+              </label>
+              <span className="font-mono text-neutral-300">
+                {Math.round(imageFilter.intensity)}%
+              </span>
+            </div>
+            <RangeSlider
+              id={`${idPrefix}-filter-intensity`}
+              aria-label="Filter intensity"
+              min={0}
+              max={100}
+              step={1}
+              disabled={!selectedImage}
+              value={Math.round(imageFilter.intensity)}
+              defaultValue={100}
+              onValueChange={(val) =>
+                onUpdateImageProps({
+                  filter: { intensity: val },
+                  filterQuality: 'preview',
+                })
+              }
+              onPointerUp={commitFilterFull}
+              onTouchEnd={commitFilterFull}
+              className="w-full"
+            />
+          </div>
+        )}
+
+        {/* Collapsible Fine-Tune Adjustments */}
+        <button
+          type="button"
+          onClick={() => setShowFineTuneFilters((prev) => !prev)}
+          className="mt-2.5 w-full flex items-center justify-between px-2.5 py-2 lg:py-1.5 rounded-lg lg:rounded-md bg-neutral-800/70 border border-neutral-700/80 text-xs font-medium text-neutral-300 hover:text-white transition-colors"
+        >
+          <span className="flex items-center gap-1.5">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-neutral-400" />
+            Fine-Tune Adjustments
+          </span>
+          {showFineTuneFilters ? (
+            <ChevronUp className="w-3.5 h-3.5 text-neutral-400" />
+          ) : (
+            <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+          )}
+        </button>
+
+        {showFineTuneFilters && (
+          <div className="mt-2.5 space-y-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/80 p-2.5">
+            {(
+              [
+                { key: 'brightness', label: 'Brightness', min: -100, max: 100 },
+                { key: 'contrast', label: 'Contrast', min: -100, max: 100 },
+                { key: 'saturation', label: 'Saturation', min: -100, max: 100 },
+                { key: 'warmth', label: 'Warmth', min: -100, max: 100 },
+                { key: 'shadows', label: 'Shadows', min: -100, max: 100 },
+                { key: 'highlights', label: 'Highlights', min: -100, max: 100 },
+                { key: 'dehaze', label: 'Dehaze', min: -100, max: 100 },
+                { key: 'blackPoint', label: 'Black Point', min: -100, max: 100 },
+                { key: 'blur', label: 'Blur', min: 0, max: 100 },
+              ] as const
+            ).map((item) => {
+              const rawVal = Math.round((imageFilter[item.key] ?? 0) * 100);
+              return (
+                <div key={item.key}>
+                  <div className="flex items-center justify-between text-[11px] mb-1">
+                    <label
+                      htmlFor={`${idPrefix}-filter-${item.key}`}
+                      className="text-neutral-400"
+                    >
+                      {item.label}
+                    </label>
+                    <span className="font-mono text-neutral-300">
+                      {rawVal > 0 && item.min < 0 ? `+${rawVal}` : rawVal}
+                    </span>
+                  </div>
+                  <RangeSlider
+                    id={`${idPrefix}-filter-${item.key}`}
+                    aria-label={item.label}
+                    min={item.min}
+                    max={item.max}
+                    step={1}
+                    disabled={!selectedImage}
+                    value={rawVal}
+                    defaultValue={0}
+                    onValueChange={(val) =>
+                      onUpdateImageProps({
+                        filter: { [item.key]: val / 100 },
+                        filterQuality: 'preview',
+                      })
+                    }
+                    onPointerUp={commitFilterFull}
+                    onTouchEnd={commitFilterFull}
+                    className="w-full"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </>
   );

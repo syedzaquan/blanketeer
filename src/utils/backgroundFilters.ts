@@ -285,23 +285,28 @@ function getSourceDimensions(el: CanvasImageSource): { width: number; height: nu
   return { width: 0, height: 0 };
 }
 
-function getOrCreatePreviewProxy(
+const fullProxyCache = new WeakMap<fabric.FabricImage, PreviewProxyCache>();
+
+function getOrCreateProxy(
   bgImage: fabric.FabricImage,
-  internal: FabricImageInternal
+  internal: FabricImageInternal,
+  targetMaxSide: number,
+  cacheMap: WeakMap<fabric.FabricImage, PreviewProxyCache>,
+  smoothingQuality: ImageSmoothingQuality = 'medium'
 ): PreviewProxyCache | null {
   const origEl = internal._originalElement;
-  const cached = previewProxyCache.get(bgImage);
+  const cached = cacheMap.get(bgImage);
   if (cached && cached.origEl === origEl) {
     return cached;
   }
 
   const { width: origW, height: origH } = getSourceDimensions(origEl);
   const maxSide = Math.max(origW, origH);
-  if (maxSide <= PREVIEW_MAX_SIDE + 60 || origW <= 0 || origH <= 0) {
+  if (maxSide <= targetMaxSide || origW <= 0 || origH <= 0) {
     return null;
   }
 
-  const scale = PREVIEW_MAX_SIDE / maxSide;
+  const scale = targetMaxSide / maxSide;
   const pw = Math.max(1, Math.round(origW * scale));
   const ph = Math.max(1, Math.round(origH * scale));
 
@@ -311,7 +316,7 @@ function getOrCreatePreviewProxy(
   const srcCtx = srcCanvas.getContext('2d');
   if (!srcCtx) return null;
   srcCtx.imageSmoothingEnabled = true;
-  srcCtx.imageSmoothingQuality = 'medium';
+  srcCtx.imageSmoothingQuality = smoothingQuality;
   srcCtx.drawImage(origEl, 0, 0, pw, ph);
 
   const filteredCanvas = document.createElement('canvas');
@@ -326,9 +331,9 @@ function getOrCreatePreviewProxy(
     ph,
     srcCanvas,
     filteredCanvas,
-    previewKey: `${internal.cacheKey || 'bg'}_preview_${pw}x${ph}`,
+    previewKey: `${internal.cacheKey || 'bg'}_proxy_${pw}x${ph}`,
   };
-  previewProxyCache.set(bgImage, entry);
+  cacheMap.set(bgImage, entry);
   return entry;
 }
 
@@ -344,6 +349,131 @@ export function isNeutralAdjustments(
     adjustments.dehaze === 0 &&
     adjustments.blackPoint === 0
   );
+}
+
+export function applyFilterListWithQuality(
+  image: fabric.FabricImage,
+  filters: fabric.filters.BaseFilter<string, Record<string, unknown>, Record<string, unknown>>[],
+  cacheKey: string,
+  quality: AdjustmentQuality = 'full'
+): void {
+  const internal = image as unknown as FabricImageInternal;
+  const prev = appliedToneCache.get(image);
+
+  if (
+    prev &&
+    prev.origEl === internal._originalElement &&
+    prev.key === cacheKey &&
+    (prev.quality === quality || prev.quality === 'full')
+  ) {
+    return;
+  }
+
+  if (filters.length === 0) {
+    if (
+      internal._element !== internal._originalElement &&
+      internal._element !== internal._filteredEl
+    ) {
+      internal._element = internal._originalElement;
+      internal._filterScalingX = 1;
+      internal._filterScalingY = 1;
+    }
+    if (
+      (image.filters && image.filters.length > 0) ||
+      internal._element !== internal._originalElement
+    ) {
+      image.filters = [];
+      image.applyFilters();
+    }
+    appliedToneCache.set(image, {
+      key: cacheKey,
+      quality: 'full',
+      origEl: internal._originalElement,
+    });
+    return;
+  }
+
+  image.filters = filters;
+
+  if (quality === 'preview') {
+    const proxy = getOrCreateProxy(
+      image,
+      internal,
+      PREVIEW_MAX_SIDE,
+      previewProxyCache,
+      'medium'
+    );
+    if (proxy) {
+      fabric
+        .getFilterBackend()
+        .applyFilters(
+          filters,
+          proxy.srcCanvas,
+          proxy.pw,
+          proxy.ph,
+          proxy.filteredCanvas,
+          proxy.previewKey
+        );
+      internal._element = proxy.filteredCanvas;
+      internal._filterScalingX = proxy.pw / proxy.origW;
+      internal._filterScalingY = proxy.ph / proxy.origH;
+      image.set('dirty', true);
+      appliedToneCache.set(image, {
+        key: cacheKey,
+        quality: 'preview',
+        origEl: internal._originalElement,
+      });
+      return;
+    }
+  }
+
+  // Cap full-res filtering to WebGL textureSize so large photos aren't cropped to a square tile
+  const maxTextureSide = Math.max(512, fabric.config.textureSize || 2048);
+  const fullProxy = getOrCreateProxy(
+    image,
+    internal,
+    maxTextureSide,
+    fullProxyCache,
+    'high'
+  );
+  if (fullProxy) {
+    fabric
+      .getFilterBackend()
+      .applyFilters(
+        filters,
+        fullProxy.srcCanvas,
+        fullProxy.pw,
+        fullProxy.ph,
+        fullProxy.filteredCanvas,
+        fullProxy.previewKey
+      );
+    internal._element = fullProxy.filteredCanvas;
+    internal._filterScalingX = fullProxy.pw / fullProxy.origW;
+    internal._filterScalingY = fullProxy.ph / fullProxy.origH;
+    image.set('dirty', true);
+    appliedToneCache.set(image, {
+      key: cacheKey,
+      quality: 'full',
+      origEl: internal._originalElement,
+    });
+    return;
+  }
+
+  if (
+    internal._element !== internal._originalElement &&
+    internal._element !== internal._filteredEl
+  ) {
+    internal._element = internal._filteredEl ?? internal._originalElement;
+    internal._filterScalingX = 1;
+    internal._filterScalingY = 1;
+  }
+
+  image.applyFilters();
+  appliedToneCache.set(image, {
+    key: cacheKey,
+    quality: 'full',
+    origEl: internal._originalElement,
+  });
 }
 
 export function applyBackgroundImageAdjustments(
@@ -417,7 +547,13 @@ export function applyBackgroundImageAdjustments(
   }
 
   if (quality === 'preview') {
-    const proxy = getOrCreatePreviewProxy(bgImage, internal);
+    const proxy = getOrCreateProxy(
+      bgImage,
+      internal,
+      PREVIEW_MAX_SIDE,
+      previewProxyCache,
+      'medium'
+    );
     if (proxy) {
       fabric
         .getFilterBackend()
