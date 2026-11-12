@@ -144,7 +144,9 @@ export function CanvasViewport({
   onToggleLock,
 }: CanvasViewportProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const frameWrapperRef = useRef<HTMLDivElement | null>(null);
   const frameBoxRef = useRef<HTMLDivElement | null>(null);
+  const pendingPanRef = useRef<{ x: number; y: number } | null>(null);
   const windowSize = useWindowSize();
   const [containerSize, setContainerSize] = useState({ width: 720, height: 760 });
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -240,7 +242,34 @@ export function CanvasViewport({
       onRecalculateOffset();
     });
     return () => window.cancelAnimationFrame(id);
-  }, [canvasScale, pan.x, pan.y, canvasWidth, canvasHeight, onRecalculateOffset]);
+  }, [canvasScale, canvasWidth, canvasHeight, onRecalculateOffset]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      onRecalculateOffset();
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [pan.x, pan.y, onRecalculateOffset]);
+
+  const applyPanTransformOnly = useCallback((x: number, y: number) => {
+    pendingPanRef.current = { x, y };
+    if (frameWrapperRef.current) {
+      frameWrapperRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    }
+  }, []);
+
+  const commitPendingPan = useCallback(() => {
+    const pending = pendingPanRef.current;
+    pendingPanRef.current = null;
+    if (!pending) return;
+    const live = liveRef.current;
+    setViewState({
+      aspectKey: live.aspectKey,
+      scale: live.canvasScale,
+      panX: pending.x,
+      panY: pending.y,
+    });
+  }, []);
 
   const applyZoom = useCallback(
     (
@@ -594,12 +623,7 @@ export function CanvasViewport({
           live.containerSize.width,
           live.containerSize.height
         );
-        setViewState({
-          aspectKey: live.aspectKey,
-          scale: live.canvasScale,
-          panX: clamped.x,
-          panY: clamped.y,
-        });
+        applyPanTransformOnly(clamped.x, clamped.y);
       } else if (awaitingAllFingersLift) {
         e.preventDefault();
         e.stopPropagation();
@@ -610,6 +634,7 @@ export function CanvasViewport({
       if (gestureMode === 'backdrop-touch-pan') {
         e.preventDefault();
         e.stopPropagation();
+        commitPendingPan();
         if (backdropTouchStart && !backdropTouchStart.moved && e.touches.length === 0) {
           if (backdropTouchStart.hitKind === 'unselected') {
             liveRef.current.onSelectObjectAtClientPoint?.(
@@ -684,7 +709,7 @@ export function CanvasViewport({
       el.removeEventListener('touchend', onTouchEnd, { capture: true });
       el.removeEventListener('touchcancel', onTouchEnd, { capture: true });
     };
-  }, []);
+  }, [applyPanTransformOnly, commitPendingPan]);
 
   // Spacebar hold for hand-panning + Ctrl/Cmd +/-/0 zoom shortcuts
   useEffect(() => {
@@ -807,16 +832,12 @@ export function CanvasViewport({
         live.containerSize.width,
         live.containerSize.height
       );
-      setViewState({
-        aspectKey: live.aspectKey,
-        scale: live.canvasScale,
-        panX: clamped.x,
-        panY: clamped.y,
-      });
+      applyPanTransformOnly(clamped.x, clamped.y);
     };
 
     const onWindowMouseUp = () => {
       if (!panDrag) return;
+      commitPendingPan();
       if (panDrag.deselectOnClick && !panDrag.moved) {
         liveRef.current.onDeselectAll();
       }
@@ -833,7 +854,7 @@ export function CanvasViewport({
       window.removeEventListener('mousemove', onWindowMouseMove);
       window.removeEventListener('mouseup', onWindowMouseUp);
     };
-  }, []);
+  }, [applyPanTransformOnly, commitPendingPan]);
 
   const handleBackdropDoubleClick = (e: MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget && isZoomedOrPanned) {
@@ -959,11 +980,13 @@ export function CanvasViewport({
     >
       {/* Scaled Canvas Frame + Unclipped Selection Overflow Overlay */}
       <div
+        ref={frameWrapperRef}
         className="relative shrink-0"
         style={{
           width: `${scaledWidth}px`,
           height: `${scaledHeight}px`,
           transform: `translate3d(${pan.x}px, ${pan.y}px, 0)`,
+          willChange: 'transform',
         }}
       >
         <div
