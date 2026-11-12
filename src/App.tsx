@@ -3,6 +3,7 @@ import {
   Download,
   Image as ImageIcon,
   Layers,
+  LayoutTemplate,
   Palette,
   Share2,
   SlidersHorizontal,
@@ -15,6 +16,7 @@ import { Inspector } from './components/Inspector';
 import { BackgroundTab } from './components/Sidebar/BackgroundTab';
 import { ImageTab } from './components/Sidebar/ImageTab';
 import { LayersTab } from './components/Sidebar/LayersTab';
+import { TemplatesTab } from './components/Sidebar/TemplatesTab';
 import { TextTab } from './components/Sidebar/TextTab';
 import { Toolbar } from './components/Toolbar';
 import { useFabricCanvas } from './hooks/useFabricCanvas';
@@ -25,6 +27,7 @@ import { sharePngBlob, type ExportPreviewPayload } from './utils/exportCanvas';
 const SIDEBAR_TABS: { id: SidebarTab; label: string; icon: typeof Type }[] = [
   { id: 'text', label: 'Text', icon: Type },
   { id: 'image', label: 'Images', icon: ImageIcon },
+  { id: 'templates', label: 'Templates', icon: LayoutTemplate },
   { id: 'background', label: 'Backdrop', icon: Palette },
   { id: 'layers', label: 'Layers', icon: Layers },
 ];
@@ -37,6 +40,8 @@ export function App() {
   const [exportPreview, setExportPreview] = useState<ExportPreviewPayload | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const quickImageInputRef = useRef<HTMLInputElement | null>(null);
+  const slotImageInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingSlotIdRef = useRef<string | null>(null);
 
   const {
     canvasElRef,
@@ -46,6 +51,7 @@ export function App() {
     setAspectRatio,
     selectedObject,
     layers,
+    templateSlots,
     background,
     availableFonts,
     showSafeArea,
@@ -60,6 +66,9 @@ export function App() {
     updateTextProps,
     uploadCustomFont,
     addImageFromFile,
+    applyTwoColumnTemplate,
+    fillTemplateSlot,
+    updateTemplateSlotCorner,
     applyImageCutout,
     updateImageProps,
     setBackgroundMode,
@@ -105,6 +114,21 @@ export function App() {
     e.target.value = '';
   };
 
+  const triggerFillSlot = (slotId: string) => {
+    pendingSlotIdRef.current = slotId;
+    slotImageInputRef.current?.click();
+  };
+
+  const handleSlotImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const slotId = pendingSlotIdRef.current;
+    pendingSlotIdRef.current = null;
+    if (file && file.type.startsWith('image/') && slotId) {
+      void fillTemplateSlot(slotId, file);
+    }
+    e.target.value = '';
+  };
+
   const handleDeleteActiveObject = () => {
     deleteActiveObject();
     setMobileSheet((prev) => (prev === 'inspector' ? 'none' : prev));
@@ -137,6 +161,16 @@ export function App() {
           onAddImageFile={(file) => void addImageFromFile(file)}
           onApplyCutout={applyImageCutout}
           onUpdateImageProps={updateImageProps}
+        />
+      );
+    }
+    if (activeTab === 'templates') {
+      return (
+        <TemplatesTab
+          templateSlots={templateSlots}
+          onApplyTwoColumnTemplate={applyTwoColumnTemplate}
+          onTriggerFillSlot={triggerFillSlot}
+          onSelectSlot={selectLayerById}
         />
       );
     }
@@ -204,6 +238,13 @@ export function App() {
         type="file"
         accept="image/*"
         onChange={handleQuickImageChange}
+        className="hidden"
+      />
+      <input
+        ref={slotImageInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleSlotImageChange}
         className="hidden"
       />
 
@@ -275,6 +316,7 @@ export function App() {
             <Toolbar
               selectedObject={selectedObject}
               onOpenMobileInspector={() => setMobileSheet('inspector')}
+              onTriggerFillSlot={triggerFillSlot}
               onAddText={() => void addText('heading')}
               onTriggerImageUpload={() => quickImageInputRef.current?.click()}
               onBringForward={bringForward}
@@ -337,6 +379,8 @@ export function App() {
           onApplyTextPreset={(preset) => void applyTextPreset(preset)}
           onApplyCutout={applyImageCutout}
           onUpdateImageProps={updateImageProps}
+          onTriggerFillSlot={triggerFillSlot}
+          onUpdateSlotCorner={updateTemplateSlotCorner}
           onUpdateCommon={updateActiveCommonProps}
           onBringForward={bringForward}
           onSendBackward={sendBackward}

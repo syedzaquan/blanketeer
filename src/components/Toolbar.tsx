@@ -14,6 +14,7 @@ import type { SelectedObjectState } from '../types/editor';
 interface ToolbarProps {
   selectedObject: SelectedObjectState | null;
   onOpenMobileInspector: () => void;
+  onTriggerFillSlot?: (slotId: string) => void;
   onAddText: () => void;
   onTriggerImageUpload: () => void;
   onBringForward: () => void;
@@ -27,6 +28,7 @@ interface ToolbarProps {
 export function Toolbar({
   selectedObject,
   onOpenMobileInspector,
+  onTriggerFillSlot,
   onAddText,
   onTriggerImageUpload,
   onBringForward,
@@ -65,6 +67,20 @@ export function Toolbar({
           </>
         ) : (
           <>
+            {selectedObject.kind === 'slot' && onTriggerFillSlot && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onTriggerFillSlot(selectedObject.id)}
+                  aria-label="Choose photo for slot"
+                  title="Choose photo for slot"
+                  className="p-2.5 lg:p-1.5 rounded-lg lg:rounded-md bg-neutral-100 text-neutral-950 hover:bg-white transition-colors shrink-0"
+                >
+                  <ImagePlus className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                </button>
+                <div className="w-px h-5 lg:h-4 bg-neutral-800 mx-0.5 shrink-0" />
+              </>
+            )}
             <button
               type="button"
               onClick={onOpenMobileInspector}

@@ -10,6 +10,7 @@ import {
   Copy,
   FlipHorizontal2,
   FlipVertical2,
+  ImagePlus,
   Italic,
   RotateCcw,
   Strikethrough,
@@ -76,6 +77,8 @@ interface InspectorProps {
   onApplyTextPreset: (preset: TextStylePresetId) => void;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
   onUpdateImageProps: (patch: ImagePropsPatch) => void;
+  onTriggerFillSlot: (slotId: string) => void;
+  onUpdateSlotCorner: (slotId: string, cornerPercent: number) => void;
   onUpdateCommon: (
     patch: Partial<{
       opacity: number;
@@ -124,6 +127,8 @@ export function Inspector({
   onApplyTextPreset,
   onApplyCutout,
   onUpdateImageProps,
+  onTriggerFillSlot,
+  onUpdateSlotCorner,
   onUpdateCommon,
   onBringForward,
   onSendBackward,
@@ -209,7 +214,9 @@ export function Inspector({
               ? 'Text Layer'
               : selectedObject.kind === 'image'
                 ? 'Image Layer'
-                : 'Layer'}
+                : selectedObject.kind === 'slot'
+                  ? 'Image Slot'
+                  : 'Layer'}
           </span>
           <h2 className="text-sm lg:text-xs font-medium text-neutral-100 truncate max-w-[165px]">
             {selectedObject.name}
@@ -921,6 +928,56 @@ export function Inspector({
           onApplyCutout={onApplyCutout}
           onUpdateImageProps={onUpdateImageProps}
         />
+      )}
+
+      {/* TEMPLATE SLOT INSPECTOR */}
+      {selectedObject.kind === 'slot' && (
+        <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-medium text-neutral-300">
+              Photo Slot
+            </h3>
+            <span className="text-[10px] font-mono text-neutral-500">
+              {selectedObject.width} × {selectedObject.height}px
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onTriggerFillSlot(selectedObject.id)}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 lg:py-2 px-3 rounded-lg lg:rounded-md bg-neutral-100 hover:bg-white text-neutral-950 text-sm lg:text-xs font-medium transition-colors"
+          >
+            <ImagePlus className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+            <span>Choose Photo</span>
+          </button>
+
+          <div>
+            <div className="flex items-center justify-between text-[11px] mb-1">
+              <label
+                htmlFor="inspector-slot-corner"
+                className="text-neutral-400"
+              >
+                Corner Radius
+              </label>
+              <span className="font-mono text-neutral-300">
+                {selectedObject.cornerPercent}%
+              </span>
+            </div>
+            <input
+              id="inspector-slot-corner"
+              aria-label="Slot corner radius"
+              type="range"
+              min={0}
+              max={25}
+              step={1}
+              value={selectedObject.cornerPercent}
+              onChange={(e) =>
+                onUpdateSlotCorner(selectedObject.id, Number(e.target.value))
+              }
+              className="w-full"
+            />
+          </div>
+        </div>
       )}
 
       {/* COMMON TRANSFORM & LAYER ORDER */}

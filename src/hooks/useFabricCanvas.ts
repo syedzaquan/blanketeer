@@ -11,6 +11,8 @@ import {
   type ImageStrokeStyle,
   type LayerItem,
   type SelectedObjectState,
+  type TemplatePlacement,
+  type TemplateSlotSummary,
   type TextBackgroundStyle,
 } from '../types/editor';
 import {
@@ -27,6 +29,7 @@ import {
   ensureObjectMeta,
   extractLayersList,
   extractSelectedState,
+  extractTemplateSlots,
   positionBackgroundImage,
   prepareBackgroundImageDataURL,
   readFileAsDataURL,
@@ -68,6 +71,11 @@ import {
 } from '../utils/snapGuides';
 import { StoryImage, buildImageShadow } from '../utils/storyImage';
 import { StoryTextbox } from '../utils/storyTextbox';
+import {
+  TemplateSlotRect,
+  coverCropFileToDataURL,
+  updateTemplateSlotCornerRadius,
+} from '../utils/templateSlot';
 
 interface HistorySnapshot {
   aspectRatio: AspectRatioKey;
@@ -246,6 +254,7 @@ export function useFabricCanvas() {
   const [background, setBackgroundState] = useState<BackgroundState>(DEFAULT_BACKGROUND);
   const [selectedObject, setSelectedObject] = useState<SelectedObjectState | null>(null);
   const [layers, setLayers] = useState<LayerItem[]>([]);
+  const [templateSlots, setTemplateSlots] = useState<TemplateSlotSummary[]>([]);
   const [availableFonts, setAvailableFonts] = useState<FontOption[]>(SUPPORTED_FONTS);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -287,6 +296,7 @@ export function useFabricCanvas() {
     const active = canvas.getActiveObject();
     setSelectedObject(extractSelectedState(active));
     setLayers(extractLayersList(canvas));
+    setTemplateSlots(extractTemplateSlots(canvas));
   }, []);
 
   const updateUndoRedoFlags = useCallback(() => {
@@ -1171,6 +1181,42 @@ export function useFabricCanvas() {
     [commitHistoryNow, persistSnapshot, syncSelectionAndLayers]
   );
 
+  const findObjectById = useCallback((id: string): fabric.FabricObject | undefined => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    return canvas.getObjects().find((o) => ensureObjectMeta(o).editorId === id);
+  }, []);
+
+  const initDefaultStoryImageMeta = (img: fabric.FabricImage, name: string): void => {
+    const meta = ensureObjectMeta(img) as FabricObjectWithMeta & {
+      cutoutShape?: CutoutShape;
+      cutoutRadius?: number;
+      aspectLocked?: boolean;
+      imageStrokeColor?: string;
+      imageStrokeWidth?: number;
+      imageStrokeStyle?: ImageStrokeStyle;
+      imageShadowEnabled?: boolean;
+      imageShadowColor?: string;
+      imageShadowOpacity?: number;
+      imageShadowBlur?: number;
+      imageShadowOffsetX?: number;
+      imageShadowOffsetY?: number;
+    };
+    meta.editorName = name;
+    meta.cutoutShape = 'none';
+    meta.cutoutRadius = 16;
+    meta.aspectLocked = true;
+    meta.imageStrokeColor = '#ffffff';
+    meta.imageStrokeWidth = 0;
+    meta.imageStrokeStyle = 'solid';
+    meta.imageShadowEnabled = false;
+    meta.imageShadowColor = '#000000';
+    meta.imageShadowOpacity = 45;
+    meta.imageShadowBlur = 24;
+    meta.imageShadowOffsetX = 0;
+    meta.imageShadowOffsetY = 12;
+  };
+
   const addImageFromFile = useCallback(
     async (file: File) => {
       const canvas = canvasRef.current;
@@ -1190,33 +1236,10 @@ export function useFabricCanvas() {
         1
       );
 
-      const meta = ensureObjectMeta(img) as FabricObjectWithMeta & {
-        cutoutShape?: CutoutShape;
-        cutoutRadius?: number;
-        aspectLocked?: boolean;
-        imageStrokeColor?: string;
-        imageStrokeWidth?: number;
-        imageStrokeStyle?: ImageStrokeStyle;
-        imageShadowEnabled?: boolean;
-        imageShadowColor?: string;
-        imageShadowOpacity?: number;
-        imageShadowBlur?: number;
-        imageShadowOffsetX?: number;
-        imageShadowOffsetY?: number;
-      };
-      meta.editorName = file.name.replace(/\.[^/.]+$/, '').slice(0, 24) || 'Image';
-      meta.cutoutShape = 'none';
-      meta.cutoutRadius = 16;
-      meta.aspectLocked = true;
-      meta.imageStrokeColor = '#ffffff';
-      meta.imageStrokeWidth = 0;
-      meta.imageStrokeStyle = 'solid';
-      meta.imageShadowEnabled = false;
-      meta.imageShadowColor = '#000000';
-      meta.imageShadowOpacity = 45;
-      meta.imageShadowBlur = 24;
-      meta.imageShadowOffsetX = 0;
-      meta.imageShadowOffsetY = 12;
+      initDefaultStoryImageMeta(
+        img,
+        file.name.replace(/\.[^/.]+$/, '').slice(0, 24) || 'Image'
+      );
 
       img.set({
         left: width / 2,
@@ -1234,6 +1257,131 @@ export function useFabricCanvas() {
       commitHistoryNow();
     },
     [commitHistoryNow, syncSelectionAndLayers]
+  );
+
+  const applyTwoColumnTemplate = useCallback(
+    (options: { placement: TemplatePlacement; cornerPercent: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const outerPad = 16;
+      const gap = 16;
+      const slotWidth = Math.round((width - outerPad * 2 - gap) / 2);
+      const slotHeight = Math.round(height * 0.5);
+      const slotTop =
+        options.placement === 'top' ? outerPad : height - outerPad - slotHeight;
+      const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
+
+      // Replace existing unfilled placeholder slots if the user switches Top/Bottom or re-applies
+      const existingSlots = canvas
+        .getObjects()
+        .filter((obj): obj is TemplateSlotRect => obj instanceof TemplateSlotRect);
+      if (existingSlots.length > 0) {
+        existingSlots.forEach((s) => canvas.remove(s));
+      }
+
+      const makeSlot = (slotIndex: number, leftCenter: number) => {
+        const slot = new TemplateSlotRect({
+          left: leftCenter,
+          top: slotTop + slotHeight / 2,
+          width: slotWidth,
+          height: slotHeight,
+          originX: 'center',
+          originY: 'center',
+          slotIndex,
+          slotCornerPercent: cornerPercent,
+          editorName: `Photo ${slotIndex}`,
+        });
+        ensureObjectMeta(slot);
+        return slot;
+      };
+
+      const slot1 = makeSlot(1, outerPad + slotWidth / 2);
+      const slot2 = makeSlot(2, outerPad + slotWidth + gap + slotWidth / 2);
+
+      canvas.insertAt(0, slot1, slot2);
+      canvas.setActiveObject(slot1);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [commitHistoryNow, syncSelectionAndLayers]
+  );
+
+  const fillTemplateSlot = useCallback(
+    async (slotId: string, file: File) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const target = findObjectById(slotId);
+      if (!(target instanceof TemplateSlotRect)) return;
+
+      const slotWidth = Math.max(20, target.getScaledWidth());
+      const slotHeight = Math.max(20, target.getScaledHeight());
+      const center = target.getCenterPoint();
+      const cornerPercent = Math.round(target.slotCornerPercent ?? 0);
+      const angle = target.angle || 0;
+      const opacity = target.opacity ?? 1;
+      const stackIndex = Math.max(0, canvas.getObjects().indexOf(target));
+      const fallbackName = target.editorName || `Photo ${target.slotIndex ?? 1}`;
+
+      const rawSrc = await readFileAsDataURL(file);
+      const croppedSrc = await coverCropFileToDataURL(
+        file,
+        rawSrc,
+        slotWidth,
+        slotHeight
+      );
+      const img = await StoryImage.fromURL(croppedSrc, {
+        crossOrigin: 'anonymous',
+      });
+
+      initDefaultStoryImageMeta(
+        img,
+        file.name.replace(/\.[^/.]+$/, '').slice(0, 24) || fallbackName
+      );
+
+      img.set({
+        left: center.x,
+        top: center.y,
+        originX: 'center',
+        originY: 'center',
+        scaleX: slotWidth / (img.width || 1),
+        scaleY: slotHeight / (img.height || 1),
+        angle,
+        opacity,
+      });
+
+      if (cornerPercent > 0) {
+        applyCutoutMask(img, 'rounded', cornerPercent);
+      }
+
+      if (canvas.getActiveObject() === target) {
+        canvas.discardActiveObject();
+      }
+      canvas.remove(target);
+      canvas.insertAt(stackIndex, img);
+      canvas.setActiveObject(img);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [commitHistoryNow, findObjectById, syncSelectionAndLayers]
+  );
+
+  const updateTemplateSlotCorner = useCallback(
+    (slotId: string, cornerPercent: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const target = findObjectById(slotId);
+      if (!(target instanceof TemplateSlotRect)) return;
+
+      updateTemplateSlotCornerRadius(target, cornerPercent);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      scheduleHistoryCommit(200);
+    },
+    [findObjectById, scheduleHistoryCommit, syncSelectionAndLayers]
   );
 
   const applyImageCutout = useCallback(
@@ -1516,12 +1664,6 @@ export function useFabricCanvas() {
     syncSelectionAndLayers();
     commitHistoryNow();
   }, [commitHistoryNow, syncSelectionAndLayers]);
-
-  const findObjectById = useCallback((id: string): fabric.FabricObject | undefined => {
-    const canvas = canvasRef.current;
-    if (!canvas) return undefined;
-    return canvas.getObjects().find((o) => ensureObjectMeta(o).editorId === id);
-  }, []);
 
   const selectLayerById = useCallback(
     (id: string) => {
@@ -2034,6 +2176,7 @@ export function useFabricCanvas() {
     setAspectRatio,
     selectedObject,
     layers,
+    templateSlots,
     background,
     availableFonts,
     canUndo,
@@ -2045,6 +2188,9 @@ export function useFabricCanvas() {
     updateTextProps,
     uploadCustomFont,
     addImageFromFile,
+    applyTwoColumnTemplate,
+    fillTemplateSlot,
+    updateTemplateSlotCorner,
     applyImageCutout,
     updateImageProps,
     setBackgroundMode,

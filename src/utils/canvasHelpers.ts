@@ -5,9 +5,11 @@ import type {
   GradientConfig,
   LayerItem,
   SelectedObjectState,
+  TemplateSlotSummary,
 } from '../types/editor';
 import type { ImageWithCutoutMeta } from './imageCutouts';
 import { StoryTextbox } from './storyTextbox';
+import { TemplateSlotRect } from './templateSlot';
 
 export const CUSTOM_SERIALIZED_PROPS = [
   'editorId',
@@ -32,6 +34,9 @@ export const CUSTOM_SERIALIZED_PROPS = [
   'imageShadowBlur',
   'imageShadowOffsetX',
   'imageShadowOffsetY',
+  'isTemplateSlot',
+  'slotIndex',
+  'slotCornerPercent',
   'locked',
 ];
 
@@ -340,6 +345,23 @@ export function extractSelectedState(
     };
   }
 
+  if (obj instanceof TemplateSlotRect) {
+    return {
+      kind: 'slot',
+      id: meta.editorId!,
+      name: meta.editorName!,
+      slotIndex: obj.slotIndex ?? 1,
+      width: Math.max(1, Math.round(obj.getScaledWidth())),
+      height: Math.max(1, Math.round(obj.getScaledHeight())),
+      cornerPercent: Math.round(obj.slotCornerPercent ?? 0),
+      opacity: Number((obj.opacity ?? 1).toFixed(2)),
+      angle: Math.round(obj.angle || 0),
+      flipX: Boolean(obj.flipX),
+      flipY: Boolean(obj.flipY),
+      locked: Boolean(meta.locked),
+    };
+  }
+
   return {
     kind: 'other',
     id: meta.editorId!,
@@ -352,6 +374,24 @@ export function extractSelectedState(
   };
 }
 
+export function extractTemplateSlots(canvas: fabric.Canvas): TemplateSlotSummary[] {
+  return canvas
+    .getObjects()
+    .filter((obj): obj is TemplateSlotRect => obj instanceof TemplateSlotRect)
+    .map((slot) => {
+      const meta = ensureObjectMeta(slot);
+      return {
+        id: meta.editorId!,
+        label: meta.editorName || `Photo ${slot.slotIndex ?? 1}`,
+        slotIndex: slot.slotIndex ?? 1,
+        width: Math.max(1, Math.round(slot.getScaledWidth())),
+        height: Math.max(1, Math.round(slot.getScaledHeight())),
+        cornerPercent: Math.round(slot.slotCornerPercent ?? 0),
+      };
+    })
+    .sort((a, b) => a.slotIndex - b.slotIndex);
+}
+
 export function extractLayersList(canvas: fabric.Canvas): LayerItem[] {
   const objects = canvas.getObjects();
   const active = canvas.getActiveObject();
@@ -362,7 +402,8 @@ export function extractLayersList(canvas: fabric.Canvas): LayerItem[] {
       const meta = ensureObjectMeta(obj);
       const isText = obj instanceof StoryTextbox || obj instanceof fabric.Textbox;
       const isImage = obj instanceof fabric.FabricImage;
-      const kind = isText ? 'text' : isImage ? 'image' : 'other';
+      const isSlot = obj instanceof TemplateSlotRect;
+      const kind = isText ? 'text' : isImage ? 'image' : isSlot ? 'slot' : 'other';
 
       let label = meta.editorName || 'Layer';
       if (isText) {

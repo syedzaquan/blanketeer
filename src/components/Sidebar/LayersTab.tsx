@@ -5,6 +5,7 @@ import {
   EyeOff,
   Image as ImageIcon,
   Layers,
+  LayoutTemplate,
   Lock,
   Trash2,
   Type,
@@ -57,7 +58,9 @@ export function LayersTab({
                 ? Type
                 : layer.kind === 'image'
                   ? ImageIcon
-                  : Layers;
+                  : layer.kind === 'slot'
+                    ? LayoutTemplate
+                    : Layers;
 
             return (
               <div

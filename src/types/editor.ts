@@ -159,6 +159,21 @@ export interface SelectedImageProps {
   locked: boolean;
 }
 
+export interface SelectedTemplateSlotProps {
+  kind: 'slot';
+  id: string;
+  name: string;
+  slotIndex: number;
+  width: number;
+  height: number;
+  cornerPercent: number;
+  opacity: number;
+  angle: number;
+  flipX: boolean;
+  flipY: boolean;
+  locked: boolean;
+}
+
 export interface SelectedOtherProps {
   kind: 'other';
   id: string;
@@ -170,11 +185,15 @@ export interface SelectedOtherProps {
   locked: boolean;
 }
 
-export type SelectedObjectState = SelectedTextProps | SelectedImageProps | SelectedOtherProps;
+export type SelectedObjectState =
+  | SelectedTextProps
+  | SelectedImageProps
+  | SelectedTemplateSlotProps
+  | SelectedOtherProps;
 
 export interface LayerItem {
   id: string;
-  kind: 'text' | 'image' | 'other';
+  kind: 'text' | 'image' | 'slot' | 'other';
   label: string;
   visible: boolean;
   locked: boolean;
@@ -182,5 +201,21 @@ export interface LayerItem {
   isSelected: boolean;
 }
 
-export type SidebarTab = 'text' | 'image' | 'background' | 'layers';
+export type TemplatePlacement = 'top' | 'bottom';
+
+export interface TemplateSlotSummary {
+  id: string;
+  label: string;
+  slotIndex: number;
+  width: number;
+  height: number;
+  cornerPercent: number;
+}
+
+export type SidebarTab =
+  | 'text'
+  | 'image'
+  | 'templates'
+  | 'background'
+  | 'layers';
 
