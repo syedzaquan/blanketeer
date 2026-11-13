@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import {
   Download,
   Image as ImageIcon,
@@ -24,6 +24,7 @@ import { Toolbar } from './components/Toolbar';
 import { useFabricCanvas } from './hooks/useFabricCanvas';
 import type { ExportImageFormat, SidebarTab } from './types/editor';
 import { cn } from './utils/cn';
+import { extractImageFileFromClipboardData } from './utils/clipboardImage';
 import { sharePngBlob, type ExportPreviewPayload } from './utils/exportCanvas';
 
 const SIDEBAR_TABS: { id: SidebarTab; label: string; icon: typeof Type }[] = [
@@ -229,6 +230,30 @@ export function App() {
     );
   };
 
+  useEffect(() => {
+    const handleWindowPaste = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (textEditingState) return;
+      const imageFile = extractImageFileFromClipboardData(e.clipboardData);
+      if (imageFile) {
+        e.preventDefault();
+        void addImageFromFile(imageFile);
+      }
+    };
+
+    window.addEventListener('paste', handleWindowPaste);
+    return () => window.removeEventListener('paste', handleWindowPaste);
+  }, [addImageFromFile, textEditingState]);
+
   const closeExportPreview = () => {
     setExportPreview((prev) => {
       if (prev?.blobUrl) {
@@ -344,6 +369,8 @@ export function App() {
               setMobileSheet((prev) => (prev === 'inspector' ? 'none' : prev));
             }}
             onDropImageFile={(file) => void addImageFromFile(file)}
+            onAddText={() => void addText('heading')}
+            onTriggerImageUpload={() => quickImageInputRef.current?.click()}
             onRecalculateOffset={recalculateOffset}
             onCanPanCanvasAt={canPanCanvasAt}
             onGetTouchHitKind={getTouchHitKind}

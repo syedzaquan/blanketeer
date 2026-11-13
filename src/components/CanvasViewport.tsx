@@ -8,13 +8,28 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
-import { ImagePlus, Lock, Minus, Plus, RotateCcw, Scan, Unlock } from 'lucide-react';
+import {
+  ClipboardPaste,
+  ImagePlus,
+  Lock,
+  Minus,
+  Plus,
+  RotateCcw,
+  Scan,
+  Type,
+  Unlock,
+} from 'lucide-react';
 import { useWindowSize } from '../hooks/useWindowSize';
 import type {
   OverflowControlKey,
   SelectionBoxSnapshot,
   TextEditingSelectionState,
 } from '../types/editor';
+import {
+  canReadClipboard,
+  hasClipboardImageSilently,
+  readImageFileFromClipboard,
+} from '../utils/clipboardImage';
 import { cn } from '../utils/cn';
 import { MobileFontSizeSlider } from './MobileFontSizeSlider';
 import { TextEditingPopover } from './TextEditingPopover';
@@ -29,6 +44,8 @@ interface CanvasViewportProps {
   onToggleSafeArea: () => void;
   onDeselectAll: () => void;
   onDropImageFile: (file: File) => void;
+  onAddText?: () => void;
+  onTriggerImageUpload?: () => void;
   onRecalculateOffset: () => void;
   onCanPanCanvasAt?: (e: globalThis.MouseEvent | globalThis.TouchEvent) => boolean;
   onGetTouchHitKind?: (
@@ -122,6 +139,8 @@ export function CanvasViewport({
   onToggleSafeArea,
   onDeselectAll,
   onDropImageFile,
+  onAddText,
+  onTriggerImageUpload,
   onRecalculateOffset,
   onCanPanCanvasAt,
   onGetTouchHitKind,
@@ -161,6 +180,74 @@ export function CanvasViewport({
 
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
+  const [canvasTapPopover, setCanvasTapPopover] = useState<{
+    x: number;
+    y: number;
+    showPaste: boolean;
+  } | null>(null);
+  const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
+  const clipboardNoticeTimerRef = useRef<number | null>(null);
+
+  const showClipboardNotice = useCallback((msg: string) => {
+    setClipboardNotice(msg);
+    if (clipboardNoticeTimerRef.current !== null) {
+      window.clearTimeout(clipboardNoticeTimerRef.current);
+    }
+    clipboardNoticeTimerRef.current = window.setTimeout(() => {
+      setClipboardNotice(null);
+      clipboardNoticeTimerRef.current = null;
+    }, 2000);
+  }, []);
+
+  const openCanvasTapPopover = useCallback(
+    (clientX: number, clientY: number) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const x = Math.max(
+        110,
+        Math.min(rect.width - 110, clientX - rect.left)
+      );
+      const y = Math.max(
+        56,
+        Math.min(rect.height - 56, clientY - rect.top)
+      );
+
+      setCanvasTapPopover({
+        x,
+        y,
+        showPaste: true,
+      });
+
+      void hasClipboardImageSilently().then((hasImg) => {
+        if (hasImg === false) {
+          setCanvasTapPopover((prev) =>
+            prev ? { ...prev, showPaste: false } : null
+          );
+        }
+      });
+    },
+    []
+  );
+
+  const handleDirectPaste = useCallback(async () => {
+    setCanvasTapPopover(null);
+    if (!canReadClipboard()) {
+      showClipboardNotice('Clipboard paste requires HTTPS');
+      return;
+    }
+
+    try {
+      const file = await readImageFileFromClipboard();
+      if (file) {
+        onDropImageFile(file);
+      } else {
+        showClipboardNotice('No image in clipboard');
+      }
+    } catch {
+      showClipboardNotice('Clipboard access blocked');
+    }
+  }, [onDropImageFile, showClipboardNotice]);
 
   const canvasScale =
     viewState.aspectKey === aspectKey ? viewState.scale : DEFAULT_CANVAS_SCALE;
@@ -409,7 +496,16 @@ export function CanvasViewport({
       panY: number;
       moved: boolean;
       hitKind: 'selected' | 'unselected' | 'empty';
+      isInFrame: boolean;
+      longPressReady: boolean;
     } | null = null;
+    let longPressTimer: number | null = null;
+    const clearLongPressTimer = () => {
+      if (longPressTimer !== null) {
+        window.clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    };
     let pinchStart: {
       dist: number;
       midX: number;
@@ -433,6 +529,9 @@ export function CanvasViewport({
 
     const onPointerDownCapture = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
+      if ((e.target as HTMLElement | null)?.closest('[data-canvas-tap-popover="true"]')) {
+        return;
+      }
       const isFirstTouch = activeTouchPointers.size === 0;
       if (isFirstTouch && preTouchActiveId === undefined) {
         preTouchActiveId = liveRef.current.onGetActiveObjectId?.() ?? null;
@@ -495,10 +594,15 @@ export function CanvasViewport({
     };
 
     const onTouchStart = (e: TouchEvent) => {
+      if ((e.target as HTMLElement | null)?.closest('[data-canvas-tap-popover="true"]')) {
+        return;
+      }
+      setCanvasTapPopover(null);
       if (e.touches.length === 1 && preTouchActiveId === undefined) {
         preTouchActiveId = liveRef.current.onGetActiveObjectId?.() ?? null;
       }
       if (e.touches.length === 2) {
+        clearLongPressTimer();
         e.preventDefault();
         e.stopPropagation();
         awaitingAllFingersLift = false;
@@ -547,7 +651,24 @@ export function CanvasViewport({
           panY: live.pan.y,
           moved: false,
           hitKind,
+          isInFrame,
+          longPressReady: false,
         };
+        clearLongPressTimer();
+        longPressTimer = window.setTimeout(() => {
+          longPressTimer = null;
+          if (backdropTouchStart && !backdropTouchStart.moved) {
+            backdropTouchStart.longPressReady = true;
+            if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+              try {
+                navigator.vibrate(12);
+              } catch {
+                // Ignore vibration restrictions
+              }
+            }
+            showClipboardNotice('Release to paste');
+          }
+        }, 450);
       }
     };
 
@@ -613,6 +734,7 @@ export function CanvasViewport({
         const dy = e.touches[0].clientY - backdropTouchStart.y;
         if (Math.hypot(dx, dy) > 4) {
           backdropTouchStart.moved = true;
+          clearLongPressTimer();
         }
         const live = liveRef.current;
         const clamped = clampPan(
@@ -632,15 +754,20 @@ export function CanvasViewport({
 
     const onTouchEnd = (e: TouchEvent) => {
       if (gestureMode === 'backdrop-touch-pan') {
+        clearLongPressTimer();
         e.preventDefault();
         e.stopPropagation();
         commitPendingPan();
         if (backdropTouchStart && !backdropTouchStart.moved && e.touches.length === 0) {
-          if (backdropTouchStart.hitKind === 'unselected') {
+          if (backdropTouchStart.longPressReady) {
+            void handleDirectPaste();
+          } else if (backdropTouchStart.hitKind === 'unselected') {
             liveRef.current.onSelectObjectAtClientPoint?.(
               backdropTouchStart.x,
               backdropTouchStart.y
             );
+          } else if (backdropTouchStart.isInFrame && !preTouchActiveId) {
+            openCanvasTapPopover(backdropTouchStart.x, backdropTouchStart.y);
           } else {
             liveRef.current.onDeselectAll();
           }
@@ -697,6 +824,7 @@ export function CanvasViewport({
     el.addEventListener('touchcancel', onTouchEnd, { capture: true });
 
     return () => {
+      clearLongPressTimer();
       if (gestureMode === 'object-pinch') {
         liveRef.current.onEndObjectPinch?.();
       }
@@ -709,7 +837,13 @@ export function CanvasViewport({
       el.removeEventListener('touchend', onTouchEnd, { capture: true });
       el.removeEventListener('touchcancel', onTouchEnd, { capture: true });
     };
-  }, [applyPanTransformOnly, commitPendingPan]);
+  }, [
+    applyPanTransformOnly,
+    commitPendingPan,
+    handleDirectPaste,
+    openCanvasTapPopover,
+    showClipboardNotice,
+  ]);
 
   // Spacebar hold for hand-panning + Ctrl/Cmd +/-/0 zoom shortcuts
   useEffect(() => {
@@ -725,6 +859,9 @@ export function CanvasViewport({
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setCanvasTapPopover(null);
+      }
       if (isInputFocused(e.target)) return;
 
       if (e.code === 'Space' && !e.repeat) {
@@ -778,10 +915,16 @@ export function CanvasViewport({
       startPanX: number;
       startPanY: number;
       deselectOnClick: boolean;
+      isInFrame: boolean;
+      hadActiveObject: boolean;
       moved: boolean;
     } | null = null;
 
     const onMouseDownCapture = (e: globalThis.MouseEvent) => {
+      if ((e.target as HTMLElement | null)?.closest('[data-canvas-tap-popover="true"]')) {
+        return;
+      }
+      setCanvasTapPopover(null);
       const live = liveRef.current;
       const isMiddle = e.button === 1;
       const isSpaceDrag = e.button === 0 && live.isSpacePressed;
@@ -810,6 +953,8 @@ export function CanvasViewport({
         startPanX: live.pan.x,
         startPanY: live.pan.y,
         deselectOnClick: isBackdropDrag || isEmptyCanvasDrag,
+        isInFrame: isEmptyCanvasDrag,
+        hadActiveObject: Boolean(live.onGetActiveObjectId?.()),
         moved: false,
       };
     };
@@ -835,11 +980,15 @@ export function CanvasViewport({
       applyPanTransformOnly(clamped.x, clamped.y);
     };
 
-    const onWindowMouseUp = () => {
+    const onWindowMouseUp = (e: globalThis.MouseEvent) => {
       if (!panDrag) return;
       commitPendingPan();
       if (panDrag.deselectOnClick && !panDrag.moved) {
-        liveRef.current.onDeselectAll();
+        if (panDrag.isInFrame && !panDrag.hadActiveObject) {
+          openCanvasTapPopover(e.clientX, e.clientY);
+        } else {
+          liveRef.current.onDeselectAll();
+        }
       }
       panDrag = null;
       setIsPanning(false);
@@ -854,7 +1003,7 @@ export function CanvasViewport({
       window.removeEventListener('mousemove', onWindowMouseMove);
       window.removeEventListener('mouseup', onWindowMouseUp);
     };
-  }, [applyPanTransformOnly, commitPendingPan]);
+  }, [applyPanTransformOnly, commitPendingPan, openCanvasTapPopover]);
 
   const handleBackdropDoubleClick = (e: MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget && isZoomedOrPanned) {
@@ -1179,6 +1328,83 @@ export function CanvasViewport({
           <Scan className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
         </button>
       </div>
+
+      {/* Canvas Tap Quick-Add Popover */}
+      {canvasTapPopover && !textEditingState?.isEditing && (
+        <div
+          data-canvas-tap-popover="true"
+          role="menu"
+          aria-label="Quick add to canvas"
+          style={{
+            left: `${canvasTapPopover.x}px`,
+            top: `${canvasTapPopover.y}px`,
+            transform: 'translate(-50%, -115%)',
+          }}
+          className="absolute z-30 flex items-center gap-1 rounded-xl border border-neutral-700/80 bg-neutral-900/95 p-1 shadow-2xl backdrop-blur-md"
+        >
+          {onAddText && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setCanvasTapPopover(null);
+                onAddText();
+              }}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:py-1.5 text-xs font-medium text-neutral-100 hover:bg-neutral-800 active:bg-neutral-700 transition-colors whitespace-nowrap"
+            >
+              <Type className="w-3.5 h-3.5 text-neutral-300" />
+              <span>Add Text</span>
+            </button>
+          )}
+          {onTriggerImageUpload && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setCanvasTapPopover(null);
+                onTriggerImageUpload();
+              }}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:py-1.5 text-xs font-medium text-neutral-100 hover:bg-neutral-800 active:bg-neutral-700 transition-colors whitespace-nowrap"
+            >
+              <ImagePlus className="w-3.5 h-3.5 text-neutral-300" />
+              <span>Add Image</span>
+            </button>
+          )}
+          {canvasTapPopover.showPaste && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => void handleDirectPaste()}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:py-1.5 text-xs font-medium text-neutral-100 hover:bg-neutral-800 active:bg-neutral-700 transition-colors whitespace-nowrap"
+            >
+              <ClipboardPaste className="w-3.5 h-3.5 text-neutral-300" />
+              <span>Paste</span>
+            </button>
+          )}
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="10"
+            viewBox="0 0 20 10"
+            className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 -mt-px"
+          >
+            <path d="M0 0 L10 9.5 L20 0 Z" fill="rgb(23 23 23 / 0.95)" />
+            <path
+              d="M0.5 0 L10 9 L19.5 0"
+              fill="none"
+              stroke="rgb(64 64 64 / 0.8)"
+              strokeWidth="1"
+            />
+          </svg>
+        </div>
+      )}
+
+      {/* Brief Clipboard Feedback Toast */}
+      {clipboardNotice && (
+        <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-30 rounded-full border border-neutral-700/80 bg-neutral-900/95 px-3 py-1.5 text-xs font-medium text-neutral-200 shadow-lg backdrop-blur-md">
+          {clipboardNotice}
+        </div>
+      )}
 
       {/* Drag & Drop Image Overlay */}
       {isDraggingFile && (
