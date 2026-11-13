@@ -300,7 +300,7 @@ export function extractSelectedState(
       linethrough: Boolean(story.linethrough),
       textAlign:
         (story.textAlign as 'left' | 'center' | 'right' | 'justify') || 'center',
-      fill: typeof story.fill === 'string' ? story.fill : '#ffffff',
+      fill: typeof story.fill === 'string' ? story.fill : '#000000',
       lineHeight: Number((story.lineHeight || 1.0).toFixed(2)),
       charSpacing: Math.round(story.charSpacing || 0),
       bgStyle: story.bgStyle || 'none',

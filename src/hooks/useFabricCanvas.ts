@@ -199,7 +199,7 @@ function isPointNearObject(
 
 const DEFAULT_BACKGROUND: BackgroundState = {
   mode: 'color',
-  color: '#FE5925',
+  color: '#ffffff',
   gradient: {
     startColor: '#F2A7A0',
     endColor: '#4D1D42',
@@ -227,7 +227,7 @@ function createStarterTextbox(canvasWidth: number, canvasHeight: number): StoryT
     fontSize: 96,
     fontWeight: 700,
     fontSoft: 100,
-    fill: '#ffffff',
+    fill: '#000000',
     placeholder: 'Add your text',
     textAlign: 'center',
     lineHeight: 1.0,
@@ -3574,6 +3574,11 @@ export function useFabricCanvas() {
     canvas.clear();
     canvas.backgroundImage = undefined;
     canvas.backgroundColor = defaultBg.color;
+
+    const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+    const starterTitle = createStarterTextbox(width, height);
+    canvas.add(starterTitle);
+    canvas.setActiveObject(starterTitle);
     canvas.requestRenderAll();
 
     syncSelectionAndLayers();
@@ -3671,6 +3676,13 @@ export function useFabricCanvas() {
 
       await restoreSnapshot(blankSnapshot, false);
 
+      const { width, height } = ASPECT_RATIO_PRESETS[nextRatio];
+      const starterTitle = createStarterTextbox(width, height);
+      canvas.add(starterTitle);
+      canvas.setActiveObject(starterTitle);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+
       const capturedJson = canvas.toObject(CUSTOM_SERIALIZED_PROPS) as Record<
         string,
         unknown
@@ -3706,6 +3718,7 @@ export function useFabricCanvas() {
       persistAllPages,
       restoreSnapshot,
       syncPagesList,
+      syncSelectionAndLayers,
       updateUndoRedoFlags,
     ]
   );
