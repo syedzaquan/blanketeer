@@ -12,8 +12,10 @@ import {
   X,
 } from 'lucide-react';
 import { CanvasViewport } from './components/CanvasViewport';
+import { ExportPagesModal } from './components/ExportPagesModal';
 import { Header } from './components/Header';
 import { Inspector } from './components/Inspector';
+import { PageStrip } from './components/PageStrip';
 import { BackgroundTab } from './components/Sidebar/BackgroundTab';
 import { ImageTab } from './components/Sidebar/ImageTab';
 import { LayersTab } from './components/Sidebar/LayersTab';
@@ -43,6 +45,7 @@ export function App() {
   const [mobileSheet, setMobileSheet] = useState<MobileSheetState>('none');
   const [exportPreview, setExportPreview] = useState<ExportPreviewPayload | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showExportPagesModal, setShowExportPagesModal] = useState(false);
   const quickImageInputRef = useRef<HTMLInputElement | null>(null);
   const slotImageInputRef = useRef<HTMLInputElement | null>(null);
   const pendingSlotIdRef = useRef<string | null>(null);
@@ -61,10 +64,18 @@ export function App() {
     availableFonts,
     showSafeArea,
     toggleSafeArea,
+    pages,
+    activePageId,
+    selectPage,
+    addPage,
+    duplicatePage,
+    deletePage,
+    exportSelectedPages,
     canUndo,
     canRedo,
     undo,
     redo,
+    resetCurrentPage,
     resetProject,
     addText,
     applyTextPreset,
@@ -291,6 +302,8 @@ export function App() {
         onRedo={() => void redo()}
         onResetProject={() => setShowResetConfirm(true)}
         onExportImage={(format) => void handleExportImage(format)}
+        onOpenExportPages={() => setShowExportPagesModal(true)}
+        pageCount={pages.length}
         onExportProjectJSON={exportProjectJSON}
         onImportProjectJSON={(file) => {
           void importProjectJSON(file).catch((err) => {
@@ -395,6 +408,15 @@ export function App() {
                 toggleLayerLock(selectedObject.id);
               }
             }}
+          />
+
+          <PageStrip
+            pages={pages}
+            activePageId={activePageId}
+            onSelectPage={(id) => void selectPage(id)}
+            onAddPage={() => void addPage(true)}
+            onDuplicatePage={(id) => void duplicatePage(id)}
+            onDeletePage={(id) => void deletePage(id)}
           />
 
           <div className={cn(hasMobileSheet ? 'hidden lg:contents' : 'shrink-0 lg:contents')}>
@@ -619,23 +641,32 @@ export function App() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xs rounded-lg bg-[#141414] border border-neutral-800 p-4 flex flex-col gap-3"
+            className="w-full max-w-sm rounded-xl bg-[#141414] border border-neutral-800 p-4 flex flex-col gap-3"
           >
             <div>
               <h2 className="text-sm font-medium text-neutral-100">
-                Reset canvas?
+                Clear or reset canvas?
               </h2>
               <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                This restores the starter template and clears your saved draft from this browser.
+                Choose whether to clear only the current slide or reset all slides back to the starter template.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="flex flex-col gap-2 pt-1">
               <button
+                id="confirm-clear-current-page"
                 type="button"
-                onClick={() => setShowResetConfirm(false)}
-                className="py-1.5 px-3 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-medium text-neutral-200 transition-colors"
+                onClick={() => {
+                  setShowResetConfirm(false);
+                  resetCurrentPage();
+                }}
+                className="w-full py-2 px-3 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-left transition-colors"
               >
-                Cancel
+                <div className="text-xs font-medium text-neutral-100">
+                  Clear Current Slide
+                </div>
+                <div className="text-[11px] text-neutral-400 mt-0.5">
+                  Removes all layers and background on this slide only (undoable).
+                </div>
               </button>
               <button
                 id="confirm-reset-project"
@@ -644,13 +675,34 @@ export function App() {
                   setShowResetConfirm(false);
                   void resetProject();
                 }}
-                className="py-1.5 px-3 rounded-md bg-red-600 hover:bg-red-500 text-xs font-medium text-white transition-colors"
+                className="w-full py-2 px-3 rounded-lg bg-red-600/90 hover:bg-red-500 text-left transition-colors"
               >
-                Reset
+                <div className="text-xs font-medium text-white">
+                  Reset All Slides
+                </div>
+                <div className="text-[11px] text-red-100/80 mt-0.5">
+                  Restores Slide 1 starter template and clears saved browser draft.
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                className="w-full py-1.5 px-3 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-medium text-neutral-300 transition-colors mt-0.5"
+              >
+                Cancel
               </button>
             </div>
           </div>
         </div>
+      )}
+      {showExportPagesModal && (
+        <ExportPagesModal
+          isOpen={showExportPagesModal}
+          pages={pages}
+          activePageId={activePageId}
+          onClose={() => setShowExportPagesModal(false)}
+          onRenderSelectedPages={exportSelectedPages}
+        />
       )}
     </div>
   );

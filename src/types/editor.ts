@@ -320,3 +320,19 @@ export interface SelectionBoxSnapshot {
   controls: Partial<Record<OverflowControlKey, { x: number; y: number }>>;
 }
 
+export interface CanvasPageSnapshot {
+  id: string;
+  name: string;
+  aspectRatio: AspectRatioKey;
+  background: BackgroundState;
+  canvasJson: Record<string, unknown>;
+  thumbnailDataUrl?: string;
+}
+
+export interface CanvasPageItem {
+  id: string;
+  name: string;
+  aspectRatio: AspectRatioKey;
+  thumbnailDataUrl?: string;
+}
+

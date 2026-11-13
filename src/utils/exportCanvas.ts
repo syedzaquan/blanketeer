@@ -1,5 +1,14 @@
 import * as fabric from 'fabric';
-import type { ExportImageFormat } from '../types/editor';
+import {
+  ASPECT_RATIO_PRESETS,
+  type CanvasPageSnapshot,
+  type ExportImageFormat,
+} from '../types/editor';
+import { applyBackgroundImageAdjustments } from './backgroundFilters';
+import { createLinearGradient } from './canvasHelpers';
+import { applyStoryImageFilters } from './imageFilters';
+import type { StoryImage } from './storyImage';
+import { StoryTextbox } from './storyTextbox';
 import {
   hasPendingFrauncesDecodes,
   isFrauncesFamily,
@@ -177,3 +186,172 @@ export const exportCanvasToPNG = async (
   filename = `story-${Date.now()}.png`
 ): Promise<ExportPreviewPayload | null> =>
   exportCanvasToImage(canvas, { format: 'png', quality: 1, filename });
+
+export interface ExportedPageItem {
+  pageId: string;
+  pageName: string;
+  blob: Blob;
+  blobUrl: string;
+  dataURL: string;
+  filename: string;
+  width: number;
+  height: number;
+}
+
+export async function renderPageSnapshotToPayload(
+  page: CanvasPageSnapshot,
+  slideNumber: number,
+  format: ExportImageFormat = 'png',
+  quality?: number
+): Promise<ExportedPageItem> {
+  const preset = ASPECT_RATIO_PRESETS[page.aspectRatio] ?? ASPECT_RATIO_PRESETS['4:5'];
+  const ext = format === 'jpeg' ? 'jpg' : format;
+  const safeSlug = page.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  const filename = `blanketeer-${safeSlug || `slide-${slideNumber}`}.${ext}`;
+  const finalQuality = format === 'png' ? 1 : (quality ?? 0.92);
+
+  const el = document.createElement('canvas');
+  el.width = preset.width;
+  el.height = preset.height;
+  const staticCanvas = new fabric.StaticCanvas(el, {
+    width: preset.width,
+    height: preset.height,
+    renderOnAddRemove: false,
+  });
+
+  try {
+    if (page.background.mode === 'color') {
+      staticCanvas.backgroundColor = page.background.color;
+    } else if (page.background.mode === 'gradient') {
+      staticCanvas.backgroundColor = createLinearGradient(
+        preset.width,
+        preset.height,
+        page.background.gradient
+      );
+    }
+
+    await staticCanvas.loadFromJSON(page.canvasJson);
+
+    staticCanvas.getObjects().forEach((obj) => {
+      if (obj instanceof StoryTextbox) {
+        obj.dirty = true;
+        obj.initDimensions();
+        obj.setCoords();
+      }
+      if (obj instanceof fabric.FabricImage) {
+        const imgWithFilter = obj as StoryImage;
+        if (imgWithFilter.imageFilter) {
+          applyStoryImageFilters(imgWithFilter, imgWithFilter.imageFilter, 'full');
+        }
+      }
+    });
+
+    if (
+      page.background.mode === 'image' &&
+      page.background.image &&
+      staticCanvas.backgroundImage instanceof fabric.FabricImage
+    ) {
+      applyBackgroundImageAdjustments(
+        staticCanvas.backgroundImage,
+        page.background.image.adjustments,
+        'full'
+      );
+    }
+
+    staticCanvas.renderAll();
+
+    const hasFrauncesLayer = staticCanvas
+      .getObjects()
+      .some(
+        (obj) =>
+          obj.visible !== false &&
+          obj instanceof fabric.Textbox &&
+          isFrauncesFamily(obj.fontFamily)
+      );
+
+    if (
+      hasFrauncesLayer &&
+      (!isFrauncesFontDataReady() || hasPendingFrauncesDecodes())
+    ) {
+      await waitForPendingFrauncesDecodes();
+      staticCanvas.getObjects().forEach((obj) => {
+        if (obj instanceof fabric.Textbox) {
+          obj.dirty = true;
+        }
+      });
+      staticCanvas.renderAll();
+    }
+
+    const dataURL = staticCanvas.toDataURL({
+      format,
+      multiplier: 1,
+      quality: finalQuality,
+    });
+
+    if (!dataURL || dataURL === 'data:,' || !dataURL.startsWith('data:image/')) {
+      throw new Error(`Export failed for ${page.name}`);
+    }
+
+    const blob = dataUrlToBlob(dataURL);
+    const blobUrl = URL.createObjectURL(blob);
+
+    return {
+      pageId: page.id,
+      pageName: page.name,
+      blob,
+      blobUrl,
+      dataURL,
+      filename,
+      width: preset.width,
+      height: preset.height,
+    };
+  } finally {
+    staticCanvas.dispose();
+  }
+}
+
+export async function shareOrDownloadExportedPages(
+  items: ExportedPageItem[],
+  format: ExportImageFormat
+): Promise<'shared' | 'downloaded' | 'cancelled'> {
+  if (items.length === 0) return 'cancelled';
+  const mimeType = `image/${format}`;
+
+  if (
+    typeof navigator !== 'undefined' &&
+    typeof navigator.share === 'function' &&
+    typeof File !== 'undefined'
+  ) {
+    const files = items.map(
+      (item) => new File([item.blob], item.filename, { type: mimeType })
+    );
+    if (
+      typeof navigator.canShare !== 'function' ||
+      navigator.canShare({ files })
+    ) {
+      try {
+        await navigator.share({
+          files,
+          title: `Blanketeer (${items.length} ${items.length === 1 ? 'slide' : 'slides'})`,
+        });
+        return 'shared';
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return 'cancelled';
+        }
+      }
+    }
+  }
+
+  for (let i = 0; i < items.length; i += 1) {
+    const item = items[i];
+    triggerAnchorDownload(item.blobUrl, item.filename);
+    if (i < items.length - 1) {
+      await new Promise((r) => window.setTimeout(r, 120));
+    }
+  }
+  return 'downloaded';
+}

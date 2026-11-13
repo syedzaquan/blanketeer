@@ -7,6 +7,8 @@ import {
   type BackgroundMode,
   type BackgroundState,
   type BasicShapeKind,
+  type CanvasPageItem,
+  type CanvasPageSnapshot,
   type CutoutShape,
   type DiagonalDirection,
   type ExportImageFormat,
@@ -46,6 +48,8 @@ import {
 import {
   exportCanvasToImage,
   isIOSDevice,
+  renderPageSnapshotToPayload,
+  type ExportedPageItem,
   type ExportPreviewPayload,
 } from '../utils/exportCanvas';
 import { extractImagePalette } from '../utils/colorPalette';
@@ -339,9 +343,39 @@ interface OverflowDragSession {
   isTextbox: boolean;
 }
 
+function createPageId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `page-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function captureCanvasThumbnail(canvas: fabric.Canvas): string {
+  try {
+    return canvas.toDataURL({
+      format: 'jpeg',
+      quality: 0.55,
+      multiplier: 0.14,
+    });
+  } catch {
+    return '';
+  }
+}
+
 export function useFabricCanvas() {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
+
+  const [initialPageId] = useState<string>(() => createPageId());
+  const [pages, setPages] = useState<CanvasPageItem[]>(() => [
+    {
+      id: initialPageId,
+      name: 'Slide 1',
+      aspectRatio: '4:5',
+      thumbnailDataUrl: '',
+    },
+  ]);
+  const [activePageId, setActivePageId] = useState<string>(initialPageId);
 
   const [aspectRatio, setAspectRatioState] = useState<AspectRatioKey>('4:5');
   const [background, setBackgroundState] = useState<BackgroundState>(DEFAULT_BACKGROUND);
@@ -382,6 +416,11 @@ export function useFabricCanvas() {
   const customFontsRef = useRef<SavedCustomFont[]>([]);
   const historyTimerRef = useRef<number | null>(null);
   const bgUpdateRafRef = useRef<number | null>(null);
+  const pagesRef = useRef<CanvasPageSnapshot[]>([]);
+  const activePageIdRef = useRef<string>(initialPageId);
+  const pageHistoriesRef = useRef<
+    Record<string, { entries: HistorySnapshot[]; index: number }>
+  >({});
 
   const refreshPhotoPalette = useCallback((src: string) => {
     void extractImagePalette(src, 5)
@@ -490,16 +529,113 @@ export function useFabricCanvas() {
     );
   }, []);
 
-  const persistSnapshot = useCallback((snapshot: HistorySnapshot) => {
+  const syncPagesList = useCallback(() => {
+    setPages(
+      pagesRef.current.map((p) => ({
+        id: p.id,
+        name: p.name,
+        aspectRatio: p.aspectRatio,
+        thumbnailDataUrl: p.thumbnailDataUrl ?? '',
+      }))
+    );
+    setActivePageId(activePageIdRef.current);
+  }, []);
+
+  const persistAllPages = useCallback(() => {
+    const activePage =
+      pagesRef.current.find((p) => p.id === activePageIdRef.current) ??
+      pagesRef.current[0];
+    if (!activePage) return;
+
     void saveProjectToBrowser({
-      version: 1,
+      version: 2,
       savedAt: Date.now(),
-      aspectRatio: snapshot.aspectRatio,
-      background: snapshot.background,
-      canvasJson: snapshot.canvasJson,
+      aspectRatio: activePage.aspectRatio,
+      background: activePage.background,
+      canvasJson: activePage.canvasJson,
       customFonts: customFontsRef.current,
+      pages: pagesRef.current,
+      activePageId: activePageIdRef.current,
     });
   }, []);
+
+  const captureActivePageIntoRef = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const canvasJson = canvas.toObject(CUSTOM_SERIALIZED_PROPS) as Record<
+      string,
+      unknown
+    >;
+    const thumbnailDataUrl = captureCanvasThumbnail(canvas);
+    const currentId = activePageIdRef.current;
+    const existingIdx = pagesRef.current.findIndex((p) => p.id === currentId);
+
+    const updatedPage: CanvasPageSnapshot = {
+      id: currentId,
+      name:
+        existingIdx >= 0
+          ? pagesRef.current[existingIdx].name
+          : `Slide ${pagesRef.current.length + 1}`,
+      aspectRatio: aspectRatioRef.current,
+      background: structuredClone(backgroundRef.current),
+      canvasJson,
+      thumbnailDataUrl,
+    };
+
+    if (existingIdx >= 0) {
+      pagesRef.current[existingIdx] = updatedPage;
+    } else {
+      pagesRef.current.push(updatedPage);
+    }
+
+    pageHistoriesRef.current[currentId] = {
+      entries: [...historyRef.current],
+      index: historyIndexRef.current,
+    };
+  }, []);
+
+  const persistSnapshot = useCallback(
+    (snapshot: HistorySnapshot) => {
+      const canvas = canvasRef.current;
+      const thumbnailDataUrl = canvas ? captureCanvasThumbnail(canvas) : '';
+      const currentId = activePageIdRef.current;
+      const existingIdx = pagesRef.current.findIndex((p) => p.id === currentId);
+      const updatedPage: CanvasPageSnapshot = {
+        id: currentId,
+        name:
+          existingIdx >= 0
+            ? pagesRef.current[existingIdx].name
+            : `Slide ${pagesRef.current.length + 1}`,
+        aspectRatio: snapshot.aspectRatio,
+        background: structuredClone(snapshot.background),
+        canvasJson: snapshot.canvasJson,
+        thumbnailDataUrl,
+      };
+      if (existingIdx >= 0) {
+        pagesRef.current[existingIdx] = updatedPage;
+      } else {
+        pagesRef.current.push(updatedPage);
+      }
+      pageHistoriesRef.current[currentId] = {
+        entries: [...historyRef.current],
+        index: historyIndexRef.current,
+      };
+      syncPagesList();
+
+      void saveProjectToBrowser({
+        version: 2,
+        savedAt: Date.now(),
+        aspectRatio: snapshot.aspectRatio,
+        background: snapshot.background,
+        canvasJson: snapshot.canvasJson,
+        customFonts: customFontsRef.current,
+        pages: pagesRef.current,
+        activePageId: currentId,
+      });
+    },
+    [syncPagesList]
+  );
 
   const commitHistoryNow = useCallback(
     (persist = true) => {
@@ -531,12 +667,43 @@ export function useFabricCanvas() {
       historyIndexRef.current = nextHistory.length - 1;
       updateUndoRedoFlags();
 
+      const currentId = activePageIdRef.current;
+      const existingIdx = pagesRef.current.findIndex((p) => p.id === currentId);
+      if (existingIdx < 0) {
+        pagesRef.current.push({
+          id: currentId,
+          name: `Slide ${pagesRef.current.length + 1}`,
+          aspectRatio: snapshot.aspectRatio,
+          background: structuredClone(snapshot.background),
+          canvasJson: snapshot.canvasJson,
+          thumbnailDataUrl: captureCanvasThumbnail(canvas),
+        });
+        pageHistoriesRef.current[currentId] = {
+          entries: [...historyRef.current],
+          index: historyIndexRef.current,
+        };
+        syncPagesList();
+      } else if (!persist) {
+        pagesRef.current[existingIdx] = {
+          ...pagesRef.current[existingIdx],
+          aspectRatio: snapshot.aspectRatio,
+          background: structuredClone(snapshot.background),
+          canvasJson: snapshot.canvasJson,
+          thumbnailDataUrl: captureCanvasThumbnail(canvas),
+        };
+        pageHistoriesRef.current[currentId] = {
+          entries: [...historyRef.current],
+          index: historyIndexRef.current,
+        };
+        syncPagesList();
+      }
+
       if (persist) {
         hasUserEditedRef.current = true;
         persistSnapshot(snapshot);
       }
     },
-    [persistSnapshot, updateUndoRedoFlags]
+    [persistSnapshot, syncPagesList, updateUndoRedoFlags]
   );
 
   const scheduleHistoryCommit = useCallback(
@@ -826,21 +993,92 @@ export function useFabricCanvas() {
       }
 
       if (disposed || hasUserEditedRef.current) return;
+
+      if (saved.version === 2 && saved.pages && saved.pages.length > 0) {
+        pagesRef.current = saved.pages;
+        const targetId =
+          saved.activePageId &&
+          saved.pages.some((p) => p.id === saved.activePageId)
+            ? saved.activePageId
+            : saved.pages[0].id;
+        activePageIdRef.current = targetId;
+        const targetPage =
+          saved.pages.find((p) => p.id === targetId) ?? saved.pages[0];
+        pageHistoriesRef.current = {};
+
+        const snapshot: HistorySnapshot = {
+          aspectRatio: targetPage.aspectRatio,
+          background: targetPage.background,
+          canvasJson: targetPage.canvasJson,
+        };
+        await restoreSnapshot(snapshot, false);
+        if (disposed || hasUserEditedRef.current) return;
+
+        historyRef.current = [snapshot];
+        historyIndexRef.current = 0;
+        pageHistoriesRef.current[targetId] = {
+          entries: [snapshot],
+          index: 0,
+        };
+        updateUndoRedoFlags();
+
+        await fontsReadyPromise;
+        if (!disposed) {
+          remeasureAllTextboxes();
+          const currentCanvas = canvasRef.current;
+          const idx = pagesRef.current.findIndex((p) => p.id === targetId);
+          if (currentCanvas && idx >= 0) {
+            pagesRef.current[idx] = {
+              ...pagesRef.current[idx],
+              thumbnailDataUrl: captureCanvasThumbnail(currentCanvas),
+            };
+          }
+          syncPagesList();
+        }
+        return;
+      }
+
+      const migratedId = initialPageId;
       const snapshot: HistorySnapshot = {
         aspectRatio: saved.aspectRatio,
         background: saved.background,
         canvasJson: saved.canvasJson,
       };
+      pagesRef.current = [
+        {
+          id: migratedId,
+          name: 'Slide 1',
+          aspectRatio: saved.aspectRatio,
+          background: structuredClone(saved.background),
+          canvasJson: saved.canvasJson,
+          thumbnailDataUrl: '',
+        },
+      ];
+      activePageIdRef.current = migratedId;
+      pageHistoriesRef.current = {};
+
       await restoreSnapshot(snapshot, false);
       if (disposed || hasUserEditedRef.current) return;
 
       historyRef.current = [snapshot];
       historyIndexRef.current = 0;
+      pageHistoriesRef.current[migratedId] = {
+        entries: [snapshot],
+        index: 0,
+      };
       updateUndoRedoFlags();
 
       await fontsReadyPromise;
       if (!disposed) {
         remeasureAllTextboxes();
+        const currentCanvas = canvasRef.current;
+        if (currentCanvas && pagesRef.current[0]) {
+          pagesRef.current[0] = {
+            ...pagesRef.current[0],
+            thumbnailDataUrl: captureCanvasThumbnail(currentCanvas),
+          };
+        }
+        syncPagesList();
       }
     })();
 
@@ -1092,8 +1330,10 @@ export function useFabricCanvas() {
   }, [
     cancelPendingBgWork,
     commitHistoryNow,
+    initialPageId,
     restoreSnapshot,
     scheduleHistoryCommit,
+    syncPagesList,
     syncSelectionAndLayers,
     syncTextEditingState,
     updateUndoRedoFlags,
@@ -3011,11 +3251,14 @@ export function useFabricCanvas() {
   const exportProjectJSON = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    captureActivePageIntoRef();
     const payload = {
-      version: 1,
+      version: 2,
       aspectRatio: aspectRatioRef.current,
       background: backgroundRef.current,
       canvasJson: canvas.toObject(CUSTOM_SERIALIZED_PROPS),
+      pages: pagesRef.current,
+      activePageId: activePageIdRef.current,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: 'application/json',
@@ -3028,27 +3271,87 @@ export function useFabricCanvas() {
     link.click();
     document.body.removeChild(link);
     window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  }, []);
+  }, [captureActivePageIntoRef]);
 
   const importProjectJSON = useCallback(
     async (file: File) => {
       const text = await file.text();
       const parsed = JSON.parse(text) as {
+        version?: number;
         aspectRatio?: AspectRatioKey;
         background?: BackgroundState;
         canvasJson?: Record<string, unknown>;
+        pages?: CanvasPageSnapshot[];
+        activePageId?: string;
       };
+
+      if (
+        parsed.version === 2 &&
+        Array.isArray(parsed.pages) &&
+        parsed.pages.length > 0
+      ) {
+        const targetId =
+          parsed.activePageId &&
+          parsed.pages.some((p) => p.id === parsed.activePageId)
+            ? parsed.activePageId
+            : parsed.pages[0].id;
+        const targetPage =
+          parsed.pages.find((p) => p.id === targetId) ?? parsed.pages[0];
+
+        pagesRef.current = parsed.pages;
+        activePageIdRef.current = targetId;
+        pageHistoriesRef.current = {};
+
+        const snapshot: HistorySnapshot = {
+          aspectRatio: targetPage.aspectRatio,
+          background: targetPage.background,
+          canvasJson: targetPage.canvasJson,
+        };
+        await restoreSnapshot(snapshot, false);
+        historyRef.current = [snapshot];
+        historyIndexRef.current = 0;
+        pageHistoriesRef.current[targetId] = {
+          entries: [snapshot],
+          index: 0,
+        };
+        const canvas = canvasRef.current;
+        const idx = pagesRef.current.findIndex((p) => p.id === targetId);
+        if (canvas && idx >= 0) {
+          pagesRef.current[idx] = {
+            ...pagesRef.current[idx],
+            thumbnailDataUrl: captureCanvasThumbnail(canvas),
+          };
+        }
+        updateUndoRedoFlags();
+        syncPagesList();
+        hasUserEditedRef.current = true;
+        persistAllPages();
+        return;
+      }
+
       if (!parsed.canvasJson || !parsed.aspectRatio || !parsed.background) {
         throw new Error('Invalid project file');
       }
-      await restoreSnapshot(
+      const migratedId = createPageId();
+      const snapshot: HistorySnapshot = {
+        aspectRatio: parsed.aspectRatio,
+        background: parsed.background,
+        canvasJson: parsed.canvasJson,
+      };
+      pagesRef.current = [
         {
+          id: migratedId,
+          name: 'Slide 1',
           aspectRatio: parsed.aspectRatio,
-          background: parsed.background,
+          background: structuredClone(parsed.background),
           canvasJson: parsed.canvasJson,
+          thumbnailDataUrl: '',
         },
-        true
-      );
+      ];
+      activePageIdRef.current = migratedId;
+      pageHistoriesRef.current = {};
+
+      await restoreSnapshot(snapshot, false);
       historyRef.current = [
         {
           aspectRatio: parsed.aspectRatio,
@@ -3057,9 +3360,28 @@ export function useFabricCanvas() {
         },
       ];
       historyIndexRef.current = 0;
+      pageHistoriesRef.current[migratedId] = {
+        entries: [...historyRef.current],
+        index: 0,
+      };
+      const canvas = canvasRef.current;
+      if (canvas && pagesRef.current[0]) {
+        pagesRef.current[0] = {
+          ...pagesRef.current[0],
+          thumbnailDataUrl: captureCanvasThumbnail(canvas),
+        };
+      }
       updateUndoRedoFlags();
+      syncPagesList();
+      hasUserEditedRef.current = true;
+      persistAllPages();
     },
-    [restoreSnapshot, updateUndoRedoFlags]
+    [
+      persistAllPages,
+      restoreSnapshot,
+      syncPagesList,
+      updateUndoRedoFlags,
+    ]
   );
 
   const applyEditingSelectionStyle = useCallback(
@@ -3198,23 +3520,336 @@ export function useFabricCanvas() {
         string,
         unknown
       >;
-      historyRef.current = [
+      const resetPageId = createPageId();
+      const resetSnapshot: HistorySnapshot = {
+        aspectRatio: defaultRatio,
+        background: structuredClone(defaultBg),
+        canvasJson,
+      };
+      historyRef.current = [resetSnapshot];
+      historyIndexRef.current = 0;
+      pagesRef.current = [
         {
+          id: resetPageId,
+          name: 'Slide 1',
           aspectRatio: defaultRatio,
           background: structuredClone(defaultBg),
           canvasJson,
+          thumbnailDataUrl: captureCanvasThumbnail(canvas),
         },
       ];
-      historyIndexRef.current = 0;
+      activePageIdRef.current = resetPageId;
+      pageHistoriesRef.current = {
+        [resetPageId]: {
+          entries: [resetSnapshot],
+          index: 0,
+        },
+      };
       hasUserEditedRef.current = true;
 
       await clearSavedProject();
       syncSelectionAndLayers();
+      syncPagesList();
     } finally {
       isRestoringRef.current = false;
       updateUndoRedoFlags();
     }
-  }, [cancelPendingBgWork, syncSelectionAndLayers, updateUndoRedoFlags]);
+  }, [
+    cancelPendingBgWork,
+    syncPagesList,
+    syncSelectionAndLayers,
+    updateUndoRedoFlags,
+  ]);
+
+  const resetCurrentPage = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    cancelPendingBgWork();
+    const defaultBg = structuredClone(DEFAULT_BACKGROUND);
+    backgroundRef.current = defaultBg;
+    setBackgroundState(defaultBg);
+
+    canvas.discardActiveObject();
+    canvas.clear();
+    canvas.backgroundImage = undefined;
+    canvas.backgroundColor = defaultBg.color;
+    canvas.requestRenderAll();
+
+    syncSelectionAndLayers();
+    commitHistoryNow(true);
+  }, [cancelPendingBgWork, commitHistoryNow, syncSelectionAndLayers]);
+
+  const selectPage = useCallback(
+    async (pageId: string) => {
+      if (pageId === activePageIdRef.current) return;
+      const targetPage = pagesRef.current.find((p) => p.id === pageId);
+      if (!targetPage) return;
+
+      captureActivePageIntoRef();
+      activePageIdRef.current = pageId;
+
+      const snapshot: HistorySnapshot = {
+        aspectRatio: targetPage.aspectRatio,
+        background: targetPage.background,
+        canvasJson: targetPage.canvasJson,
+      };
+
+      await restoreSnapshot(snapshot, false);
+
+      const savedHist = pageHistoriesRef.current[pageId];
+      if (savedHist && savedHist.entries.length > 0) {
+        historyRef.current = [...savedHist.entries];
+        historyIndexRef.current = Math.min(
+          savedHist.index,
+          savedHist.entries.length - 1
+        );
+      } else {
+        historyRef.current = [snapshot];
+        historyIndexRef.current = 0;
+        pageHistoriesRef.current[pageId] = {
+          entries: [snapshot],
+          index: 0,
+        };
+      }
+
+      const canvas = canvasRef.current;
+      const idx = pagesRef.current.findIndex((p) => p.id === pageId);
+      if (canvas && idx >= 0 && !pagesRef.current[idx].thumbnailDataUrl) {
+        pagesRef.current[idx] = {
+          ...pagesRef.current[idx],
+          thumbnailDataUrl: captureCanvasThumbnail(canvas),
+        };
+      }
+
+      updateUndoRedoFlags();
+      syncPagesList();
+      persistAllPages();
+    },
+    [
+      captureActivePageIntoRef,
+      persistAllPages,
+      restoreSnapshot,
+      syncPagesList,
+      updateUndoRedoFlags,
+    ]
+  );
+
+  const addPage = useCallback(
+    async (copyCurrentRatio = true) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      captureActivePageIntoRef();
+
+      const nextRatio: AspectRatioKey = copyCurrentRatio
+        ? aspectRatioRef.current
+        : '4:5';
+      const defaultBg = structuredClone(DEFAULT_BACKGROUND);
+      const newPageId = createPageId();
+      const blankSnapshot: HistorySnapshot = {
+        aspectRatio: nextRatio,
+        background: defaultBg,
+        canvasJson: {
+          version: '6.0.0',
+          objects: [],
+          background: defaultBg.color,
+        },
+      };
+
+      const newPage: CanvasPageSnapshot = {
+        id: newPageId,
+        name: `Slide ${pagesRef.current.length + 1}`,
+        aspectRatio: nextRatio,
+        background: structuredClone(defaultBg),
+        canvasJson: blankSnapshot.canvasJson,
+        thumbnailDataUrl: '',
+      };
+
+      pagesRef.current = [...pagesRef.current, newPage];
+      activePageIdRef.current = newPageId;
+
+      await restoreSnapshot(blankSnapshot, false);
+
+      const capturedJson = canvas.toObject(CUSTOM_SERIALIZED_PROPS) as Record<
+        string,
+        unknown
+      >;
+      const settledSnapshot: HistorySnapshot = {
+        aspectRatio: nextRatio,
+        background: structuredClone(defaultBg),
+        canvasJson: capturedJson,
+      };
+      const idx = pagesRef.current.findIndex((p) => p.id === newPageId);
+      if (idx >= 0) {
+        pagesRef.current[idx] = {
+          ...pagesRef.current[idx],
+          canvasJson: capturedJson,
+          thumbnailDataUrl: captureCanvasThumbnail(canvas),
+        };
+      }
+
+      historyRef.current = [settledSnapshot];
+      historyIndexRef.current = 0;
+      pageHistoriesRef.current[newPageId] = {
+        entries: [settledSnapshot],
+        index: 0,
+      };
+
+      hasUserEditedRef.current = true;
+      updateUndoRedoFlags();
+      syncPagesList();
+      persistAllPages();
+    },
+    [
+      captureActivePageIntoRef,
+      persistAllPages,
+      restoreSnapshot,
+      syncPagesList,
+      updateUndoRedoFlags,
+    ]
+  );
+
+  const duplicatePage = useCallback(
+    async (pageId: string) => {
+      captureActivePageIntoRef();
+
+      const sourceIndex = pagesRef.current.findIndex((p) => p.id === pageId);
+      if (sourceIndex < 0) return;
+
+      const source = pagesRef.current[sourceIndex];
+      const dupId = createPageId();
+      const dupPage: CanvasPageSnapshot = {
+        id: dupId,
+        name: `${source.name} Copy`,
+        aspectRatio: source.aspectRatio,
+        background: structuredClone(source.background),
+        canvasJson: structuredClone(source.canvasJson),
+        thumbnailDataUrl: source.thumbnailDataUrl ?? '',
+      };
+
+      const nextPages = [...pagesRef.current];
+      nextPages.splice(sourceIndex + 1, 0, dupPage);
+      pagesRef.current = nextPages;
+      activePageIdRef.current = dupId;
+
+      const dupSnapshot: HistorySnapshot = {
+        aspectRatio: dupPage.aspectRatio,
+        background: dupPage.background,
+        canvasJson: dupPage.canvasJson,
+      };
+
+      await restoreSnapshot(dupSnapshot, false);
+      historyRef.current = [dupSnapshot];
+      historyIndexRef.current = 0;
+      pageHistoriesRef.current[dupId] = {
+        entries: [dupSnapshot],
+        index: 0,
+      };
+
+      const canvas = canvasRef.current;
+      const idx = pagesRef.current.findIndex((p) => p.id === dupId);
+      if (canvas && idx >= 0) {
+        pagesRef.current[idx] = {
+          ...pagesRef.current[idx],
+          thumbnailDataUrl: captureCanvasThumbnail(canvas),
+        };
+      }
+
+      hasUserEditedRef.current = true;
+      updateUndoRedoFlags();
+      syncPagesList();
+      persistAllPages();
+    },
+    [
+      captureActivePageIntoRef,
+      persistAllPages,
+      restoreSnapshot,
+      syncPagesList,
+      updateUndoRedoFlags,
+    ]
+  );
+
+  const deletePage = useCallback(
+    async (pageId: string) => {
+      if (pagesRef.current.length <= 1) return;
+      captureActivePageIntoRef();
+
+      const removeIdx = pagesRef.current.findIndex((p) => p.id === pageId);
+      if (removeIdx < 0) return;
+
+      const remaining = pagesRef.current.filter((p) => p.id !== pageId);
+      pagesRef.current = remaining;
+      delete pageHistoriesRef.current[pageId];
+
+      if (activePageIdRef.current === pageId) {
+        const nextPage = remaining[Math.min(removeIdx, remaining.length - 1)];
+        activePageIdRef.current = nextPage.id;
+
+        const snapshot: HistorySnapshot = {
+          aspectRatio: nextPage.aspectRatio,
+          background: nextPage.background,
+          canvasJson: nextPage.canvasJson,
+        };
+        await restoreSnapshot(snapshot, false);
+
+        const savedHist = pageHistoriesRef.current[nextPage.id];
+        if (savedHist && savedHist.entries.length > 0) {
+          historyRef.current = [...savedHist.entries];
+          historyIndexRef.current = Math.min(
+            savedHist.index,
+            savedHist.entries.length - 1
+          );
+        } else {
+          historyRef.current = [snapshot];
+          historyIndexRef.current = 0;
+          pageHistoriesRef.current[nextPage.id] = {
+            entries: [snapshot],
+            index: 0,
+          };
+        }
+        updateUndoRedoFlags();
+      }
+
+      hasUserEditedRef.current = true;
+      syncPagesList();
+      persistAllPages();
+    },
+    [
+      captureActivePageIntoRef,
+      persistAllPages,
+      restoreSnapshot,
+      syncPagesList,
+      updateUndoRedoFlags,
+    ]
+  );
+
+  const exportSelectedPages = useCallback(
+    async (
+      pageIds: string[],
+      format: ExportImageFormat = 'png',
+      quality?: number
+    ): Promise<ExportedPageItem[]> => {
+      captureActivePageIntoRef();
+      const idSet = new Set(pageIds);
+      const selectedEntries = pagesRef.current
+        .map((page, index) => ({ page, slideNumber: index + 1 }))
+        .filter(({ page }) => idSet.has(page.id));
+
+      const results: ExportedPageItem[] = [];
+      for (const { page, slideNumber } of selectedEntries) {
+        const rendered = await renderPageSnapshotToPayload(
+          page,
+          slideNumber,
+          format,
+          quality
+        );
+        results.push(rendered);
+      }
+      return results;
+    },
+    [captureActivePageIntoRef]
+  );
 
   // Global keyboard shortcuts (Delete, Undo, Redo, Duplicate, Nudge, Escape)
   useEffect(() => {
@@ -3374,10 +4009,18 @@ export function useFabricCanvas() {
     exitTextEditing,
     showSafeArea,
     toggleSafeArea,
+    pages,
+    activePageId,
+    selectPage,
+    addPage,
+    duplicatePage,
+    deletePage,
+    exportSelectedPages,
     exportImage,
     exportPNG,
     exportProjectJSON,
     importProjectJSON,
+    resetCurrentPage,
     resetProject,
   };
 }

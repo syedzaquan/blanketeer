@@ -4,6 +4,7 @@ import {
   Download,
   FileDown,
   FileUp,
+  Layers,
   Redo2,
   RotateCcw,
   Undo2,
@@ -24,6 +25,8 @@ interface HeaderProps {
   onRedo: () => void;
   onResetProject: () => void;
   onExportImage: (format: ExportImageFormat) => void;
+  onOpenExportPages: () => void;
+  pageCount: number;
   onExportProjectJSON: () => void;
   onImportProjectJSON: (file: File) => void;
 }
@@ -37,6 +40,8 @@ export function Header({
   onRedo,
   onResetProject,
   onExportImage,
+  onOpenExportPages,
+  pageCount,
   onExportProjectJSON,
   onImportProjectJSON,
 }: HeaderProps) {
@@ -218,6 +223,21 @@ export function Header({
                   <span>{item.label}</span>
                 </button>
               ))}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onOpenExportPages();
+                }}
+                className="w-full px-3 py-2 lg:py-1.5 text-left hover:bg-neutral-800 flex items-center justify-between gap-2 transition-colors text-indigo-300"
+              >
+                <span className="flex items-center gap-2">
+                  <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Export Slides…</span>
+                </span>
+                <span className="text-[10px] text-neutral-400">{pageCount}</span>
+              </button>
 
               <div className="my-1 border-t border-neutral-800" />
               <div className="px-2.5 py-1 text-[10px] font-medium text-neutral-500 uppercase tracking-wider">

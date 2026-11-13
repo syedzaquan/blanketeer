@@ -1,4 +1,8 @@
-import type { AspectRatioKey, BackgroundState } from '../types/editor';
+import type {
+  AspectRatioKey,
+  BackgroundState,
+  CanvasPageSnapshot,
+} from '../types/editor';
 
 export interface SavedCustomFont {
   family: string;
@@ -6,11 +10,13 @@ export interface SavedCustomFont {
 }
 
 export interface SavedProjectState {
-  version: 1;
+  version: 1 | 2;
   savedAt: number;
   aspectRatio: AspectRatioKey;
   background: BackgroundState;
   canvasJson: Record<string, unknown>;
+  pages?: CanvasPageSnapshot[];
+  activePageId?: string;
   customFonts?: SavedCustomFont[];
 }
 
@@ -54,7 +60,7 @@ function readLocalStorageFallback(): SavedProjectState | null {
     const raw = localStorage.getItem(LOCAL_FALLBACK_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SavedProjectState;
-    return parsed?.version === 1 ? parsed : null;
+    return parsed?.version === 1 || parsed?.version === 2 ? parsed : null;
   } catch {
     return null;
   }
@@ -93,7 +99,7 @@ export async function loadProjectFromBrowser(): Promise<SavedProjectState | null
       }
     );
     db.close();
-    if (record && record.version === 1) {
+    if (record && (record.version === 1 || record.version === 2)) {
       return record;
     }
   } catch {
