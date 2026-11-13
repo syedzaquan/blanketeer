@@ -12,10 +12,10 @@ import {
   ClipboardPaste,
   ImagePlus,
   Lock,
+  Maximize2,
   Minus,
   Plus,
   RotateCcw,
-  Scan,
   Type,
   Unlock,
 } from 'lucide-react';
@@ -38,10 +38,11 @@ interface CanvasViewportProps {
   canvasElRef: RefObject<HTMLCanvasElement | null>;
   canvasWidth: number;
   canvasHeight: number;
-  showSafeArea: boolean;
+  showSafeArea?: boolean;
   selectedTextFontSize?: number | null;
   onChangeTextFontSize?: (size: number) => void;
-  onToggleSafeArea: () => void;
+  onToggleSafeArea?: () => void;
+  onOpenPreview?: () => void;
   onDeselectAll: () => void;
   onDropImageFile: (file: File) => void;
   onAddText?: () => void;
@@ -133,10 +134,9 @@ export function CanvasViewport({
   canvasElRef,
   canvasWidth,
   canvasHeight,
-  showSafeArea,
   selectedTextFontSize = null,
   onChangeTextFontSize,
-  onToggleSafeArea,
+  onOpenPreview,
   onDeselectAll,
   onDropImageFile,
   onAddText,
@@ -1315,17 +1315,12 @@ export function CanvasViewport({
 
         <button
           type="button"
-          onClick={onToggleSafeArea}
-          aria-label="Toggle Instagram Safe Area Guides"
-          title="Toggle Instagram Safe Area Guides"
-          className={cn(
-            'flex items-center justify-center p-2.5 lg:p-1.5 rounded-lg lg:rounded-md border transition-colors',
-            showSafeArea
-              ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
-              : 'bg-[#1c1c1e] border-neutral-700/80 text-neutral-300 hover:text-white'
-          )}
+          onClick={onOpenPreview}
+          aria-label="Preview Full Size"
+          title="Preview Full Size"
+          className="flex items-center justify-center p-2.5 lg:p-1.5 rounded-lg lg:rounded-md border bg-[#1c1c1e] border-neutral-700/80 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
         >
-          <Scan className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+          <Maximize2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
         </button>
       </div>
 

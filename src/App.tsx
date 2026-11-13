@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { CanvasViewport } from './components/CanvasViewport';
 import { ExportPagesModal } from './components/ExportPagesModal';
+import { FullSizePreviewModal } from './components/FullSizePreviewModal';
 import { Header } from './components/Header';
 import { Inspector } from './components/Inspector';
 import { PageStrip } from './components/PageStrip';
@@ -46,6 +47,7 @@ export function App() {
   const [exportPreview, setExportPreview] = useState<ExportPreviewPayload | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showExportPagesModal, setShowExportPagesModal] = useState(false);
+  const [showFullPreview, setShowFullPreview] = useState(false);
   const quickImageInputRef = useRef<HTMLInputElement | null>(null);
   const slotImageInputRef = useRef<HTMLInputElement | null>(null);
   const pendingSlotIdRef = useRef<string | null>(null);
@@ -377,6 +379,7 @@ export function App() {
               void updateTextProps({ fontSize })
             }
             onToggleSafeArea={toggleSafeArea}
+            onOpenPreview={() => setShowFullPreview(true)}
             onDeselectAll={() => {
               deselectAll();
               setMobileSheet((prev) => (prev === 'inspector' ? 'none' : prev));
@@ -702,6 +705,14 @@ export function App() {
           activePageId={activePageId}
           onClose={() => setShowExportPagesModal(false)}
           onRenderSelectedPages={exportSelectedPages}
+        />
+      )}
+      {showFullPreview && (
+        <FullSizePreviewModal
+          pages={pages}
+          activePageId={activePageId}
+          onClose={() => setShowFullPreview(false)}
+          onRenderPages={exportSelectedPages}
         />
       )}
     </div>

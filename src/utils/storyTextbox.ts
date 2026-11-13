@@ -563,9 +563,16 @@ export class StoryTextbox extends fabric.Textbox {
     }
   }
 
+  override exitEditing(): this {
+    if (!this.text && this.placeholder) {
+      this.dirty = true;
+    }
+    return super.exitEditing();
+  }
+
   _render(ctx: CanvasRenderingContext2D): void {
     super._render(ctx);
-    if (!this.text && this.placeholder) {
+    if (!this.text && !this.isEditing && this.placeholder) {
       ctx.save();
       ctx.globalAlpha *= 0.5;
       ctx.font = this._getFontDeclaration();

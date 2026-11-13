@@ -1232,6 +1232,11 @@ export function useFabricCanvas() {
 
     const handleMouseDown = (opt: { e: fabric.TPointerEvent; target?: fabric.FabricObject }) => {
       const target = opt.target;
+      if (target instanceof StoryTextbox && !target.text && target.placeholder) {
+        target.placeholder = '';
+        target.dirty = true;
+        canvas.requestRenderAll();
+      }
       if (
         !target ||
         !prevActiveIdBeforeDown ||
