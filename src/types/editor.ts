@@ -229,12 +229,19 @@ export type BasicShapeKind =
   | 'star'
   | 'line';
 
+export type ShapeImageFit = 'cover' | 'contain' | 'stretch';
+
 export interface SelectedShapeProps {
   kind: 'shape';
   id: string;
   name: string;
   shapeKind: BasicShapeKind;
   fill: string;
+  shapeImageSrc?: string;
+  shapeImageFit: ShapeImageFit;
+  shapeImageScale: number;
+  shapeImageOffsetX: number;
+  shapeImageOffsetY: number;
   stroke: string;
   strokeWidth: number;
   cornerRadius: number;

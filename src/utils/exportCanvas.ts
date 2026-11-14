@@ -9,6 +9,7 @@ import { createLinearGradient } from './canvasHelpers';
 import { applyStoryImageFilters } from './imageFilters';
 import type { StoryImage } from './storyImage';
 import { StoryTextbox } from './storyTextbox';
+import { restoreShapeImageFills } from './shapeImageFill';
 import {
   hasPendingFrauncesDecodes,
   isFrauncesFamily,
@@ -234,6 +235,7 @@ export async function renderPageSnapshotToPayload(
     }
 
     await staticCanvas.loadFromJSON(page.canvasJson);
+    await restoreShapeImageFills(staticCanvas);
 
     staticCanvas.getObjects().forEach((obj) => {
       if (obj instanceof StoryTextbox) {

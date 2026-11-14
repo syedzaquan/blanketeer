@@ -19,6 +19,7 @@ import {
   type OverflowControlKey,
   type SelectedObjectState,
   type SelectionBoxSnapshot,
+  type ShapeImageFit,
   type TemplatePlacement,
   type TemplateSlotSummary,
   type TextBackgroundStyle,
@@ -45,6 +46,13 @@ import {
   renderBackgroundOverlayGradient,
   type FabricObjectWithMeta,
 } from '../utils/canvasHelpers';
+import {
+  applyShapeImageFill,
+  clearShapeImageFill,
+  refreshShapeImagePatternTransform,
+  restoreShapeImageFills,
+  type ShapeWithImageMeta,
+} from '../utils/shapeImageFill';
 import {
   exportCanvasToImage,
   isIOSDevice,
@@ -758,6 +766,7 @@ export function useFabricCanvas() {
         setBackgroundState(structuredClone(snapshot.background));
 
         await canvas.loadFromJSON(snapshot.canvasJson);
+        await restoreShapeImageFills(canvas);
 
         canvas.getObjects().forEach((obj) => {
           const meta = ensureObjectMeta(obj);
@@ -1150,6 +1159,7 @@ export function useFabricCanvas() {
         'scaling'
       );
       setSelectionBox(buildSelectionBoxSnapshot(target));
+      refreshShapeImagePatternTransform(target);
     };
 
     const handleObjectResizing = (e: {
@@ -1168,11 +1178,15 @@ export function useFabricCanvas() {
         'resizing'
       );
       setSelectionBox(buildSelectionBoxSnapshot(target));
+      refreshShapeImagePatternTransform(target);
     };
 
     const handleObjectModified = (e?: { target?: fabric.FabricObject }) => {
       const target = e?.target;
       if (target && normalizeTextboxScale(target)) {
+        canvas.requestRenderAll();
+      }
+      if (target && refreshShapeImagePatternTransform(target)) {
         canvas.requestRenderAll();
       }
       clearSnapGuides();
@@ -1956,6 +1970,13 @@ export function useFabricCanvas() {
       if (!meta.shapeKind) return;
 
       if (patch.fill !== undefined) {
+        const shapeMeta = active as ShapeWithImageMeta;
+        shapeMeta.shapeFillColor = patch.fill;
+        shapeMeta.shapeImageSrc = undefined;
+        shapeMeta.shapeImageFit = undefined;
+        shapeMeta.shapeImageScale = undefined;
+        shapeMeta.shapeImageOffsetX = undefined;
+        shapeMeta.shapeImageOffsetY = undefined;
         active.set('fill', patch.fill);
       }
       if (patch.stroke !== undefined) {
@@ -1985,6 +2006,73 @@ export function useFabricCanvas() {
     },
     [scheduleHistoryCommit, syncSelectionAndLayers]
   );
+
+  const setShapeImageFromFile = useCallback(
+    async (file: File) => {
+      const canvas = canvasRef.current;
+      const active = canvas?.getActiveObject();
+      if (!canvas || !active) return;
+      const meta = active as ShapeWithImageMeta;
+      if (!meta.shapeKind || meta.shapeKind === 'line') return;
+
+      const dataUrl = await readFileAsDataURL(file);
+      await applyShapeImageFill(active, dataUrl);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [commitHistoryNow, syncSelectionAndLayers]
+  );
+
+  const updateShapeImageProps = useCallback(
+    (
+      patch: Partial<{
+        fit: ShapeImageFit;
+        scale: number;
+        offsetX: number;
+        offsetY: number;
+      }>
+    ) => {
+      const canvas = canvasRef.current;
+      const active = canvas?.getActiveObject();
+      if (!canvas || !active) return;
+      const meta = active as ShapeWithImageMeta;
+      if (!meta.shapeKind || !meta.shapeImageSrc) return;
+
+      if (patch.fit !== undefined) {
+        meta.shapeImageFit = patch.fit;
+      }
+      if (patch.scale !== undefined && Number.isFinite(patch.scale)) {
+        meta.shapeImageScale = Math.max(0.25, Math.min(4, patch.scale));
+      }
+      if (patch.offsetX !== undefined && Number.isFinite(patch.offsetX)) {
+        meta.shapeImageOffsetX = Math.max(-100, Math.min(100, patch.offsetX));
+      }
+      if (patch.offsetY !== undefined && Number.isFinite(patch.offsetY)) {
+        meta.shapeImageOffsetY = Math.max(-100, Math.min(100, patch.offsetY));
+      }
+
+      refreshShapeImagePatternTransform(active);
+      active.setCoords();
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      scheduleHistoryCommit(180);
+    },
+    [scheduleHistoryCommit, syncSelectionAndLayers]
+  );
+
+  const removeShapeImage = useCallback(() => {
+    const canvas = canvasRef.current;
+    const active = canvas?.getActiveObject();
+    if (!canvas || !active) return;
+    const meta = active as ShapeWithImageMeta;
+    if (!meta.shapeKind) return;
+
+    clearShapeImageFill(active);
+    canvas.requestRenderAll();
+    syncSelectionAndLayers();
+    commitHistoryNow();
+  }, [commitHistoryNow, syncSelectionAndLayers]);
 
   const applyTwoColumnTemplate = useCallback(
     (options: { placement: TemplatePlacement; cornerPercent: number }) => {
@@ -2580,6 +2668,15 @@ export function useFabricCanvas() {
     if (!canvas || !active) return;
 
     const cloned = await active.clone(CUSTOM_SERIALIZED_PROPS);
+    const clonedShapeMeta = cloned as ShapeWithImageMeta;
+    if (clonedShapeMeta.shapeKind && clonedShapeMeta.shapeImageSrc) {
+      await applyShapeImageFill(cloned, clonedShapeMeta.shapeImageSrc, {
+        fit: clonedShapeMeta.shapeImageFit,
+        scale: clonedShapeMeta.shapeImageScale,
+        offsetX: clonedShapeMeta.shapeImageOffsetX,
+        offsetY: clonedShapeMeta.shapeImageOffsetY,
+      });
+    }
     const meta = ensureObjectMeta(cloned);
     meta.editorId = createEditorId();
     meta.editorName = `${ensureObjectMeta(active).editorName || 'Layer'} Copy`;
@@ -3980,6 +4077,9 @@ export function useFabricCanvas() {
     addImageFromFile,
     addBasicShape,
     updateShapeProps,
+    setShapeImageFromFile,
+    updateShapeImageProps,
+    removeShapeImage,
     applyTwoColumnTemplate,
     applyDiagonalTemplate,
     applySplitTemplate,

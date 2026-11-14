@@ -86,6 +86,9 @@ export function App() {
     addImageFromFile,
     addBasicShape,
     updateShapeProps,
+    setShapeImageFromFile,
+    updateShapeImageProps,
+    removeShapeImage,
     applyTwoColumnTemplate,
     applyDiagonalTemplate,
     applySplitTemplate,
@@ -498,6 +501,9 @@ export function App() {
           onTriggerFillSlot={triggerFillSlot}
           onUpdateSlotCorner={updateTemplateSlotCorner}
           onUpdateShape={updateShapeProps}
+          onSetShapeImage={(file) => void setShapeImageFromFile(file)}
+          onUpdateShapeImage={updateShapeImageProps}
+          onRemoveShapeImage={removeShapeImage}
           onUpdateCommon={updateActiveCommonProps}
           onBringForward={bringForward}
           onSendBackward={sendBackward}

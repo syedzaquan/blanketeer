@@ -44,6 +44,12 @@ export const CUSTOM_SERIALIZED_PROPS = [
   'slotCornerPercent',
   'shapeKind',
   'shapeCornerRadius',
+  'shapeFillColor',
+  'shapeImageSrc',
+  'shapeImageFit',
+  'shapeImageScale',
+  'shapeImageOffsetX',
+  'shapeImageOffsetY',
   'locked',
 ];
 
@@ -376,16 +382,33 @@ export function extractSelectedState(
   const shapeMeta = obj as fabric.FabricObject & {
     shapeKind?: BasicShapeKind;
     shapeCornerRadius?: number;
+    shapeFillColor?: string;
+    shapeImageSrc?: string;
+    shapeImageFit?: 'cover' | 'contain' | 'stretch';
+    shapeImageScale?: number;
+    shapeImageOffsetX?: number;
+    shapeImageOffsetY?: number;
   };
   if (shapeMeta.shapeKind) {
     const rectRx =
       obj instanceof fabric.Rect ? Math.round(obj.rx ?? 0) : 0;
+    const solidFill =
+      typeof obj.fill === 'string'
+        ? obj.fill
+        : typeof shapeMeta.shapeFillColor === 'string'
+          ? shapeMeta.shapeFillColor
+          : '';
     return {
       kind: 'shape',
       id: meta.editorId!,
       name: meta.editorName!,
       shapeKind: shapeMeta.shapeKind,
-      fill: typeof obj.fill === 'string' ? obj.fill : '',
+      fill: solidFill,
+      shapeImageSrc: shapeMeta.shapeImageSrc,
+      shapeImageFit: shapeMeta.shapeImageFit ?? 'cover',
+      shapeImageScale: Number((shapeMeta.shapeImageScale ?? 1).toFixed(2)),
+      shapeImageOffsetX: Math.round(shapeMeta.shapeImageOffsetX ?? 0),
+      shapeImageOffsetY: Math.round(shapeMeta.shapeImageOffsetY ?? 0),
       stroke: typeof obj.stroke === 'string' ? obj.stroke : '#000000',
       strokeWidth: Math.round(obj.strokeWidth ?? 0),
       cornerRadius: Math.round(shapeMeta.shapeCornerRadius ?? rectRx),

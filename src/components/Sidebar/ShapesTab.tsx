@@ -58,7 +58,7 @@ export function ShapesTab({ onAddShape }: ShapesTabProps) {
         </div>
       </div>
       <p className="text-[11px] text-neutral-500 leading-relaxed">
-        Tap a shape to add it to the canvas, then customize fill, border, and corner radius in Properties.
+        Tap a shape to add it to the canvas, then customize fill color or image, border, and corner radius in Properties.
       </p>
     </div>
   );
