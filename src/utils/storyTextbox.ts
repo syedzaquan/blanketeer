@@ -32,7 +32,8 @@ export interface StoryTextboxExtraProps {
   pillPaddingX?: number;
   pillPaddingY?: number;
   inkBleed?: boolean;
-  inkBleedAmount?: number;
+  inkBleedBlur?: number;
+  inkBleedThreshold?: number;
   placeholder?: string;
   locked?: boolean;
 }
@@ -184,7 +185,8 @@ export class StoryTextbox extends fabric.Textbox {
     'pillPaddingX',
     'pillPaddingY',
     'inkBleed',
-    'inkBleedAmount',
+    'inkBleedBlur',
+    'inkBleedThreshold',
     'placeholder',
   ];
 
@@ -199,7 +201,8 @@ export class StoryTextbox extends fabric.Textbox {
   declare pillPaddingX: number;
   declare pillPaddingY: number;
   declare inkBleed: boolean;
-  declare inkBleedAmount: number;
+  declare inkBleedBlur: number;
+  declare inkBleedThreshold: number;
   declare placeholder: string;
   declare locked: boolean;
   private _skipBgInRender = false;
@@ -217,7 +220,8 @@ export class StoryTextbox extends fabric.Textbox {
       pillPaddingX = 24,
       pillPaddingY = 8,
       inkBleed = false,
-      inkBleedAmount = 3.5,
+      inkBleedBlur = 0.05,
+      inkBleedThreshold = 10,
       placeholder = '',
       locked = false,
       ...textboxOptions
@@ -253,7 +257,8 @@ export class StoryTextbox extends fabric.Textbox {
     this.pillPaddingX = pillPaddingX;
     this.pillPaddingY = pillPaddingY;
     this.inkBleed = inkBleed;
-    this.inkBleedAmount = inkBleedAmount;
+    this.inkBleedBlur = inkBleedBlur;
+    this.inkBleedThreshold = inkBleedThreshold;
     this.placeholder = placeholder;
     this.locked = locked;
   }
@@ -478,8 +483,7 @@ export class StoryTextbox extends fabric.Textbox {
       dims.height += 24 * dims.zoomY;
     }
     if (this.inkBleed) {
-      const fontScale = Math.max(0.8, (this.fontSize || 72) / 56);
-      const blurPx = Math.max(1, Math.min(28, (this.inkBleedAmount || 3.5) * 1.6 * fontScale));
+      const blurPx = this._getInkBleedBlurPx();
       const bleedPad = Math.ceil(blurPx * 3) + Math.ceil((this.fontSize || 72) * 0.25) + 16;
       dims.width += bleedPad * 2 * dims.zoomX;
       dims.height += bleedPad * 2 * dims.zoomY;
@@ -625,9 +629,15 @@ export class StoryTextbox extends fabric.Textbox {
     }
   }
 
+  private _getInkBleedBlurPx(): number {
+    const rawBlur = Math.max(0, Math.min(30, this.inkBleedBlur ?? 0.05));
+    if (rawBlur <= 0) return 0;
+    const fontScale = Math.max(1, (this.fontSize || 72) / 40);
+    return Math.min(80, rawBlur * fontScale);
+  }
+
   private _renderWithInkBleed(ctx: CanvasRenderingContext2D): void {
-    const fontScale = Math.max(0.8, (this.fontSize || 72) / 56);
-    const blurPx = Math.max(1, Math.min(28, (this.inkBleedAmount || 3.5) * 1.6 * fontScale));
+    const blurPx = this._getInkBleedBlurPx();
     const pad = Math.ceil(blurPx * 3) + Math.ceil((this.fontSize || 72) * 0.25) + 16;
     const w = Math.max(1, Math.ceil(this.width + pad * 2));
     const h = Math.max(1, Math.ceil(this.height + pad * 2));
@@ -643,7 +653,11 @@ export class StoryTextbox extends fabric.Textbox {
 
     offCtx.save();
     offCtx.translate(this.width / 2 + pad, this.height / 2 + pad);
-    offCtx.filter = `blur(${blurPx.toFixed(2)}px)`;
+    let filterApplied = false;
+    if (blurPx > 0 && 'filter' in offCtx) {
+      offCtx.filter = `blur(${blurPx.toFixed(2)}px)`;
+      filterApplied = offCtx.filter !== 'none' && offCtx.filter !== '';
+    }
     this._skipBgInRender = true;
     try {
       super._render(offCtx);
@@ -652,16 +666,50 @@ export class StoryTextbox extends fabric.Textbox {
       offCtx.restore();
     }
 
-    // Apply SVG feComponentTransfer-style alpha threshold (low cutoff so ink spreads outward & pools in corners)
     const imgData = offCtx.getImageData(0, 0, w, h);
     const data = imgData.data;
-    const threshold = 0.2;
-    const slope = 16;
+
+    // Fallback separable box blur on alpha if ctx.filter is unsupported
+    if (blurPx > 0 && !filterApplied) {
+      const r = Math.max(1, Math.round(blurPx));
+      const tmp = new Uint8ClampedArray(w * h);
+      for (let pass = 0; pass < 2; pass++) {
+        for (let y = 0; y < h; y++) {
+          const rowOff = y * w;
+          for (let x = 0; x < w; x++) {
+            let sum = 0;
+            let count = 0;
+            const x0 = Math.max(0, x - r);
+            const x1 = Math.min(w - 1, x + r);
+            for (let kx = x0; kx <= x1; kx++) {
+              sum += data[(rowOff + kx) * 4 + 3];
+              count++;
+            }
+            tmp[rowOff + x] = Math.round(sum / count);
+          }
+        }
+        for (let x = 0; x < w; x++) {
+          for (let y = 0; y < h; y++) {
+            let sum = 0;
+            let count = 0;
+            const y0 = Math.max(0, y - r);
+            const y1 = Math.min(h - 1, y + r);
+            for (let ky = y0; ky <= y1; ky++) {
+              sum += tmp[ky * w + x];
+              count++;
+            }
+            data[(y * w + x) * 4 + 3] = Math.round(sum / count);
+          }
+        }
+      }
+    }
+
+    // Discrete alpha threshold matching SVG <feComponentTransfer><feFuncA type="discrete">
+    const threshold = Math.max(0.01, Math.min(0.99, (this.inkBleedThreshold ?? 10) / 100));
     for (let i = 3; i < data.length; i += 4) {
       const a = data[i];
       if (a === 0) continue;
-      const outA = (a / 255 - threshold) * slope + 0.5;
-      data[i] = outA <= 0 ? 0 : outA >= 1 ? 255 : Math.round(outA * 255);
+      data[i] = a / 255 >= threshold ? 255 : 0;
     }
     offCtx.putImageData(imgData, 0, 0);
 
@@ -696,7 +744,8 @@ export class StoryTextbox extends fabric.Textbox {
       'pillPaddingX',
       'pillPaddingY',
       'inkBleed',
-      'inkBleedAmount',
+      'inkBleedBlur',
+      'inkBleedThreshold',
       'placeholder',
       'locked',
       ...propertiesToInclude,

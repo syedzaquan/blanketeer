@@ -146,7 +146,8 @@ export interface SelectedTextProps {
   pillPaddingY: number;
   textShadowEnabled: boolean;
   inkBleed: boolean;
-  inkBleedAmount: number;
+  inkBleedBlur: number;
+  inkBleedThreshold: number;
   opacity: number;
   angle: number;
   flipX: boolean;

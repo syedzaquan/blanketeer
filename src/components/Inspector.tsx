@@ -85,7 +85,8 @@ interface InspectorProps {
       pillPaddingY: number;
       textShadowEnabled: boolean;
       inkBleed: boolean;
-      inkBleedAmount: number;
+      inkBleedBlur: number;
+      inkBleedThreshold: number;
     }>
   ) => void;
   onApplyTextPreset: (preset: TextStylePresetId) => void;
@@ -998,22 +999,82 @@ export function Inspector({
             </div>
 
             {selectedObject.inkBleed && (
-              <div>
-                <div className="flex items-center justify-between text-xs lg:text-[11px] text-neutral-400 mb-1">
-                  <span>Ink Bleed Amount</span>
-                  <span className="font-mono text-neutral-300">
-                    {selectedObject.inkBleedAmount.toFixed(1)}
-                  </span>
+              <div className="flex flex-col gap-2.5 w-full">
+                <div className="w-full">
+                  <div className="flex items-center justify-between text-xs lg:text-[11px] text-neutral-400 mb-1">
+                    <span>Blur</span>
+                    <span className="font-mono text-neutral-300">
+                      {selectedObject.inkBleedBlur.toFixed(2)}px
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 w-full">
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.05}
+                      aria-label="Ink bleed blur"
+                      value={selectedObject.inkBleedBlur}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (Number.isFinite(val) && val >= 0) {
+                          onUpdateText({
+                            inkBleedBlur: Math.min(30, Number(val.toFixed(2))),
+                          });
+                        }
+                      }}
+                      className="w-16 lg:w-14 shrink-0 px-2 py-1 lg:px-1.5 lg:py-0.5 rounded-md lg:rounded bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-right text-neutral-100 focus:outline-none focus:border-neutral-500"
+                    />
+                    <RangeSlider
+                      min={0}
+                      max={5}
+                      step={0.05}
+                      value={Math.min(5, selectedObject.inkBleedBlur)}
+                      defaultValue={0.05}
+                      onValueChange={(inkBleedBlur) =>
+                        onUpdateText({ inkBleedBlur })
+                      }
+                      className="flex-1 min-w-0"
+                    />
+                  </div>
                 </div>
-                <RangeSlider
-                  min={1}
-                  max={10}
-                  step={0.5}
-                  value={selectedObject.inkBleedAmount}
-                  onValueChange={(inkBleedAmount) =>
-                    onUpdateText({ inkBleedAmount })
-                  }
-                />
+                <div className="w-full">
+                  <div className="flex items-center justify-between text-xs lg:text-[11px] text-neutral-400 mb-1">
+                    <span>Threshold</span>
+                    <span className="font-mono text-neutral-300">
+                      {selectedObject.inkBleedThreshold}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 w-full">
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      step={1}
+                      aria-label="Ink bleed threshold"
+                      value={selectedObject.inkBleedThreshold}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (Number.isFinite(val) && val >= 1 && val <= 99) {
+                          onUpdateText({
+                            inkBleedThreshold: Math.round(val),
+                          });
+                        }
+                      }}
+                      className="w-16 lg:w-14 shrink-0 px-2 py-1 lg:px-1.5 lg:py-0.5 rounded-md lg:rounded bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-right text-neutral-100 focus:outline-none focus:border-neutral-500"
+                    />
+                    <RangeSlider
+                      min={5}
+                      max={95}
+                      step={1}
+                      value={Math.max(5, Math.min(95, selectedObject.inkBleedThreshold))}
+                      defaultValue={10}
+                      onValueChange={(inkBleedThreshold) =>
+                        onUpdateText({ inkBleedThreshold })
+                      }
+                      className="flex-1 min-w-0"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -1106,7 +1167,6 @@ export function Inspector({
                 max={3.0}
                 step={0.05}
                 value={selectedObject.lineHeight}
-                defaultValue={1.0}
                 onValueChange={(lineHeight) => onUpdateText({ lineHeight })}
                 className="w-full"
               />
@@ -1131,7 +1191,6 @@ export function Inspector({
                 max={1000}
                 step={10}
                 value={selectedObject.charSpacing}
-                defaultValue={0}
                 onValueChange={(charSpacing) => onUpdateText({ charSpacing })}
                 className="w-full"
               />

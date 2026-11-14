@@ -1683,7 +1683,8 @@ export function useFabricCanvas(options?: {
         pillPaddingY: number;
         textShadowEnabled: boolean;
         inkBleed: boolean;
-        inkBleedAmount: number;
+        inkBleedBlur: number;
+        inkBleedThreshold: number;
       }>
     ) => {
       const canvas = canvasRef.current;
