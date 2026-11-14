@@ -43,11 +43,11 @@ export function getSafeZoneBounds(
   canvasWidth: number,
   canvasHeight: number
 ): SafeZoneBounds {
-  const marginX = 64;
+  const marginX = 44;
   const aspect = canvasHeight / Math.max(canvasWidth, 1);
 
   // Story (9:16) reserves taller top/bottom margins for Instagram UI overlays
-  const marginY = aspect >= 1.5 ? 180 : aspect >= 1.15 ? 84 : 64;
+  const marginY = aspect >= 1.5 ? 130 : aspect >= 1.15 ? 60 : 44;
 
   return {
     left: marginX,

@@ -91,6 +91,7 @@ import {
   type SavedCustomFont,
 } from '../utils/projectStorage';
 import {
+  getSafeZoneBounds,
   renderGuidesOnTopContext,
   snapObjectToGuides,
   snapObjectResizeToGuides,
@@ -2146,12 +2147,12 @@ export function useFabricCanvas(options?: {
       if (!canvas) return;
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-      const outerPad = 16;
+      const safe = getSafeZoneBounds(width, height);
       const gap = 16;
-      const slotWidth = Math.round((width - outerPad * 2 - gap) / 2);
-      const slotHeight = Math.round(height * 0.5);
+      const slotWidth = Math.round((safe.width - gap) / 2);
+      const slotHeight = Math.round(safe.height * 0.5);
       const slotTop =
-        options.placement === 'top' ? outerPad : height - outerPad - slotHeight;
+        options.placement === 'top' ? safe.top : safe.bottom - slotHeight;
       const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
 
       // Replace existing unfilled placeholder slots if the user switches Top/Bottom or re-applies
@@ -2178,8 +2179,8 @@ export function useFabricCanvas(options?: {
         return slot;
       };
 
-      const slot1 = makeSlot(1, outerPad + slotWidth / 2);
-      const slot2 = makeSlot(2, outerPad + slotWidth + gap + slotWidth / 2);
+      const slot1 = makeSlot(1, safe.left + slotWidth / 2);
+      const slot2 = makeSlot(2, safe.left + slotWidth + gap + slotWidth / 2);
 
       canvas.insertAt(0, slot1, slot2);
       canvas.setActiveObject(slot1);
@@ -2196,7 +2197,7 @@ export function useFabricCanvas(options?: {
       if (!canvas) return;
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-      const outerPad = 16;
+      const safe = getSafeZoneBounds(width, height);
       const gap = 16;
       const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
 
@@ -2209,15 +2210,15 @@ export function useFabricCanvas(options?: {
 
       const isVertical = options.direction === 'vertical';
       const slotW = isVertical
-        ? Math.round((width - outerPad * 2 - gap) / 2)
-        : width - outerPad * 2;
+        ? Math.round((safe.width - gap) / 2)
+        : safe.width;
       const slotH = isVertical
-        ? height - outerPad * 2
-        : Math.round((height - outerPad * 2 - gap) / 2);
+        ? safe.height
+        : Math.round((safe.height - gap) / 2);
 
       const slot1 = new TemplateSlotRect({
-        left: outerPad + slotW / 2,
-        top: outerPad + slotH / 2,
+        left: safe.left + slotW / 2,
+        top: safe.top + slotH / 2,
         width: slotW,
         height: slotH,
         originX: 'center',
@@ -2230,11 +2231,11 @@ export function useFabricCanvas(options?: {
 
       const slot2 = new TemplateSlotRect({
         left: isVertical
-          ? outerPad + slotW + gap + slotW / 2
-          : outerPad + slotW / 2,
+          ? safe.left + slotW + gap + slotW / 2
+          : safe.left + slotW / 2,
         top: isVertical
-          ? outerPad + slotH / 2
-          : outerPad + slotH + gap + slotH / 2,
+          ? safe.top + slotH / 2
+          : safe.top + slotH + gap + slotH / 2,
         width: slotW,
         height: slotH,
         originX: 'center',
@@ -2260,7 +2261,7 @@ export function useFabricCanvas(options?: {
       if (!canvas) return;
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-      const outerPad = 16;
+      const safe = getSafeZoneBounds(width, height);
       const gap = 16;
       const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
 
@@ -2271,13 +2272,13 @@ export function useFabricCanvas(options?: {
         existingSlots.forEach((s) => canvas.remove(s));
       }
 
-      const colW = Math.round((width - outerPad * 2 - gap) / 2);
-      const fullH = height - outerPad * 2;
+      const colW = Math.round((safe.width - gap) / 2);
+      const fullH = safe.height;
       const halfH = Math.round((fullH - gap) / 2);
 
       const slot1 = new TemplateSlotRect({
-        left: outerPad + colW / 2,
-        top: outerPad + fullH / 2,
+        left: safe.left + colW / 2,
+        top: safe.top + fullH / 2,
         width: colW,
         height: fullH,
         originX: 'center',
@@ -2289,8 +2290,8 @@ export function useFabricCanvas(options?: {
       ensureObjectMeta(slot1);
 
       const slot2 = new TemplateSlotRect({
-        left: outerPad + colW + gap + colW / 2,
-        top: outerPad + halfH / 2,
+        left: safe.left + colW + gap + colW / 2,
+        top: safe.top + halfH / 2,
         width: colW,
         height: halfH,
         originX: 'center',
@@ -2302,8 +2303,8 @@ export function useFabricCanvas(options?: {
       ensureObjectMeta(slot2);
 
       const slot3 = new TemplateSlotRect({
-        left: outerPad + colW + gap + colW / 2,
-        top: outerPad + halfH + gap + halfH / 2,
+        left: safe.left + colW + gap + colW / 2,
+        top: safe.top + halfH + gap + halfH / 2,
         width: colW,
         height: halfH,
         originX: 'center',
@@ -2329,11 +2330,11 @@ export function useFabricCanvas(options?: {
       if (!canvas) return;
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-      const outerPad = 16;
+      const safe = getSafeZoneBounds(width, height);
       const gap = 16;
 
-      const slotWidth = Math.round((width - outerPad * 2 - gap) / 2);
-      const slotHeight = Math.round((height - outerPad * 2 - gap) / 2);
+      const slotWidth = Math.round((safe.width - gap) / 2);
+      const slotHeight = Math.round((safe.height - gap) / 2);
       const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
 
       const existingSlots = canvas
@@ -2343,10 +2344,10 @@ export function useFabricCanvas(options?: {
         existingSlots.forEach((s) => canvas.remove(s));
       }
 
-      const leftX = outerPad + slotWidth / 2;
-      const rightX = outerPad + slotWidth + gap + slotWidth / 2;
-      const topY = outerPad + slotHeight / 2;
-      const bottomY = outerPad + slotHeight + gap + slotHeight / 2;
+      const leftX = safe.left + slotWidth / 2;
+      const rightX = safe.left + slotWidth + gap + slotWidth / 2;
+      const topY = safe.top + slotHeight / 2;
+      const bottomY = safe.top + slotHeight + gap + slotHeight / 2;
 
       const isLtr = options.direction === 'ltr';
 
