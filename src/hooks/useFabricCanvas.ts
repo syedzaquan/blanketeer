@@ -9,6 +9,7 @@ import {
   type BasicShapeKind,
   type CanvasPageItem,
   type CanvasPageSnapshot,
+  type CropAspectRatio,
   type CutoutShape,
   type DiagonalDirection,
   type ExportImageFormat,
@@ -53,6 +54,13 @@ import {
   restoreShapeImageFills,
   type ShapeWithImageMeta,
 } from '../utils/shapeImageFill';
+import {
+  applyCropAspectRatio,
+  beginImageCropSession,
+  endImageCropSession,
+  syncCropSessionFromRect,
+  type ActiveCropSession,
+} from '../utils/imageCropMode';
 import {
   exportCanvasToImage,
   isIOSDevice,
@@ -187,6 +195,23 @@ function clientPointToCanvas(
   };
 }
 
+function isPointOnSlotPlusBadge(
+  slot: TemplateSlotRect,
+  canvas: fabric.Canvas,
+  clientPt: { x: number; y: number }
+): boolean {
+  const pt = clientPointToCanvas(canvas, clientPt);
+  if (!pt) return false;
+  const inv = fabric.util.invertTransform(slot.calcTransformMatrix());
+  const localPt = new fabric.Point(pt.x, pt.y).transform(inv);
+  const sx = Math.abs(slot.scaleX ?? 1) || 1;
+  const sy = Math.abs(slot.scaleY ?? 1) || 1;
+  const invAvg = 1 / Math.sqrt(sx * sy);
+  const dx = localPt.x * sx;
+  const dy = (localPt.y + 16 * invAvg) * sy;
+  return Math.hypot(dx, dy) <= 46;
+}
+
 function isPointNearObject(
   obj: fabric.FabricObject,
   point: { x: number; y: number },
@@ -223,27 +248,6 @@ const DEFAULT_BACKGROUND: BackgroundState = {
 };
 
 const MAX_HISTORY = 40;
-
-function createStarterTextbox(canvasWidth: number, canvasHeight: number): StoryTextbox {
-  return new StoryTextbox('', {
-    left: canvasWidth / 2,
-    top: canvasHeight / 2,
-    width: 780,
-    originX: 'center',
-    originY: 'center',
-    fontFamily: 'Fedro',
-    fontSize: 96,
-    fontWeight: 700,
-    fontSoft: 100,
-    fill: '#000000',
-    placeholder: 'Add your text',
-    textAlign: 'center',
-    lineHeight: 1.0,
-    bgStyle: 'none',
-    textBgColor: '#ffffff',
-    editorName: 'Headline',
-  });
-}
 
 function computeControlSizes(cssScale = 0.26): { cornerSize: number; touchCornerSize: number } {
   const safeScale = Math.max(0.1, cssScale);
@@ -370,9 +374,13 @@ function captureCanvasThumbnail(canvas: fabric.Canvas): string {
   }
 }
 
-export function useFabricCanvas() {
+export function useFabricCanvas(options?: {
+  onRequestFillSlot?: (slotId: string) => void;
+}) {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
+  const onRequestFillSlotRef = useRef(options?.onRequestFillSlot);
+  onRequestFillSlotRef.current = options?.onRequestFillSlot;
 
   const [initialPageId] = useState<string>(() => createPageId());
   const [pages, setPages] = useState<CanvasPageItem[]>(() => [
@@ -388,6 +396,9 @@ export function useFabricCanvas() {
   const [aspectRatio, setAspectRatioState] = useState<AspectRatioKey>('4:5');
   const [background, setBackgroundState] = useState<BackgroundState>(DEFAULT_BACKGROUND);
   const [selectedObject, setSelectedObject] = useState<SelectedObjectState | null>(null);
+  const cropSessionRef = useRef<ActiveCropSession | null>(null);
+  const [cropModeActive, setCropModeActive] = useState(false);
+  const [cropAspectRatio, setCropAspectRatioState] = useState<CropAspectRatio>('free');
   const [selectionBox, setSelectionBox] = useState<SelectionBoxSnapshot | null>(null);
   const [layers, setLayers] = useState<LayerItem[]>([]);
   const [templateSlots, setTemplateSlots] = useState<TemplateSlotSummary[]>([]);
@@ -932,15 +943,6 @@ export function useFabricCanvas() {
 
     canvasRef.current = canvas;
     canvas.backgroundColor = DEFAULT_BACKGROUND.color;
-
-    // Seed an editorial starter text layer so the canvas feels alive immediately
-    const starterTitle = createStarterTextbox(
-      initialPreset.width,
-      initialPreset.height
-    );
-
-    canvas.add(starterTitle);
-    canvas.setActiveObject(starterTitle);
     canvas.requestRenderAll();
 
     // Sync initial React state & seed history[0] without overwriting browser storage
@@ -1092,6 +1094,19 @@ export function useFabricCanvas() {
     })();
 
     const handleSelection = () => {
+      const session = cropSessionRef.current;
+      if (session) {
+        const active = canvas.getActiveObject();
+        if (active !== session.cropRect) {
+          endImageCropSession(canvas, session, true);
+          cropSessionRef.current = null;
+          setCropModeActive(false);
+          setCropAspectRatioState('free');
+          commitHistoryNow();
+        } else {
+          return;
+        }
+      }
       syncSelectionAndLayers();
     };
 
@@ -1118,6 +1133,12 @@ export function useFabricCanvas() {
 
     const handleObjectMoving = (e: { target?: fabric.FabricObject }) => {
       if (!e.target) return;
+      const session = cropSessionRef.current;
+      if (session && e.target === session.cropRect) {
+        syncCropSessionFromRect(session);
+        canvas.requestRenderAll();
+        return;
+      }
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
       activeSnapGuidesRef.current = snapObjectToGuides(
         e.target,
@@ -1140,6 +1161,12 @@ export function useFabricCanvas() {
     }) => {
       const target = e.target;
       if (!target) return;
+      const session = cropSessionRef.current;
+      if (session && target === session.cropRect) {
+        syncCropSessionFromRect(session);
+        canvas.requestRenderAll();
+        return;
+      }
       if (target instanceof StoryTextbox || target instanceof fabric.Textbox) {
         const uniformScale = Math.max(0.05, Math.abs(target.scaleX || 1));
         if (
@@ -1183,6 +1210,12 @@ export function useFabricCanvas() {
 
     const handleObjectModified = (e?: { target?: fabric.FabricObject }) => {
       const target = e?.target;
+      const session = cropSessionRef.current;
+      if (session && target === session.cropRect) {
+        syncCropSessionFromRect(session);
+        canvas.requestRenderAll();
+        return;
+      }
       if (target && normalizeTextboxScale(target)) {
         canvas.requestRenderAll();
       }
@@ -1222,6 +1255,11 @@ export function useFabricCanvas() {
       x: number;
       y: number;
     } | null = null;
+    let slotTapDownInfo: {
+      target: TemplateSlotRect;
+      x: number;
+      y: number;
+    } | null = null;
 
     const getPointerClientXY = (e: Event): { x: number; y: number } | null => {
       if ('changedTouches' in e && (e as TouchEvent).changedTouches?.length) {
@@ -1242,6 +1280,7 @@ export function useFabricCanvas() {
       const active = canvas.getActiveObject();
       prevActiveIdBeforeDown = active ? ensureObjectMeta(active).editorId ?? null : null;
       tapDownInfo = null;
+      slotTapDownInfo = null;
     };
 
     const handleMouseDown = (opt: { e: fabric.TPointerEvent; target?: fabric.FabricObject }) => {
@@ -1250,6 +1289,17 @@ export function useFabricCanvas() {
         target.placeholder = '';
         target.dirty = true;
         canvas.requestRenderAll();
+      }
+      if (
+        target instanceof TemplateSlotRect &&
+        !target.__corner &&
+        !ensureObjectMeta(target).locked
+      ) {
+        const xy = getPointerClientXY(opt.e);
+        if (xy && isPointOnSlotPlusBadge(target, canvas, xy)) {
+          slotTapDownInfo = { target, x: xy.x, y: xy.y };
+          return;
+        }
       }
       if (
         !target ||
@@ -1272,6 +1322,18 @@ export function useFabricCanvas() {
 
     const handleMouseUp = (opt: { e: fabric.TPointerEvent }) => {
       clearSnapGuides();
+      const pendingSlot = slotTapDownInfo;
+      slotTapDownInfo = null;
+      if (pendingSlot) {
+        const xy = getPointerClientXY(opt.e);
+        if (xy && Math.hypot(xy.x - pendingSlot.x, xy.y - pendingSlot.y) <= 6) {
+          const slotId = ensureObjectMeta(pendingSlot.target).editorId;
+          if (slotId) {
+            onRequestFillSlotRef.current?.(slotId);
+            return;
+          }
+        }
+      }
       const pending = tapDownInfo;
       tapDownInfo = null;
       if (!pending) return;
@@ -2336,11 +2398,98 @@ export function useFabricCanvas() {
       const fallbackName = target.editorName || `Photo ${target.slotIndex ?? 1}`;
 
       const rawSrc = await readFileAsDataURL(file);
+      const minDim = Math.min(slotWidth, slotHeight);
+      const rx =
+        cornerPercent <= 0
+          ? 0
+          : Math.round(Math.min((minDim * cornerPercent) / 100, minDim / 2));
+
+      const shape = new fabric.Rect({
+        left: center.x,
+        top: center.y,
+        originX: 'center',
+        originY: 'center',
+        width: slotWidth,
+        height: slotHeight,
+        rx,
+        ry: rx,
+        angle,
+        opacity,
+        fill: '',
+        stroke: '#000000',
+        strokeWidth: 0,
+        strokeUniform: true,
+      });
+
+      const meta = ensureObjectMeta(
+        shape
+      ) as FabricObjectWithMeta & ShapeWithImageMeta;
+      meta.editorName =
+        file.name.replace(/\.[^/.]+$/, '').slice(0, 24) || fallbackName;
+      meta.shapeKind = rx > 0 ? 'rounded' : 'rect';
+      meta.shapeCornerRadius = rx;
+      meta.shapeFillColor = '';
+
+      await applyShapeImageFill(shape, rawSrc, {
+        fit: 'cover',
+        scale: 1,
+        offsetX: 0,
+        offsetY: 0,
+      });
+
+      if (canvas.getActiveObject() === target) {
+        canvas.discardActiveObject();
+      }
+      canvas.remove(target);
+      canvas.insertAt(stackIndex, shape);
+      canvas.setActiveObject(shape);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+      refreshPhotoPalette(rawSrc);
+    },
+    [commitHistoryNow, findObjectById, refreshPhotoPalette, syncSelectionAndLayers]
+  );
+
+  const replaceActiveImageFromFile = useCallback(
+    async (file: File) => {
+      const canvas = canvasRef.current;
+      const active = canvas?.getActiveObject();
+      if (!canvas || !(active instanceof fabric.FabricImage)) return;
+
+      const oldMeta = active as StoryImage;
+      const targetWidth = Math.max(20, active.getScaledWidth());
+      const targetHeight = Math.max(20, active.getScaledHeight());
+      const center = active.getCenterPoint();
+      const angle = active.angle || 0;
+      const opacity = active.opacity ?? 1;
+      const flipX = Boolean(active.flipX);
+      const flipY = Boolean(active.flipY);
+      const stackIndex = Math.max(0, canvas.getObjects().indexOf(active));
+
+      const cutoutShape = oldMeta.cutoutShape ?? 'none';
+      const cutoutRadius = oldMeta.cutoutRadius ?? 16;
+      const aspectLocked = oldMeta.aspectLocked ?? true;
+      const imageStrokeColor = oldMeta.imageStrokeColor;
+      const imageStrokeWidth = oldMeta.imageStrokeWidth;
+      const imageStrokeStyle = oldMeta.imageStrokeStyle;
+      const imageShadowEnabled = oldMeta.imageShadowEnabled;
+      const imageShadowColor = oldMeta.imageShadowColor;
+      const imageShadowOpacity = oldMeta.imageShadowOpacity;
+      const imageShadowBlur = oldMeta.imageShadowBlur;
+      const imageShadowOffsetX = oldMeta.imageShadowOffsetX;
+      const imageShadowOffsetY = oldMeta.imageShadowOffsetY;
+      const imageFilter = oldMeta.imageFilter
+        ? { ...oldMeta.imageFilter }
+        : undefined;
+      const locked = Boolean(oldMeta.locked);
+
+      const rawSrc = await readFileAsDataURL(file);
       const croppedSrc = await coverCropFileToDataURL(
         file,
         rawSrc,
-        slotWidth,
-        slotHeight
+        targetWidth,
+        targetHeight
       );
       const img = await StoryImage.fromURL(croppedSrc, {
         crossOrigin: 'anonymous',
@@ -2348,7 +2497,9 @@ export function useFabricCanvas() {
 
       initDefaultStoryImageMeta(
         img,
-        file.name.replace(/\.[^/.]+$/, '').slice(0, 24) || fallbackName
+        file.name.replace(/\.[^/.]+$/, '').slice(0, 24) ||
+          oldMeta.editorName ||
+          'Image Layer'
       );
 
       img.set({
@@ -2356,20 +2507,36 @@ export function useFabricCanvas() {
         top: center.y,
         originX: 'center',
         originY: 'center',
-        scaleX: slotWidth / (img.width || 1),
-        scaleY: slotHeight / (img.height || 1),
+        scaleX: targetWidth / (img.width || 1),
+        scaleY: targetHeight / (img.height || 1),
         angle,
         opacity,
+        flipX,
+        flipY,
       });
 
-      if (cornerPercent > 0) {
-        applyCutoutMask(img, 'rounded', cornerPercent);
+      const newMeta = img as StoryImage;
+      newMeta.aspectLocked = aspectLocked;
+      if (imageStrokeColor !== undefined) newMeta.imageStrokeColor = imageStrokeColor;
+      if (imageStrokeWidth !== undefined) newMeta.imageStrokeWidth = imageStrokeWidth;
+      if (imageStrokeStyle !== undefined) newMeta.imageStrokeStyle = imageStrokeStyle;
+      if (imageShadowEnabled !== undefined) newMeta.imageShadowEnabled = imageShadowEnabled;
+      if (imageShadowColor !== undefined) newMeta.imageShadowColor = imageShadowColor;
+      if (imageShadowOpacity !== undefined) newMeta.imageShadowOpacity = imageShadowOpacity;
+      if (imageShadowBlur !== undefined) newMeta.imageShadowBlur = imageShadowBlur;
+      if (imageShadowOffsetX !== undefined) newMeta.imageShadowOffsetX = imageShadowOffsetX;
+      if (imageShadowOffsetY !== undefined) newMeta.imageShadowOffsetY = imageShadowOffsetY;
+      if (locked) applyLockState(img, true);
+
+      if (cutoutShape && cutoutShape !== 'none') {
+        applyCutoutMask(img, cutoutShape, cutoutRadius);
+      }
+      if (imageFilter) {
+        applyStoryImageFilters(img, imageFilter, 'full');
       }
 
-      if (canvas.getActiveObject() === target) {
-        canvas.discardActiveObject();
-      }
-      canvas.remove(target);
+      canvas.discardActiveObject();
+      canvas.remove(active);
       canvas.insertAt(stackIndex, img);
       canvas.setActiveObject(img);
       canvas.requestRenderAll();
@@ -2377,8 +2544,51 @@ export function useFabricCanvas() {
       commitHistoryNow();
       refreshPhotoPalette(croppedSrc);
     },
-    [commitHistoryNow, findObjectById, refreshPhotoPalette, syncSelectionAndLayers]
+    [commitHistoryNow, refreshPhotoPalette, syncSelectionAndLayers]
   );
+
+  const exitCropMode = useCallback(
+    (commit: boolean) => {
+      const canvas = canvasRef.current;
+      const session = cropSessionRef.current;
+      if (!canvas || !session) return;
+      cropSessionRef.current = null;
+      endImageCropSession(canvas, session, commit);
+      setCropModeActive(false);
+      setCropAspectRatioState('free');
+      syncSelectionAndLayers();
+      if (commit) {
+        commitHistoryNow();
+      }
+    },
+    [commitHistoryNow, syncSelectionAndLayers]
+  );
+
+  const toggleCropMode = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (cropSessionRef.current) {
+      exitCropMode(true);
+      return;
+    }
+    const active = canvas.getActiveObject();
+    if (!(active instanceof fabric.FabricImage)) return;
+    if (ensureObjectMeta(active).locked) return;
+
+    const session = beginImageCropSession(canvas, active);
+    cropSessionRef.current = session;
+    setCropModeActive(true);
+    setCropAspectRatioState('free');
+  }, [exitCropMode]);
+
+  const setCropAspectRatio = useCallback((ratio: CropAspectRatio) => {
+    const canvas = canvasRef.current;
+    const session = cropSessionRef.current;
+    if (!canvas || !session) return;
+    applyCropAspectRatio(session, ratio);
+    setCropAspectRatioState(ratio);
+    canvas.requestRenderAll();
+  }, []);
 
   const updateTemplateSlotCorner = useCallback(
     (slotId: string, cornerPercent: number) => {
@@ -3609,13 +3819,6 @@ export function useFabricCanvas() {
       canvas.clear();
       canvas.backgroundImage = undefined;
       canvas.backgroundColor = defaultBg.color;
-
-      const starterTitle = createStarterTextbox(
-        defaultPreset.width,
-        defaultPreset.height
-      );
-      canvas.add(starterTitle);
-      canvas.setActiveObject(starterTitle);
       canvas.requestRenderAll();
 
       const canvasJson = canvas.toObject(CUSTOM_SERIALIZED_PROPS) as Record<
@@ -3676,11 +3879,6 @@ export function useFabricCanvas() {
     canvas.clear();
     canvas.backgroundImage = undefined;
     canvas.backgroundColor = defaultBg.color;
-
-    const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
-    const starterTitle = createStarterTextbox(width, height);
-    canvas.add(starterTitle);
-    canvas.setActiveObject(starterTitle);
     canvas.requestRenderAll();
 
     syncSelectionAndLayers();
@@ -3778,10 +3976,6 @@ export function useFabricCanvas() {
 
       await restoreSnapshot(blankSnapshot, false);
 
-      const { width, height } = ASPECT_RATIO_PRESETS[nextRatio];
-      const starterTitle = createStarterTextbox(width, height);
-      canvas.add(starterTitle);
-      canvas.setActiveObject(starterTitle);
       canvas.requestRenderAll();
       syncSelectionAndLayers();
 
@@ -4085,6 +4279,12 @@ export function useFabricCanvas() {
     applySplitTemplate,
     applyBentoTemplate,
     fillTemplateSlot,
+    replaceActiveImageFromFile,
+    cropModeActive,
+    cropAspectRatio,
+    toggleCropMode,
+    setCropAspectRatio,
+    exitCropMode,
     updateTemplateSlotCorner,
     applyImageCutout,
     updateImageProps,

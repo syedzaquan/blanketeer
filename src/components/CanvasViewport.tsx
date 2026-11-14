@@ -9,7 +9,9 @@ import {
   type RefObject,
 } from 'react';
 import {
+  Check,
   ClipboardPaste,
+  Crop,
   ImagePlus,
   Lock,
   Maximize2,
@@ -18,9 +20,11 @@ import {
   RotateCcw,
   Type,
   Unlock,
+  X,
 } from 'lucide-react';
 import { useWindowSize } from '../hooks/useWindowSize';
 import type {
+  CropAspectRatio,
   OverflowControlKey,
   SelectionBoxSnapshot,
   TextEditingSelectionState,
@@ -92,6 +96,12 @@ interface CanvasViewportProps {
   onExitTextEditing?: () => void;
   selectedObjectLocked?: boolean | null;
   onToggleLock?: () => void;
+  canCropSelectedImage?: boolean;
+  cropModeActive?: boolean;
+  cropAspectRatio?: CropAspectRatio;
+  onToggleCropMode?: () => void;
+  onChangeCropAspectRatio?: (ratio: CropAspectRatio) => void;
+  onExitCropMode?: (commit: boolean) => void;
 }
 
 const DEFAULT_CANVAS_SCALE = 0.26;
@@ -161,6 +171,12 @@ export function CanvasViewport({
   onExitTextEditing,
   selectedObjectLocked = null,
   onToggleLock,
+  canCropSelectedImage = false,
+  cropModeActive = false,
+  cropAspectRatio = 'free',
+  onToggleCropMode,
+  onChangeCropAspectRatio,
+  onExitCropMode,
 }: CanvasViewportProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const frameWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -1240,6 +1256,24 @@ export function CanvasViewport({
         onPointerDown={(e) => e.stopPropagation()}
         className="absolute top-2.5 right-3 z-10 flex items-center gap-1.5"
       >
+        {(canCropSelectedImage || cropModeActive) && onToggleCropMode && (
+          <button
+            type="button"
+            onClick={onToggleCropMode}
+            disabled={Boolean(selectedObjectLocked) && !cropModeActive}
+            aria-label={cropModeActive ? 'Finish cropping image' : 'Crop selected image'}
+            title={cropModeActive ? 'Finish cropping' : 'Crop image'}
+            className={cn(
+              'flex items-center justify-center p-2.5 lg:p-1.5 rounded-lg lg:rounded-md border transition-colors disabled:opacity-40 disabled:pointer-events-none',
+              cropModeActive
+                ? 'bg-sky-500 border-sky-400 text-neutral-950'
+                : 'bg-[#1c1c1e] border-neutral-700/80 text-neutral-300 hover:text-white'
+            )}
+          >
+            <Crop className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+          </button>
+        )}
+
         {selectedObjectLocked !== null && onToggleLock && (
           <button
             type="button"
@@ -1410,6 +1444,65 @@ export function CanvasViewport({
           <p className="text-xs font-medium text-neutral-100">
             Drop image to add layer
           </p>
+        </div>
+      )}
+
+      {/* Crop Mode Aspect Ratio & Apply/Cancel Bar */}
+      {cropModeActive && onChangeCropAspectRatio && onExitCropMode && (
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 rounded-xl border border-neutral-700/90 bg-neutral-900/95 px-2.5 py-1.5 shadow-2xl backdrop-blur-md"
+        >
+          <div className="flex items-center gap-1">
+            {(
+              [
+                { id: 'free', label: 'Free' },
+                { id: '1:1', label: '1:1' },
+                { id: '4:5', label: '4:5' },
+                { id: '5:4', label: '5:4' },
+                { id: '9:16', label: '9:16' },
+                { id: '16:9', label: '16:9' },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => onChangeCropAspectRatio(opt.id)}
+                className={cn(
+                  'px-2 py-1 rounded-md text-xs lg:text-[11px] font-medium transition-colors',
+                  cropAspectRatio === opt.id
+                    ? 'bg-sky-500 text-neutral-950'
+                    : 'text-neutral-300 hover:text-white hover:bg-neutral-800'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-4 bg-neutral-700 mx-0.5" />
+
+          <button
+            type="button"
+            onClick={() => onExitCropMode(false)}
+            aria-label="Cancel crop"
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs lg:text-[11px] font-medium text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Cancel</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onExitCropMode(true)}
+            aria-label="Apply crop"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs lg:text-[11px] font-medium bg-neutral-100 hover:bg-white text-neutral-950 transition-colors"
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>Done</span>
+          </button>
         </div>
       )}
 

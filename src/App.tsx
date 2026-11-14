@@ -94,6 +94,12 @@ export function App() {
     applySplitTemplate,
     applyBentoTemplate,
     fillTemplateSlot,
+    replaceActiveImageFromFile,
+    cropModeActive,
+    cropAspectRatio,
+    toggleCropMode,
+    setCropAspectRatio,
+    exitCropMode,
     updateTemplateSlotCorner,
     applyImageCutout,
     updateImageProps,
@@ -137,7 +143,12 @@ export function App() {
     exportImage,
     exportProjectJSON,
     importProjectJSON,
-  } = useFabricCanvas();
+  } = useFabricCanvas({
+    onRequestFillSlot: (slotId) => {
+      pendingSlotIdRef.current = slotId;
+      slotImageInputRef.current?.click();
+    },
+  });
 
   const showMobileInspector = mobileSheet === 'inspector' && Boolean(selectedObject);
   const showMobileToolSheet = mobileSheet === 'tool';
@@ -201,6 +212,7 @@ export function App() {
           onAddImageFile={(file) => void addImageFromFile(file)}
           onApplyCutout={applyImageCutout}
           onUpdateImageProps={updateImageProps}
+          onReplaceImage={(file) => void replaceActiveImageFromFile(file)}
         />
       );
     }
@@ -414,6 +426,12 @@ export function App() {
                 toggleLayerLock(selectedObject.id);
               }
             }}
+            canCropSelectedImage={selectedObject?.kind === 'image'}
+            cropModeActive={cropModeActive}
+            cropAspectRatio={cropAspectRatio}
+            onToggleCropMode={toggleCropMode}
+            onChangeCropAspectRatio={setCropAspectRatio}
+            onExitCropMode={exitCropMode}
           />
 
           <PageStrip
@@ -430,8 +448,6 @@ export function App() {
               selectedObject={selectedObject}
               onOpenMobileInspector={() => setMobileSheet('inspector')}
               onTriggerFillSlot={triggerFillSlot}
-              onAddText={() => void addText('heading')}
-              onTriggerImageUpload={() => quickImageInputRef.current?.click()}
               onBringForward={bringForward}
               onSendBackward={sendBackward}
               onBringToFront={bringToFront}
@@ -494,10 +510,13 @@ export function App() {
               toggleLayerLock(selectedObject.id);
             }
           }}
+          cropModeActive={cropModeActive}
+          onToggleCropMode={toggleCropMode}
           onUpdateText={(patch) => void updateTextProps(patch)}
           onApplyTextPreset={(preset) => void applyTextPreset(preset)}
           onApplyCutout={applyImageCutout}
           onUpdateImageProps={updateImageProps}
+          onReplaceImage={(file) => void replaceActiveImageFromFile(file)}
           onTriggerFillSlot={triggerFillSlot}
           onUpdateSlotCorner={updateTemplateSlotCorner}
           onUpdateShape={updateShapeProps}

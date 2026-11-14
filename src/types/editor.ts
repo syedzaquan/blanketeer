@@ -327,6 +327,8 @@ export interface SelectionBoxSnapshot {
   controls: Partial<Record<OverflowControlKey, { x: number; y: number }>>;
 }
 
+export type CropAspectRatio = 'free' | '1:1' | '4:5' | '5:4' | '9:16' | '16:9';
+
 export interface CanvasPageSnapshot {
   id: string;
   name: string;

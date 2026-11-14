@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -6,6 +6,7 @@ import {
   FlipHorizontal2,
   FlipVertical2,
   Heart,
+  ImagePlus,
   Link2,
   Link2Off,
   RotateCcw,
@@ -56,6 +57,7 @@ interface ImageStyleControlsProps {
   showTransformControls?: boolean;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
   onUpdateImageProps: (patch: ImagePropsPatch) => void;
+  onReplaceImage?: (file: File) => void;
 }
 
 const SIZE_PERCENT_PRESETS = [100, 50, 25] as const;
@@ -204,7 +206,9 @@ export function ImageStyleControls({
   showTransformControls = true,
   onApplyCutout,
   onUpdateImageProps,
+  onReplaceImage,
 }: ImageStyleControlsProps) {
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   const strokeWidth = selectedImage?.strokeWidth ?? 0;
   const strokeColor = selectedImage?.strokeColor ?? '#ffffff';
   const strokeStyle = selectedImage?.strokeStyle ?? 'solid';
@@ -232,6 +236,32 @@ export function ImageStyleControls({
 
   return (
     <>
+      {onReplaceImage && selectedImage && (
+        <div className="border-t border-neutral-800/80 pt-3.5">
+          <input
+            ref={replaceInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file && file.type.startsWith('image/')) {
+                onReplaceImage(file);
+              }
+              e.target.value = '';
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => replaceInputRef.current?.click()}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 lg:py-2 px-3 rounded-lg lg:rounded-md bg-neutral-100 hover:bg-white text-neutral-950 text-sm lg:text-xs font-medium transition-colors"
+          >
+            <ImagePlus className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+            <span>Replace Image</span>
+          </button>
+        </div>
+      )}
+
       {/* Dimensions */}
       <div className="border-t border-neutral-800/80 pt-3.5">
         <div className="flex items-center justify-between mb-2">

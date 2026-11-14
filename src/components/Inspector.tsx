@@ -10,6 +10,7 @@ import {
   ArrowUpToLine,
   Bold,
   Copy,
+  Crop,
   FlipHorizontal2,
   FlipVertical2,
   ImagePlus,
@@ -59,6 +60,8 @@ interface InspectorProps {
   mobileOpen: boolean;
   onCloseMobile: () => void;
   onToggleLock: () => void;
+  cropModeActive?: boolean;
+  onToggleCropMode?: () => void;
   onUpdateText: (
     patch: Partial<{
       text: string;
@@ -86,6 +89,7 @@ interface InspectorProps {
   onApplyTextPreset: (preset: TextStylePresetId) => void;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
   onUpdateImageProps: (patch: ImagePropsPatch) => void;
+  onReplaceImage?: (file: File) => void;
   onTriggerFillSlot: (slotId: string) => void;
   onUpdateSlotCorner: (slotId: string, cornerPercent: number) => void;
   onUpdateShape: (
@@ -141,10 +145,13 @@ export function Inspector({
   mobileOpen,
   onCloseMobile,
   onToggleLock,
+  cropModeActive = false,
+  onToggleCropMode,
   onUpdateText,
   onApplyTextPreset,
   onApplyCutout,
   onUpdateImageProps,
+  onReplaceImage,
   onTriggerFillSlot,
   onUpdateSlotCorner,
   onUpdateShape,
@@ -250,6 +257,23 @@ export function Inspector({
         </div>
 
         <div className="flex items-center gap-1.5 lg:gap-1">
+          {(selectedObject.kind === 'image' || cropModeActive) && onToggleCropMode && (
+            <button
+              type="button"
+              onClick={onToggleCropMode}
+              disabled={selectedObject.locked && !cropModeActive}
+              aria-label={cropModeActive ? 'Finish cropping image' : 'Crop image'}
+              title={cropModeActive ? 'Finish cropping' : 'Crop image'}
+              className={cn(
+                'p-2.5 lg:p-1.5 rounded-lg lg:rounded-md border transition-colors disabled:opacity-40 disabled:pointer-events-none',
+                cropModeActive
+                  ? 'bg-sky-500 border-sky-400 text-neutral-950'
+                  : 'bg-neutral-800/80 hover:bg-neutral-700 border-neutral-700 text-neutral-300'
+              )}
+            >
+              <Crop className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={onToggleLock}
@@ -418,7 +442,7 @@ export function Inspector({
               value={selectedObject.text}
               onChange={(e) => onUpdateText({ text: e.target.value })}
               className="w-full min-h-[108px] px-3 py-2.5 lg:px-2.5 lg:py-2 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 placeholder:text-neutral-100/50 focus:outline-none focus:border-neutral-500 resize-y"
-              placeholder="Add your text"
+              placeholder="Type text..."
             />
           </div>
 
@@ -1086,6 +1110,7 @@ export function Inspector({
           showTransformControls={false}
           onApplyCutout={onApplyCutout}
           onUpdateImageProps={onUpdateImageProps}
+          onReplaceImage={onReplaceImage}
         />
       )}
 

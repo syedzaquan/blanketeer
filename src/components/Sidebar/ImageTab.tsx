@@ -14,6 +14,7 @@ interface ImageTabProps {
   onAddImageFile: (file: File) => void;
   onApplyCutout: (shape: CutoutShape, cornerPercent?: number) => void;
   onUpdateImageProps: (patch: ImagePropsPatch) => void;
+  onReplaceImage?: (file: File) => void;
 }
 
 export function ImageTab({
@@ -23,6 +24,7 @@ export function ImageTab({
   onAddImageFile,
   onApplyCutout,
   onUpdateImageProps,
+  onReplaceImage,
 }: ImageTabProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -155,6 +157,7 @@ export function ImageTab({
         idPrefix="image-tab"
         onApplyCutout={onApplyCutout}
         onUpdateImageProps={onUpdateImageProps}
+        onReplaceImage={onReplaceImage}
       />
     </div>
   );

@@ -8,36 +8,12 @@ import {
   SlidersHorizontal,
   Trash2,
 } from 'lucide-react';
-
-function TypePlusIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M3 8V6h11v2" />
-      <path d="M8.5 6v13" />
-      <path d="M6 19h5" />
-      <path d="M19 3v6" />
-      <path d="M16 6h6" />
-    </svg>
-  );
-}
 import type { SelectedObjectState } from '../types/editor';
 
 interface ToolbarProps {
   selectedObject: SelectedObjectState | null;
   onOpenMobileInspector: () => void;
   onTriggerFillSlot?: (slotId: string) => void;
-  onAddText: () => void;
-  onTriggerImageUpload: () => void;
   onBringForward: () => void;
   onSendBackward: () => void;
   onBringToFront: () => void;
@@ -50,8 +26,6 @@ export function Toolbar({
   selectedObject,
   onOpenMobileInspector,
   onTriggerFillSlot,
-  onAddText,
-  onTriggerImageUpload,
   onBringForward,
   onSendBackward,
   onBringToFront,
@@ -59,33 +33,12 @@ export function Toolbar({
   onDuplicate,
   onDelete,
 }: ToolbarProps) {
+  if (!selectedObject) return null;
+
   return (
     <div className="shrink-0 w-full px-2 py-2 border-t border-neutral-800/80 bg-[#0f0f0f] flex items-center justify-center lg:pointer-events-none lg:w-auto lg:border-0 lg:bg-transparent lg:p-0 lg:absolute lg:bottom-3.5 lg:left-1/2 lg:-translate-x-1/2 lg:z-20">
       <div className="pointer-events-auto flex items-center gap-1 lg:gap-0.5 p-1 rounded-xl lg:rounded-lg bg-[#1c1c1e] border border-neutral-700/80 max-w-full overflow-x-auto">
-        {!selectedObject ? (
-          <>
-            <button
-              type="button"
-              onClick={onAddText}
-              aria-label="Add Text"
-              title="Add Text"
-              className="flex items-center justify-center px-3 py-2 lg:px-2 lg:py-1.5 rounded-lg lg:rounded-md text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors shrink-0"
-            >
-              <TypePlusIcon className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
-            </button>
-            <div className="w-px h-5 lg:h-3.5 bg-neutral-800 mx-0.5 shrink-0" />
-            <button
-              type="button"
-              onClick={onTriggerImageUpload}
-              aria-label="Add Image"
-              title="Add Image"
-              className="flex items-center justify-center px-3 py-2 lg:px-2 lg:py-1.5 rounded-lg lg:rounded-md text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors shrink-0"
-            >
-              <ImagePlus className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
-            </button>
-          </>
-        ) : (
-          <>
+        <>
             {selectedObject.kind === 'slot' && onTriggerFillSlot && (
               <>
                 <button
@@ -165,8 +118,7 @@ export function Toolbar({
             >
               <Trash2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
             </button>
-          </>
-        )}
+        </>
       </div>
     </div>
   );
