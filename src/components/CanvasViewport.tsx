@@ -48,9 +48,9 @@ interface CanvasViewportProps {
   onToggleSafeArea?: () => void;
   onOpenPreview?: () => void;
   onDeselectAll: () => void;
-  onDropImageFile: (file: File) => void;
-  onAddText?: () => void;
-  onTriggerImageUpload?: () => void;
+  onDropImageFile: (file: File, position?: { x: number; y: number }) => void;
+  onAddText?: (position?: { x: number; y: number }) => void;
+  onTriggerImageUpload?: (position?: { x: number; y: number }) => void;
   onRecalculateOffset: () => void;
   onCanPanCanvasAt?: (e: globalThis.MouseEvent | globalThis.TouchEvent) => boolean;
   onGetTouchHitKind?: (
@@ -102,6 +102,7 @@ interface CanvasViewportProps {
   onToggleCropMode?: () => void;
   onChangeCropAspectRatio?: (ratio: CropAspectRatio) => void;
   onExitCropMode?: (commit: boolean) => void;
+  isCanvasEmpty?: boolean;
 }
 
 const DEFAULT_CANVAS_SCALE = 0.26;
@@ -177,6 +178,7 @@ export function CanvasViewport({
   onToggleCropMode,
   onChangeCropAspectRatio,
   onExitCropMode,
+  isCanvasEmpty = true,
 }: CanvasViewportProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const frameWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -200,6 +202,7 @@ export function CanvasViewport({
     x: number;
     y: number;
     showPaste: boolean;
+    canvasPoint?: { x: number; y: number };
   } | null>(null);
   const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
   const clipboardNoticeTimerRef = useRef<number | null>(null);
@@ -237,10 +240,22 @@ export function CanvasViewport({
         Math.min(rect.height - 56, clientY - rect.top)
       );
 
+      const frameRect = frameBoxRef.current?.getBoundingClientRect();
+      let canvasPoint: { x: number; y: number } | undefined;
+      if (frameRect && frameRect.width > 0 && frameRect.height > 0) {
+        const rawX = ((clientX - frameRect.left) / frameRect.width) * canvasWidth;
+        const rawY = ((clientY - frameRect.top) / frameRect.height) * canvasHeight;
+        canvasPoint = {
+          x: Math.max(0, Math.min(canvasWidth, Math.round(rawX))),
+          y: Math.max(0, Math.min(canvasHeight, Math.round(rawY))),
+        };
+      }
+
       setCanvasTapPopover({
         x,
         y,
         showPaste: true,
+        canvasPoint,
       });
 
       void hasClipboardImageSilently().then((hasImg) => {
@@ -251,10 +266,11 @@ export function CanvasViewport({
         }
       });
     },
-    []
+    [canvasHeight, canvasWidth]
   );
 
   const handleDirectPaste = useCallback(async () => {
+    const pastePoint = canvasTapPopover?.canvasPoint;
     setCanvasTapPopover(null);
     if (!canReadClipboard()) {
       showClipboardNotice('Clipboard paste requires HTTPS');
@@ -264,14 +280,14 @@ export function CanvasViewport({
     try {
       const file = await readImageFileFromClipboard();
       if (file) {
-        onDropImageFile(file);
+        onDropImageFile(file, pastePoint);
       } else {
         showClipboardNotice('No image in clipboard');
       }
     } catch {
       showClipboardNotice('Clipboard access blocked');
     }
-  }, [onDropImageFile, showClipboardNotice]);
+  }, [canvasTapPopover, onDropImageFile, showClipboardNotice]);
 
   const canvasScale =
     viewState.aspectKey === aspectKey ? viewState.scale : DEFAULT_CANVAS_SCALE;
@@ -437,7 +453,7 @@ export function CanvasViewport({
         };
       });
     },
-    []
+    [canvasHeight, canvasWidth]
   );
 
   const resetViewport = useCallback(() => {
@@ -1381,8 +1397,9 @@ export function CanvasViewport({
               type="button"
               role="menuitem"
               onClick={() => {
+                const pt = canvasTapPopover.canvasPoint;
                 setCanvasTapPopover(null);
-                onAddText();
+                onAddText(pt);
               }}
               className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:py-1.5 text-xs font-medium text-neutral-100 hover:bg-neutral-800 active:bg-neutral-700 transition-colors whitespace-nowrap"
             >
@@ -1395,8 +1412,9 @@ export function CanvasViewport({
               type="button"
               role="menuitem"
               onClick={() => {
+                const pt = canvasTapPopover.canvasPoint;
                 setCanvasTapPopover(null);
-                onTriggerImageUpload();
+                onTriggerImageUpload(pt);
               }}
               className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:py-1.5 text-xs font-medium text-neutral-100 hover:bg-neutral-800 active:bg-neutral-700 transition-colors whitespace-nowrap"
             >
@@ -1434,7 +1452,7 @@ export function CanvasViewport({
       )}
 
       {/* First-Load 3-Second Instruction Hint */}
-      {showFirstLoadHint && !canvasTapPopover && !clipboardNotice && (
+      {showFirstLoadHint && isCanvasEmpty && !canvasTapPopover && !clipboardNotice && (
         <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 rounded-full border border-neutral-700/80 bg-neutral-900/90 px-4 py-2 text-xs font-medium text-neutral-100 shadow-xl backdrop-blur-md whitespace-nowrap">
           Tap canvas to add text or image
         </div>

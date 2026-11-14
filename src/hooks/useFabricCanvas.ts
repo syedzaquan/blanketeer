@@ -1601,7 +1601,11 @@ export function useFabricCanvas(options?: {
   }, [applyCanvasBackground, cancelPendingBgWork, commitHistoryNow]);
 
   const addText = useCallback(
-    async (presetType: TextStylePresetId = 'heading', fontFamily?: string) => {
+    async (
+      presetType: TextStylePresetId = 'heading',
+      fontFamily?: string,
+      position?: { x: number; y: number }
+    ) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -1622,8 +1626,8 @@ export function useFabricCanvas(options?: {
       }
 
       const textbox = new StoryTextbox(cfg.defaultText, {
-        left: width / 2,
-        top: height / 2,
+        left: position?.x ?? width / 2,
+        top: position?.y ?? height / 2,
         width: cfg.boxWidth,
         originX: 'center',
         originY: 'center',
@@ -1865,7 +1869,7 @@ export function useFabricCanvas(options?: {
   };
 
   const addImageFromFile = useCallback(
-    async (file: File) => {
+    async (file: File, position?: { x: number; y: number }) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -1889,8 +1893,8 @@ export function useFabricCanvas(options?: {
       );
 
       img.set({
-        left: width / 2,
-        top: height / 2,
+        left: position?.x ?? width / 2,
+        top: position?.y ?? height / 2,
         originX: 'center',
         originY: 'center',
         scaleX: scale,

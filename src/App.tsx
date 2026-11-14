@@ -49,6 +49,7 @@ export function App() {
   const [showExportPagesModal, setShowExportPagesModal] = useState(false);
   const [showFullPreview, setShowFullPreview] = useState(false);
   const quickImageInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingImagePointRef = useRef<{ x: number; y: number } | null>(null);
   const slotImageInputRef = useRef<HTMLInputElement | null>(null);
   const pendingSlotIdRef = useRef<string | null>(null);
 
@@ -157,8 +158,10 @@ export function App() {
 
   const handleQuickImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    const point = pendingImagePointRef.current ?? undefined;
+    pendingImagePointRef.current = null;
     if (file && file.type.startsWith('image/')) {
-      void addImageFromFile(file);
+      void addImageFromFile(file, point);
     }
     e.target.value = '';
   };
@@ -400,9 +403,12 @@ export function App() {
               deselectAll();
               setMobileSheet((prev) => (prev === 'inspector' ? 'none' : prev));
             }}
-            onDropImageFile={(file) => void addImageFromFile(file)}
-            onAddText={() => void addText('heading')}
-            onTriggerImageUpload={() => quickImageInputRef.current?.click()}
+            onDropImageFile={(file, pt) => void addImageFromFile(file, pt)}
+            onAddText={(pt) => void addText('heading', undefined, pt)}
+            onTriggerImageUpload={(pt) => {
+              pendingImagePointRef.current = pt ?? null;
+              quickImageInputRef.current?.click();
+            }}
             onRecalculateOffset={recalculateOffset}
             onCanPanCanvasAt={canPanCanvasAt}
             onGetTouchHitKind={getTouchHitKind}
@@ -433,6 +439,7 @@ export function App() {
             onToggleCropMode={toggleCropMode}
             onChangeCropAspectRatio={setCropAspectRatio}
             onExitCropMode={exitCropMode}
+            isCanvasEmpty={layers.length === 0 && !canUndo}
           />
 
           <PageStrip
