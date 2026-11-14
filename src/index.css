@@ -556,6 +556,87 @@
   font-display: swap;
 }
 
+/* Local Font Family: Plantin MT Pro (300, 400, 600, 700, Normal & Italic) */
+@font-face {
+  font-family: 'Plantin MT Pro';
+  src:
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Light.woff2') format('woff2'),
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plantin MT Pro';
+  src:
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-LightItalic.woff2') format('woff2'),
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-LightItalic.woff') format('woff');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plantin MT Pro';
+  src:
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Regular.woff2') format('woff2'),
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plantin MT Pro';
+  src:
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Italic.woff2') format('woff2'),
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Italic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plantin MT Pro';
+  src:
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Semibold.woff2') format('woff2'),
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Semibold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plantin MT Pro';
+  src:
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-SemiboldIt.woff2') format('woff2'),
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-SemiboldIt.woff') format('woff');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plantin MT Pro';
+  src:
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Bold.woff2') format('woff2'),
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plantin MT Pro';
+  src:
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-BoldItalic.woff2') format('woff2'),
+    url('./assets/fonts/plantin-mt-pro/PlantinMTPro-BoldItalic.woff') format('woff');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 @layer base {
   html,
   body,

@@ -56,6 +56,18 @@ const CASLON_ANTIQUE_WEIGHTS: FontWeightOption[] = [
   { value: 700, label: 'Bold' },
 ];
 
+const PLANTIN_WEIGHTS: FontWeightOption[] = [
+  { value: 300, label: 'Light' },
+  { value: 400, label: 'Regular' },
+  { value: 600, label: 'SemiBold' },
+  { value: 700, label: 'Bold' },
+];
+
+const LIBRE_BASKERVILLE_WEIGHTS: FontWeightOption[] = [
+  { value: 400, label: 'Regular' },
+  { value: 700, label: 'Bold' },
+];
+
 const LT_STAIRCASE_WEIGHTS: FontWeightOption[] = [
   { value: 400, label: 'Regular' },
 ];
@@ -130,6 +142,21 @@ export const SUPPORTED_FONTS: FontOption[] = [
     source: 'custom',
     categoryLabel: 'Vintage Serif',
     availableWeights: CASLON_ANTIQUE_WEIGHTS,
+  },
+  {
+    name: 'Plantin MT Pro',
+    family: 'Plantin MT Pro',
+    source: 'custom',
+    categoryLabel: 'Editorial Serif',
+    availableWeights: PLANTIN_WEIGHTS,
+  },
+  {
+    name: 'Libre Baskerville',
+    family: 'Libre Baskerville',
+    source: 'google',
+    url: 'https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap',
+    categoryLabel: 'Editorial Serif',
+    availableWeights: LIBRE_BASKERVILLE_WEIGHTS,
   },
   {
     name: 'IM Fell DW Pica',
