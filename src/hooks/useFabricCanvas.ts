@@ -1682,6 +1682,8 @@ export function useFabricCanvas(options?: {
         pillPaddingX: number;
         pillPaddingY: number;
         textShadowEnabled: boolean;
+        inkBleed: boolean;
+        inkBleedAmount: number;
       }>
     ) => {
       const canvas = canvasRef.current;

@@ -84,6 +84,8 @@ interface InspectorProps {
       pillPaddingX: number;
       pillPaddingY: number;
       textShadowEnabled: boolean;
+      inkBleed: boolean;
+      inkBleedAmount: number;
     }>
   ) => void;
   onApplyTextPreset: (preset: TextStylePresetId) => void;
@@ -975,7 +977,45 @@ export function Inspector({
               >
                 Shadow {selectedObject.textShadowEnabled ? 'On' : 'Off'}
               </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateText({
+                    inkBleed: !selectedObject.inkBleed,
+                  })
+                }
+                aria-pressed={selectedObject.inkBleed}
+                className={cn(
+                  'py-2 lg:py-1 px-2.5 rounded-lg lg:rounded-md border text-xs lg:text-[11px] font-medium transition-colors',
+                  selectedObject.inkBleed
+                    ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                    : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:text-white'
+                )}
+              >
+                Ink Bleed {selectedObject.inkBleed ? 'On' : 'Off'}
+              </button>
             </div>
+
+            {selectedObject.inkBleed && (
+              <div>
+                <div className="flex items-center justify-between text-xs lg:text-[11px] text-neutral-400 mb-1">
+                  <span>Ink Bleed Amount</span>
+                  <span className="font-mono text-neutral-300">
+                    {selectedObject.inkBleedAmount.toFixed(1)}
+                  </span>
+                </div>
+                <RangeSlider
+                  min={1}
+                  max={10}
+                  step={0.5}
+                  value={selectedObject.inkBleedAmount}
+                  onValueChange={(inkBleedAmount) =>
+                    onUpdateText({ inkBleedAmount })
+                  }
+                />
+              </div>
+            )}
           </div>
 
           {/* Text Color */}
