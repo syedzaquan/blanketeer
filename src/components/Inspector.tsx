@@ -233,7 +233,7 @@ export function Inspector({
       className={cn(
         'border-neutral-800/80 bg-[#0f0f0f] p-4 lg:p-3.5 overflow-y-auto flex-col gap-4 lg:gap-3.5 shrink-0',
         mobileOpen
-          ? 'flex w-full h-[44vh] max-h-[420px] border-t lg:w-72 lg:h-auto lg:max-h-none lg:border-t-0 lg:border-l'
+          ? 'flex w-full h-[32vh] max-h-[280px] border-t lg:w-72 lg:h-auto lg:max-h-none lg:border-t-0 lg:border-l'
           : 'hidden lg:flex lg:w-72 lg:border-l'
       )}
     >

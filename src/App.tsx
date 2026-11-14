@@ -320,6 +320,7 @@ export function App() {
         onResetProject={() => setShowResetConfirm(true)}
         onExportImage={(format) => void handleExportImage(format)}
         onOpenExportPages={() => setShowExportPagesModal(true)}
+        onAddPage={() => void addPage(true)}
         pageCount={pages.length}
         onExportProjectJSON={exportProjectJSON}
         onImportProjectJSON={(file) => {
@@ -462,36 +463,36 @@ export function App() {
         {showMobileToolSheet && (
           <section
             aria-label={`${activeTabLabel} panel`}
-            className="lg:hidden w-full h-[44vh] max-h-[420px] shrink-0 border-t border-neutral-800 bg-[#0f0f0f] flex flex-col overflow-hidden z-20"
+            className="lg:hidden w-full h-[32vh] max-h-[280px] shrink-0 border-t border-neutral-800 bg-[#0f0f0f] flex flex-col overflow-hidden z-20"
           >
-            <div className="h-11 px-4 border-b border-neutral-800/80 flex items-center justify-between shrink-0">
-              <span className="text-sm font-medium text-neutral-200">
+            <div className="h-9 px-3 border-b border-neutral-800/80 flex items-center justify-between shrink-0">
+              <span className="text-xs font-medium text-neutral-200">
                 {activeTabLabel}
               </span>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 {selectedObject && (
                   <button
                     type="button"
                     onClick={() => setMobileSheet('inspector')}
                     aria-label="Layer properties"
                     title="Layer properties"
-                    className="p-2 rounded-lg bg-neutral-800 text-neutral-100"
+                    className="p-1.5 rounded-md bg-neutral-800 text-neutral-100"
                   >
-                    <SlidersHorizontal className="w-4 h-4" />
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setMobileSheet('none')}
-                  className="p-2 rounded-lg text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                  className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
                   aria-label="Close tool panel"
                   title="Close"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto p-4">{renderTabContent()}</div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-3">{renderTabContent()}</div>
           </section>
         )}
 
@@ -536,7 +537,7 @@ export function App() {
       {/* Mobile / Tablet Bottom Navigation Dock */}
       <nav
         aria-label="Mobile editor tools"
-        className="lg:hidden shrink-0 border-t border-neutral-800 bg-[#0f0f0f] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around gap-1.5 z-30"
+        className="lg:hidden shrink-0 border-t border-neutral-800 bg-[#0f0f0f] px-2 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] flex items-center justify-around gap-1 z-30"
       >
         {SIDEBAR_TABS.map((tab) => {
           const Icon = tab.icon;
@@ -556,7 +557,7 @@ export function App() {
               aria-label={tab.label}
               title={tab.label}
               className={cn(
-                'flex-1 min-h-[48px] py-2 rounded-lg flex items-center justify-center transition-colors',
+                'flex-1 min-h-[40px] py-1.5 rounded-lg flex items-center justify-center transition-colors',
                 active
                   ? 'bg-neutral-700 text-white'
                   : 'text-neutral-400 hover:text-neutral-100'
@@ -577,7 +578,7 @@ export function App() {
           aria-label="Edit selected layer properties"
           title={selectedObject ? 'Edit selected layer properties' : 'Select a layer to edit'}
           className={cn(
-            'relative flex-1 min-h-[48px] py-2 rounded-lg flex items-center justify-center transition-colors',
+            'relative flex-1 min-h-[40px] py-1.5 rounded-lg flex items-center justify-center transition-colors',
             !selectedObject
               ? 'text-neutral-700 cursor-not-allowed'
               : showMobileInspector

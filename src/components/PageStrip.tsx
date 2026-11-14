@@ -19,8 +19,10 @@ export const PageStrip: React.FC<PageStripProps> = ({
   onDuplicatePage,
   onDeletePage,
 }) => {
+  if (pages.length <= 1) return null;
+
   return (
-    <div className="shrink-0 h-16 border-t border-white/10 bg-[#0d0d11]/95 backdrop-blur-md px-3 flex items-center gap-2 overflow-x-auto no-scrollbar z-20">
+    <div className="shrink-0 h-12 border-t border-white/10 bg-[#0d0d11]/95 backdrop-blur-md px-3 flex items-center gap-2 overflow-x-auto no-scrollbar z-20">
       <div className="flex items-center gap-2 mx-auto min-w-max">
         {pages.map((page, index) => {
           const isActive = page.id === activePageId;

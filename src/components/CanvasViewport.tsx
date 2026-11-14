@@ -203,6 +203,14 @@ export function CanvasViewport({
   } | null>(null);
   const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
   const clipboardNoticeTimerRef = useRef<number | null>(null);
+  const [showFirstLoadHint, setShowFirstLoadHint] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowFirstLoadHint(false);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const showClipboardNotice = useCallback((msg: string) => {
     setClipboardNotice(msg);
@@ -1305,7 +1313,7 @@ export function CanvasViewport({
             disabled={canvasScale <= MIN_CANVAS_SCALE + 0.001}
             aria-label="Zoom out canvas"
             title="Zoom out (Cmd/Ctrl -)"
-            className="p-2 lg:p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
+            className="hidden sm:inline-flex p-2 lg:p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
           >
             <Minus className="w-4 h-4 lg:w-3 lg:h-3" />
           </button>
@@ -1326,25 +1334,22 @@ export function CanvasViewport({
             disabled={canvasScale >= MAX_CANVAS_SCALE - 0.001}
             aria-label="Zoom in canvas"
             title="Zoom in (Cmd/Ctrl +)"
-            className="p-2 lg:p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
+            className="hidden sm:inline-flex p-2 lg:p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-35 disabled:pointer-events-none transition-colors"
           >
             <Plus className="w-4 h-4 lg:w-3 lg:h-3" />
           </button>
 
-          <button
-            type="button"
-            onClick={resetViewport}
-            aria-label="Reset canvas position and zoom"
-            title="Reset to default position & 26% zoom (Cmd/Ctrl 0)"
-            className={cn(
-              'p-2 lg:p-1 rounded flex items-center justify-center transition-colors',
-              isZoomedOrPanned
-                ? 'bg-neutral-800 text-neutral-100 hover:bg-neutral-700'
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800'
-            )}
-          >
-            <RotateCcw className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
-          </button>
+          {isZoomedOrPanned && (
+            <button
+              type="button"
+              onClick={resetViewport}
+              aria-label="Reset canvas position and zoom"
+              title="Reset to default position & 26% zoom (Cmd/Ctrl 0)"
+              className="p-2 lg:p-1 rounded flex items-center justify-center bg-neutral-800 text-neutral-100 hover:bg-neutral-700 transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
+            </button>
+          )}
         </div>
 
         <button
@@ -1425,6 +1430,13 @@ export function CanvasViewport({
               strokeWidth="1"
             />
           </svg>
+        </div>
+      )}
+
+      {/* First-Load 3-Second Instruction Hint */}
+      {showFirstLoadHint && !canvasTapPopover && !clipboardNotice && (
+        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 rounded-full border border-neutral-700/80 bg-neutral-900/90 px-4 py-2 text-xs font-medium text-neutral-100 shadow-xl backdrop-blur-md whitespace-nowrap">
+          Tap canvas to add text or image
         </div>
       )}
 

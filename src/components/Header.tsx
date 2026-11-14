@@ -5,6 +5,7 @@ import {
   FileDown,
   FileUp,
   Layers,
+  Plus,
   Redo2,
   RotateCcw,
   Undo2,
@@ -26,6 +27,7 @@ interface HeaderProps {
   onResetProject: () => void;
   onExportImage: (format: ExportImageFormat) => void;
   onOpenExportPages: () => void;
+  onAddPage?: () => void;
   pageCount: number;
   onExportProjectJSON: () => void;
   onImportProjectJSON: (file: File) => void;
@@ -41,6 +43,7 @@ export function Header({
   onResetProject,
   onExportImage,
   onOpenExportPages,
+  onAddPage,
   pageCount,
   onExportProjectJSON,
   onImportProjectJSON,
@@ -75,12 +78,12 @@ export function Header({
 
   return (
     <header className="shrink-0 border-b border-neutral-800/80 bg-[#0f0f0f] z-30 flex flex-col lg:flex-row lg:h-11 lg:items-center lg:justify-between lg:px-3 lg:gap-2">
-      {/* Brand: centered top row on mobile/tablet, left-aligned on desktop */}
-      <div className="flex items-center justify-center gap-2.5 py-1.5 border-b border-neutral-800/60 lg:border-b-0 lg:py-0 lg:justify-start min-w-0">
+      {/* Brand: desktop only so mobile stays a single compact bar */}
+      <div className="hidden lg:flex items-center gap-2.5 min-w-0">
         <span className="text-xs font-semibold text-neutral-100 tracking-tight select-none">
           Blanketeer
         </span>
-        <span className="hidden lg:inline-block text-[11px] font-mono text-neutral-500">
+        <span className="text-[11px] font-mono text-neutral-500">
           {currentPreset.width}×{currentPreset.height}
         </span>
       </div>
@@ -223,6 +226,20 @@ export function Header({
                   <span>{item.label}</span>
                 </button>
               ))}
+
+              {onAddPage && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onAddPage();
+                  }}
+                  className="w-full px-3 py-2 lg:py-1.5 text-left hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5 text-neutral-400" />
+                  <span>Add New Slide</span>
+                </button>
+              )}
 
               <button
                 type="button"
