@@ -121,20 +121,9 @@ function clampPan(
   containerWidth: number,
   containerHeight: number
 ): { x: number; y: number } {
-  const maxX = Math.max(
-    48,
-    Math.min(
-      (containerWidth + scaledWidth) / 2 - 48,
-      Math.abs(scaledWidth - containerWidth) / 2 + 80
-    )
-  );
-  const maxY = Math.max(
-    48,
-    Math.min(
-      (containerHeight + scaledHeight) / 2 - 48,
-      Math.abs(scaledHeight - containerHeight) / 2 + 80
-    )
-  );
+  // Allow free panning across the viewport while keeping at least 32px of the canvas edge visible
+  const maxX = Math.max(240, (containerWidth + scaledWidth) / 2 - 32);
+  const maxY = Math.max(240, (containerHeight + scaledHeight) / 2 - 32);
   return {
     x: Math.min(maxX, Math.max(-maxX, panX)),
     y: Math.min(maxY, Math.max(-maxY, panY)),
