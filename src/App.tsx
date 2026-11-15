@@ -120,6 +120,9 @@ export function App() {
     bringToFront,
     sendToBack,
     duplicateActiveObject,
+    hasCopiedElement,
+    copyActiveObject,
+    pasteCopiedObject,
     deleteActiveObject,
     selectLayerById,
     toggleLayerVisibility,
@@ -421,7 +424,9 @@ export function App() {
               setMobileSheet((prev) => (prev === 'inspector' ? 'none' : prev));
             }}
             onDropImageFile={(file, pt) => void addImageFromFile(file, pt)}
-            onAddText={(pt) => void addText('heading', undefined, pt)}
+            onAddText={(pt) => void addText('heading', undefined, pt, 400)}
+            hasCopiedElement={hasCopiedElement}
+            onPasteElement={(pt) => void pasteCopiedObject(pt)}
             onTriggerImageUpload={(pt) => {
               pendingImagePointRef.current = pt ?? null;
               quickImageInputRef.current?.click();
@@ -456,7 +461,7 @@ export function App() {
             onToggleCropMode={toggleCropMode}
             onChangeCropAspectRatio={setCropAspectRatio}
             onExitCropMode={exitCropMode}
-            isCanvasEmpty={layers.length === 0 && !canUndo}
+            isCanvasEmpty={pages.length <= 1 && layers.length === 0 && !canUndo}
           />
 
           <PageStrip
@@ -553,6 +558,7 @@ export function App() {
           onSendBackward={sendBackward}
           onBringToFront={bringToFront}
           onSendToBack={sendToBack}
+          onCopy={() => void copyActiveObject()}
           onDuplicate={() => void duplicateActiveObject()}
           onDelete={handleDeleteActiveObject}
         />

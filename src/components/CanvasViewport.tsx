@@ -50,6 +50,8 @@ interface CanvasViewportProps {
   onDeselectAll: () => void;
   onDropImageFile: (file: File, position?: { x: number; y: number }) => void;
   onAddText?: (position?: { x: number; y: number }) => void;
+  hasCopiedElement?: boolean;
+  onPasteElement?: (position?: { x: number; y: number }) => void;
   onTriggerImageUpload?: (position?: { x: number; y: number }) => void;
   onRecalculateOffset: () => void;
   onCanPanCanvasAt?: (e: globalThis.MouseEvent | globalThis.TouchEvent) => boolean;
@@ -140,6 +142,8 @@ export function CanvasViewport({
   onDeselectAll,
   onDropImageFile,
   onAddText,
+  hasCopiedElement = false,
+  onPasteElement,
   onTriggerImageUpload,
   onRecalculateOffset,
   onCanPanCanvasAt,
@@ -199,7 +203,7 @@ export function CanvasViewport({
   const hasShownInitialHintRef = useRef(false);
 
   useEffect(() => {
-    const shouldShow = !hasShownInitialHintRef.current || isCanvasEmpty;
+    const shouldShow = !hasShownInitialHintRef.current && isCanvasEmpty;
     if (!shouldShow) {
       setShowFirstLoadHint(false);
       return;
@@ -1276,12 +1280,7 @@ export function CanvasViewport({
                     interactive ? 'pointer-events-auto' : 'pointer-events-none'
                   )}
                 >
-                  <span
-                    className={cn(
-                      'block rounded-full bg-white border-2 border-[#8b5cf6] shadow-sm',
-                      key === 'mtr' ? 'w-3.5 h-3.5' : 'w-3 h-3'
-                    )}
-                  />
+                  <span className="block w-3 h-3 rounded-full bg-white border-2 border-[#8b5cf6] shadow-sm" />
                 </button>
               );
             })}
@@ -1444,6 +1443,21 @@ export function CanvasViewport({
             >
               <ImagePlus className="w-3.5 h-3.5 text-neutral-300" />
               <span>Add Image</span>
+            </button>
+          )}
+          {hasCopiedElement && onPasteElement && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                const pt = canvasTapPopover.canvasPoint;
+                setCanvasTapPopover(null);
+                onPasteElement(pt);
+              }}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:py-1.5 text-xs font-medium text-emerald-300 hover:bg-neutral-800 active:bg-neutral-700 transition-colors whitespace-nowrap"
+            >
+              <ClipboardPaste className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Paste Element</span>
             </button>
           )}
           {canvasTapPopover.showPaste && (

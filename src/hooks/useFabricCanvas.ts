@@ -248,17 +248,39 @@ const DEFAULT_BACKGROUND: BackgroundState = {
 
 const MAX_HISTORY = 40;
 
-function computeControlSizes(cssScale = 0.26): { cornerSize: number; touchCornerSize: number } {
+let latestMtrOffsetY = -115;
+
+function computeControlSizes(cssScale = 0.26): {
+  cornerSize: number;
+  touchCornerSize: number;
+  borderScaleFactor: number;
+  mtrOffsetY: number;
+} {
   const safeScale = Math.max(0.1, cssScale);
   return {
-    // Keep visual corner dots ~8px and touch hit zones ~44px on screen regardless of CSS zoom.
-    cornerSize: Math.round(Math.min(34, Math.max(16, 8 / safeScale))),
+    // Keep visual corner dots ~12px, borders ~2px, rotation handle ~22px out, and touch hit zones ~44px on screen regardless of CSS zoom.
+    cornerSize: Math.round(Math.min(120, Math.max(12, 12 / safeScale))),
     touchCornerSize: Math.round(Math.min(200, Math.max(44, 44 / safeScale))),
+    borderScaleFactor: Math.min(20, Math.max(2, 2 / safeScale)),
+    mtrOffsetY: -Math.round(Math.min(180, Math.max(28, 22 / safeScale))),
   };
 }
 
-function applyControlStyling(cssScale = 0.26): { cornerSize: number; touchCornerSize: number } {
+function applyMtrOffsetToObject(obj: fabric.FabricObject, mtrOffsetY: number): boolean {
+  const mtr = obj.controls?.mtr;
+  if (!mtr || mtr.offsetY === mtrOffsetY) return false;
+  mtr.offsetY = mtrOffsetY;
+  return true;
+}
+
+function applyControlStyling(cssScale = 0.26): {
+  cornerSize: number;
+  touchCornerSize: number;
+  borderScaleFactor: number;
+  mtrOffsetY: number;
+} {
   const sizes = computeControlSizes(cssScale);
+  latestMtrOffsetY = sizes.mtrOffsetY;
   Object.assign(fabric.InteractiveFabricObject.ownDefaults, {
     cornerColor: '#ffffff',
     cornerStrokeColor: '#8b5cf6',
@@ -267,7 +289,7 @@ function applyControlStyling(cssScale = 0.26): { cornerSize: number; touchCorner
     cornerSize: sizes.cornerSize,
     touchCornerSize: sizes.touchCornerSize,
     transparentCorners: false,
-    borderScaleFactor: 2.5,
+    borderScaleFactor: sizes.borderScaleFactor,
     padding: 0,
   });
   return sizes;
@@ -410,6 +432,8 @@ export function useFabricCanvas(options?: {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [showSafeArea, setShowSafeArea] = useState(false);
+  const copiedObjectRef = useRef<fabric.FabricObject | null>(null);
+  const [hasCopiedElement, setHasCopiedElement] = useState(false);
 
   const aspectRatioRef = useRef<AspectRatioKey>('4:5');
   const backgroundRef = useRef<BackgroundState>(DEFAULT_BACKGROUND);
@@ -1265,6 +1289,13 @@ export function useFabricCanvas(options?: {
       }
     };
 
+    const handleObjectAdded = (e: { target?: fabric.FabricObject }) => {
+      if (e.target && applyMtrOffsetToObject(e.target, latestMtrOffsetY)) {
+        e.target.setCoords();
+      }
+      handleStackChange();
+    };
+
     const handleAfterRender = ({ ctx }: { ctx: CanvasRenderingContext2D }) => {
       if (ctx !== canvas.getContext()) return;
       renderGuidesOnTopContext(
@@ -1406,7 +1437,7 @@ export function useFabricCanvas(options?: {
       handleTextChanged();
       syncTextEditingState();
     });
-    canvas.on('object:added', handleStackChange);
+    canvas.on('object:added', handleObjectAdded);
     canvas.on('object:removed', handleStackChange);
     canvas.on('after:render', handleAfterRender);
 
@@ -1630,17 +1661,19 @@ export function useFabricCanvas(options?: {
     async (
       presetType: TextStylePresetId = 'heading',
       fontFamily?: string,
-      position?: { x: number; y: number }
+      position?: { x: number; y: number },
+      fontWeightOverride?: number
     ) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
       const cfg = TEXT_STYLE_PRESETS_BY_ID[presetType];
-      const targetFamily = fontFamily || 'Fedro';
+      const targetFamily = fontFamily || 'Plantin MT Pro';
+      const desiredWeight = fontWeightOverride ?? cfg.fontWeight;
       const targetWeight = isFrauncesFamily(targetFamily)
-        ? cfg.fontWeight
-        : snapToSupportedWeight(cfg.fontWeight, targetFamily, fontsRef.current);
+        ? desiredWeight
+        : snapToSupportedWeight(desiredWeight, targetFamily, fontsRef.current);
 
       const fontOption = fontsRef.current.find((f) => f.family === targetFamily);
       if (fontOption) {
@@ -1801,7 +1834,7 @@ export function useFabricCanvas(options?: {
       }
 
       const preset = TEXT_STYLE_PRESETS_BY_ID[presetId];
-      const family = active.fontFamily || 'Fedro';
+      const family = active.fontFamily || 'Plantin MT Pro';
       const nextWeight = isFrauncesFamily(family)
         ? preset.fontWeight
         : snapToSupportedWeight(preset.fontWeight, family, fontsRef.current);
@@ -2220,7 +2253,10 @@ export function useFabricCanvas(options?: {
       editorName?: string;
     }) => {
       const cfg = TEXT_STYLE_PRESETS_BY_ID[opts.preset];
-      const targetFamily = fontsRef.current[0]?.family ?? 'Fraunces';
+      const targetFamily = fontsRef.current[0]?.family ?? 'Plantin MT Pro';
+      const targetWeight = isFrauncesFamily(targetFamily)
+        ? cfg.fontWeight
+        : snapToSupportedWeight(cfg.fontWeight, targetFamily, fontsRef.current);
       const textbox = new StoryTextbox(opts.text ?? cfg.defaultText, {
         left: opts.left,
         top: opts.top,
@@ -2229,7 +2265,7 @@ export function useFabricCanvas(options?: {
         originY: opts.originY ?? 'center',
         fontFamily: targetFamily,
         fontSize: cfg.fontSize,
-        fontWeight: cfg.fontWeight,
+        fontWeight: targetWeight,
         fontOpsz: Math.min(144, Math.max(9, Math.round(cfg.fontSize))),
         fontSoft: 100,
         fontWonk: 0,
@@ -3264,39 +3300,78 @@ export function useFabricCanvas(options?: {
     commitHistoryNow();
   }, [commitHistoryNow, syncSelectionAndLayers]);
 
+  const cloneObjectWithMeta = useCallback(
+    async (source: fabric.FabricObject, nameSuffix?: string) => {
+      const cloned = await source.clone(CUSTOM_SERIALIZED_PROPS);
+      const clonedShapeMeta = cloned as ShapeWithImageMeta;
+      if (clonedShapeMeta.shapeKind && clonedShapeMeta.shapeImageSrc) {
+        await applyShapeImageFill(cloned, clonedShapeMeta.shapeImageSrc, {
+          fit: clonedShapeMeta.shapeImageFit,
+          scale: clonedShapeMeta.shapeImageScale,
+          offsetX: clonedShapeMeta.shapeImageOffsetX,
+          offsetY: clonedShapeMeta.shapeImageOffsetY,
+        });
+      }
+      const meta = ensureObjectMeta(cloned);
+      meta.editorId = createEditorId();
+      const baseName = ensureObjectMeta(source).editorName || 'Layer';
+      meta.editorName = nameSuffix ? `${baseName} ${nameSuffix}` : baseName;
+      if (meta.locked) {
+        applyLockState(cloned, false);
+      }
+      return cloned;
+    },
+    [],
+  );
+
   const duplicateActiveObject = useCallback(async () => {
     const canvas = canvasRef.current;
     const active = canvas?.getActiveObject();
     if (!canvas || !active) return;
 
-    const cloned = await active.clone(CUSTOM_SERIALIZED_PROPS);
-    const clonedShapeMeta = cloned as ShapeWithImageMeta;
-    if (clonedShapeMeta.shapeKind && clonedShapeMeta.shapeImageSrc) {
-      await applyShapeImageFill(cloned, clonedShapeMeta.shapeImageSrc, {
-        fit: clonedShapeMeta.shapeImageFit,
-        scale: clonedShapeMeta.shapeImageScale,
-        offsetX: clonedShapeMeta.shapeImageOffsetX,
-        offsetY: clonedShapeMeta.shapeImageOffsetY,
-      });
-    }
-    const meta = ensureObjectMeta(cloned);
-    meta.editorId = createEditorId();
-    meta.editorName = `${ensureObjectMeta(active).editorName || 'Layer'} Copy`;
-
+    const cloned = await cloneObjectWithMeta(active, 'Copy');
     cloned.set({
       left: (active.left ?? 0) + 32,
       top: (active.top ?? 0) + 32,
     });
-    if (meta.locked) {
-      applyLockState(cloned, false);
-    }
 
     canvas.add(cloned);
     canvas.setActiveObject(cloned);
     canvas.requestRenderAll();
     syncSelectionAndLayers();
     commitHistoryNow();
-  }, [commitHistoryNow, syncSelectionAndLayers]);
+  }, [cloneObjectWithMeta, commitHistoryNow, syncSelectionAndLayers]);
+
+  const copyActiveObject = useCallback(async () => {
+    const canvas = canvasRef.current;
+    const active = canvas?.getActiveObject();
+    if (!canvas || !active) return;
+
+    const snapshot = await cloneObjectWithMeta(active);
+    copiedObjectRef.current = snapshot;
+    setHasCopiedElement(true);
+  }, [cloneObjectWithMeta]);
+
+  const pasteCopiedObject = useCallback(
+    async (position?: { x: number; y: number }) => {
+      const canvas = canvasRef.current;
+      const source = copiedObjectRef.current;
+      if (!canvas || !source) return;
+
+      const cloned = await cloneObjectWithMeta(source);
+      if (position) {
+        cloned.setPositionByOrigin(new fabric.Point(position.x, position.y), 'center', 'center');
+      }
+      cloned.setCoords();
+
+      canvas.add(cloned);
+      canvas.setActiveObject(cloned);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [cloneObjectWithMeta, commitHistoryNow, syncSelectionAndLayers],
+  );
 
   const deleteActiveObject = useCallback(() => {
     const canvas = canvasRef.current;
@@ -3413,12 +3488,19 @@ export function useFabricCanvas(options?: {
     if (rect.width <= 0) return;
 
     const cssScale = rect.width / (canvas.width || 2160);
-    const { cornerSize, touchCornerSize } = applyControlStyling(cssScale);
+    const { cornerSize, touchCornerSize, borderScaleFactor, mtrOffsetY } =
+      applyControlStyling(cssScale);
 
     let changed = false;
     for (const obj of canvas.getObjects()) {
-      if (obj.cornerSize !== cornerSize || obj.touchCornerSize !== touchCornerSize) {
-        obj.set({ cornerSize, touchCornerSize });
+      const mtrChanged = applyMtrOffsetToObject(obj, mtrOffsetY);
+      if (
+        mtrChanged ||
+        obj.cornerSize !== cornerSize ||
+        obj.touchCornerSize !== touchCornerSize ||
+        obj.borderScaleFactor !== borderScaleFactor
+      ) {
+        obj.set({ cornerSize, touchCornerSize, borderScaleFactor });
         obj.setCoords();
         changed = true;
       }
@@ -4634,6 +4716,22 @@ export function useFabricCanvas(options?: {
         return;
       }
 
+      if (isMod && e.key.toLowerCase() === 'c') {
+        if (active) {
+          e.preventDefault();
+          void copyActiveObject();
+        }
+        return;
+      }
+
+      if (isMod && e.key.toLowerCase() === 'v') {
+        if (copiedObjectRef.current) {
+          e.preventDefault();
+          void pasteCopiedObject();
+        }
+        return;
+      }
+
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (active) {
           e.preventDefault();
@@ -4662,9 +4760,11 @@ export function useFabricCanvas(options?: {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+    copyActiveObject,
     deleteActiveObject,
     deselectAll,
     duplicateActiveObject,
+    pasteCopiedObject,
     redo,
     scheduleHistoryCommit,
     undo,
@@ -4726,6 +4826,9 @@ export function useFabricCanvas(options?: {
     bringToFront,
     sendToBack,
     duplicateActiveObject,
+    hasCopiedElement,
+    copyActiveObject,
+    pasteCopiedObject,
     deleteActiveObject,
     selectLayerById,
     toggleLayerVisibility,

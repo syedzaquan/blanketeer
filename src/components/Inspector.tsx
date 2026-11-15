@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AlignCenter,
   AlignJustify,
@@ -9,6 +9,8 @@ import {
   ArrowUp,
   ArrowUpToLine,
   Bold,
+  Check,
+  ClipboardCopy,
   Copy,
   Crop,
   FlipHorizontal2,
@@ -126,6 +128,7 @@ interface InspectorProps {
   onSendBackward: () => void;
   onBringToFront: () => void;
   onSendToBack: () => void;
+  onCopy?: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }
@@ -166,10 +169,18 @@ export function Inspector({
   onSendBackward,
   onBringToFront,
   onSendToBack,
+  onCopy,
   onDuplicate,
   onDelete,
 }: InspectorProps) {
   const shapeImageInputRef = useRef<HTMLInputElement>(null);
+  const [copiedFeedback, setCopiedFeedback] = useState(false);
+
+  useEffect(() => {
+    if (!copiedFeedback) return;
+    const timer = window.setTimeout(() => setCopiedFeedback(false), 1500);
+    return () => window.clearTimeout(timer);
+  }, [copiedFeedback]);
 
   if (!selectedObject) {
     const preset = ASPECT_RATIO_PRESETS[aspectRatio];
@@ -295,6 +306,24 @@ export function Inspector({
               <Unlock className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
             )}
           </button>
+          {onCopy && (
+            <button
+              type="button"
+              onClick={() => {
+                onCopy();
+                setCopiedFeedback(true);
+              }}
+              aria-label={copiedFeedback ? 'Copied' : 'Copy Element'}
+              title={copiedFeedback ? 'Copied' : 'Copy Element (Cmd/Ctrl+C)'}
+              className="p-2.5 lg:p-1.5 rounded-lg lg:rounded-md bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 transition-colors"
+            >
+              {copiedFeedback ? (
+                <Check className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-emerald-400" />
+              ) : (
+                <ClipboardCopy className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+              )}
+            </button>
+          )}
           <button
             type="button"
             onClick={onDuplicate}

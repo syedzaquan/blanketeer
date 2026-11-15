@@ -86,6 +86,13 @@ const FRAUNCES_PRESET_WEIGHTS: FontWeightOption[] = [
 
 export const SUPPORTED_FONTS: FontOption[] = [
   {
+    name: 'Plantin MT Pro',
+    family: 'Plantin MT Pro',
+    source: 'custom',
+    categoryLabel: 'Editorial Serif',
+    availableWeights: PLANTIN_WEIGHTS,
+  },
+  {
     name: 'Fedro',
     family: 'Fedro',
     source: 'custom',
@@ -142,13 +149,6 @@ export const SUPPORTED_FONTS: FontOption[] = [
     source: 'custom',
     categoryLabel: 'Vintage Serif',
     availableWeights: CASLON_ANTIQUE_WEIGHTS,
-  },
-  {
-    name: 'Plantin MT Pro',
-    family: 'Plantin MT Pro',
-    source: 'custom',
-    categoryLabel: 'Editorial Serif',
-    availableWeights: PLANTIN_WEIGHTS,
   },
   {
     name: 'Libre Baskerville',
@@ -339,12 +339,18 @@ export const preloadAllFonts = async (): Promise<void> => {
       )
     ),
     ...localDiscretePreloads,
-    loadFont(SUPPORTED_FONTS[1], 100, 'normal'),
-    loadFont(SUPPORTED_FONTS[1], 600, 'normal'),
-    loadFont(SUPPORTED_FONTS[1], 700, 'normal'),
-    loadFont(SUPPORTED_FONTS[1], 900, 'normal'),
-    loadFont(SUPPORTED_FONTS[1], 600, 'italic'),
-    loadFont(SUPPORTED_FONTS[1], 700, 'italic'),
+    ...((): Promise<boolean>[] => {
+      const fraunces = SUPPORTED_FONTS.find((f) => f.family === 'Fraunces');
+      if (!fraunces) return [];
+      return [
+        loadFont(fraunces, 100, 'normal'),
+        loadFont(fraunces, 600, 'normal'),
+        loadFont(fraunces, 700, 'normal'),
+        loadFont(fraunces, 900, 'normal'),
+        loadFont(fraunces, 600, 'italic'),
+        loadFont(fraunces, 700, 'italic'),
+      ];
+    })(),
     ensureFrauncesFontData(),
   ]);
 };

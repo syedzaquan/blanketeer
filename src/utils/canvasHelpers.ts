@@ -298,7 +298,7 @@ export function extractSelectedState(
       id: meta.editorId!,
       name: meta.editorName!,
       text: story.text || '',
-      fontFamily: story.fontFamily || 'Fedro',
+      fontFamily: story.fontFamily || 'Plantin MT Pro',
       fontSize: Math.round(story.fontSize || 64),
       fontWeight: numericWeight,
       fontStyle: story.fontStyle === 'italic' ? 'italic' : 'normal',
