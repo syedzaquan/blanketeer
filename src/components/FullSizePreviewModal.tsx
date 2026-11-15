@@ -1,7 +1,227 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
-import type { CanvasPageItem, ExportImageFormat } from '../types/editor';
+import type {
+  CanvasPageItem,
+  ExportImageFormat,
+  ExportScale,
+} from '../types/editor';
 import type { ExportedPageItem } from '../utils/exportCanvas';
+
+interface ZoomablePreviewImageProps {
+  src: string;
+  alt: string;
+  imageWidth: number;
+  imageHeight: number;
+  onZoomActiveChange: (active: boolean) => void;
+}
+
+const PREVIEW_TEXTURE_SUPERSAMPLE = 3;
+
+const ZoomablePreviewImage: React.FC<ZoomablePreviewImageProps> = ({
+  src,
+  alt,
+  imageWidth,
+  imageHeight,
+  onZoomActiveChange,
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [boxSize, setBoxSize] = useState<{ w: number; h: number }>({
+    w: 0,
+    h: 0,
+  });
+  const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
+  const [isPinching, setIsPinching] = useState(false);
+
+  const pinchRef = useRef<{
+    initialDist: number;
+    initialMidX: number;
+    initialMidY: number;
+    centerX: number;
+    centerY: number;
+  } | null>(null);
+  const wheelResetTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      setBoxSize({ w: el.clientWidth, h: el.clientHeight });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (wheelResetTimerRef.current !== null) {
+        window.clearTimeout(wheelResetTimerRef.current);
+      }
+    };
+  }, []);
+
+  const fitScale =
+    boxSize.w > 0 && boxSize.h > 0 && imageWidth > 0 && imageHeight > 0
+      ? Math.min(boxSize.w / imageWidth, boxSize.h / imageHeight)
+      : 0;
+  const displayW = fitScale > 0 ? imageWidth * fitScale : 0;
+  const displayH = fitScale > 0 ? imageHeight * fitScale : 0;
+
+  const startPinchFromTouches = (t1: React.Touch, t2: React.Touch) => {
+    const el = imgRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    pinchRef.current = {
+      initialDist: Math.max(dist, 1),
+      initialMidX: (t1.clientX + t2.clientX) / 2,
+      initialMidY: (t1.clientY + t2.clientY) / 2,
+      centerX: rect.left + rect.width / 2,
+      centerY: rect.top + rect.height / 2,
+    };
+    setIsPinching(true);
+    onZoomActiveChange(true);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2) {
+      e.stopPropagation();
+      startPinchFromTouches(e.touches[0], e.touches[1]);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2 && pinchRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+
+      const { initialDist, initialMidX, initialMidY, centerX, centerY } =
+        pinchRef.current;
+
+      const rawScale = dist / initialDist;
+      // Elastic resistance below 1x and above 4x
+      const clampedScale =
+        rawScale < 1
+          ? 1 - (1 - Math.max(0.7, rawScale)) * 0.45
+          : rawScale > 4
+            ? 4 + (rawScale - 4) * 0.25
+            : rawScale;
+
+      const offsetFromCenterX = initialMidX - centerX;
+      const offsetFromCenterY = initialMidY - centerY;
+      const tx =
+        midX - initialMidX - offsetFromCenterX * (clampedScale - 1);
+      const ty =
+        midY - initialMidY - offsetFromCenterY * (clampedScale - 1);
+
+      setTransform({ scale: clampedScale, x: tx, y: ty });
+    }
+  };
+
+  const resetElastic = () => {
+    if (!pinchRef.current && !isPinching) return;
+    pinchRef.current = null;
+    setIsPinching(false);
+    setTransform({ scale: 1, x: 0, y: 0 });
+    onZoomActiveChange(false);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length < 2) {
+      resetElastic();
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (wheelResetTimerRef.current !== null) {
+      window.clearTimeout(wheelResetTimerRef.current);
+    }
+
+    const el = imgRef.current;
+    const rect = el?.getBoundingClientRect();
+
+    setIsPinching(true);
+    onZoomActiveChange(true);
+    setTransform((prev) => {
+      const factor = Math.exp(-e.deltaY * 0.01);
+      const rawNext = prev.scale * factor;
+      const nextScale = Math.max(0.85, Math.min(4.5, rawNext));
+      if (!rect) {
+        return { scale: nextScale, x: prev.x, y: prev.y };
+      }
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const cursorOffsetX = e.clientX - centerX;
+      const cursorOffsetY = e.clientY - centerY;
+      const ratio = nextScale / prev.scale;
+      return {
+        scale: nextScale,
+        x: prev.x * ratio - cursorOffsetX * (ratio - 1),
+        y: prev.y * ratio - cursorOffsetY * (ratio - 1),
+      };
+    });
+
+    wheelResetTimerRef.current = window.setTimeout(() => {
+      setIsPinching(false);
+      setTransform({ scale: 1, x: 0, y: 0 });
+      onZoomActiveChange(false);
+    }, 180);
+  };
+
+  const hasMeasuredSize = displayW > 0 && displayH > 0;
+  const renderScale = hasMeasuredSize
+    ? transform.scale / PREVIEW_TEXTURE_SUPERSAMPLE
+    : transform.scale;
+
+  return (
+    <div
+      ref={containerRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      onWheel={handleWheel}
+      onClick={(e) => e.stopPropagation()}
+      className={`w-full h-full flex items-center justify-center ${
+        isPinching ? 'relative z-30 touch-none' : 'touch-pan-x'
+      }`}
+    >
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        draggable={false}
+        style={{
+          width: hasMeasuredSize
+            ? `${displayW * PREVIEW_TEXTURE_SUPERSAMPLE}px`
+            : undefined,
+          height: hasMeasuredSize
+            ? `${displayH * PREVIEW_TEXTURE_SUPERSAMPLE}px`
+            : undefined,
+          maxWidth: hasMeasuredSize ? 'none' : '100%',
+          maxHeight: hasMeasuredSize ? 'none' : '100%',
+          transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${renderScale})`,
+          transition: isPinching
+            ? 'none'
+            : 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+          transformOrigin: 'center center',
+          willChange: 'transform',
+        }}
+        className="shrink-0 object-contain rounded-lg shadow-2xl ring-1 ring-white/10"
+      />
+    </div>
+  );
+};
 
 interface FullSizePreviewModalProps {
   pages: CanvasPageItem[];
@@ -9,7 +229,9 @@ interface FullSizePreviewModalProps {
   onClose: () => void;
   onRenderPages: (
     pageIds: string[],
-    format: ExportImageFormat
+    format: ExportImageFormat,
+    quality?: number,
+    scale?: ExportScale
   ) => Promise<ExportedPageItem[]>;
 }
 
@@ -28,6 +250,7 @@ export const FullSizePreviewModal: React.FC<FullSizePreviewModalProps> = ({
     Record<string, ExportedPageItem>
   >({});
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isZooming, setIsZooming] = useState(false);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const hasScrolledInitialRef = useRef(false);
 
@@ -47,7 +270,7 @@ export const FullSizePreviewModal: React.FC<FullSizePreviewModalProps> = ({
       for (const pageId of orderedIds) {
         if (cancelled) break;
         try {
-          const items = await onRenderPages([pageId], 'png');
+          const items = await onRenderPages([pageId], 'png', undefined, 2);
           if (cancelled) {
             items.forEach((it) => {
               if (it.blobUrl) URL.revokeObjectURL(it.blobUrl);
@@ -166,7 +389,9 @@ export const FullSizePreviewModal: React.FC<FullSizePreviewModalProps> = ({
         <div
           ref={scrollerRef}
           onScroll={handleScroll}
-          className="w-full h-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
+          className={`w-full h-full flex snap-x snap-mandatory no-scrollbar ${
+            isZooming ? 'overflow-hidden' : 'overflow-x-auto'
+          }`}
           style={{ scrollbarWidth: 'none' }}
         >
           {pages.map((page, idx) => {
@@ -177,12 +402,12 @@ export const FullSizePreviewModal: React.FC<FullSizePreviewModalProps> = ({
                 className="w-full h-full shrink-0 snap-center flex items-center justify-center p-4 sm:p-8"
               >
                 {rendered ? (
-                  <img
+                  <ZoomablePreviewImage
                     src={rendered.blobUrl || rendered.dataURL}
                     alt={`Slide ${idx + 1} full size preview`}
-                    onClick={(e) => e.stopPropagation()}
-                    draggable={false}
-                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl ring-1 ring-white/10"
+                    imageWidth={rendered.width}
+                    imageHeight={rendered.height}
+                    onZoomActiveChange={setIsZooming}
                   />
                 ) : (
                   <div

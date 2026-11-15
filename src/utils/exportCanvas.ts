@@ -230,6 +230,7 @@ export async function renderPageSnapshotToPayload(
   const staticCanvas = new fabric.StaticCanvas(el, {
     width: preset.width,
     height: preset.height,
+    enableRetinaScaling: false,
     renderOnAddRemove: false,
   });
 
