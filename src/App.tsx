@@ -94,6 +94,11 @@ export function App() {
     applyDiagonalTemplate,
     applySplitTemplate,
     applyBentoTemplate,
+    applyHeroTwoTemplate,
+    applyGridFourTemplate,
+    applyEditorialTemplate,
+    applyStackThreeTemplate,
+    applyCornerPhotoGridTemplate,
     fillTemplateSlot,
     replaceActiveImageFromFile,
     cropModeActive,
@@ -230,6 +235,11 @@ export function App() {
           onApplyDiagonalTemplate={applyDiagonalTemplate}
           onApplySplitTemplate={applySplitTemplate}
           onApplyBentoTemplate={applyBentoTemplate}
+          onApplyHeroTwoTemplate={applyHeroTwoTemplate}
+          onApplyGridFourTemplate={applyGridFourTemplate}
+          onApplyEditorialTemplate={applyEditorialTemplate}
+          onApplyStackThreeTemplate={applyStackThreeTemplate}
+          onApplyCornerPhotoGridTemplate={applyCornerPhotoGridTemplate}
           onTriggerFillSlot={triggerFillSlot}
           onSelectSlot={selectLayerById}
         />

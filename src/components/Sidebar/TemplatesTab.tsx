@@ -8,7 +8,16 @@ import type {
 import { cn } from '../../utils/cn';
 import { RangeSlider } from '../RangeSlider';
 
-type TemplateKind = 'two-column' | 'diagonal' | 'split' | 'bento';
+type TemplateKind =
+  | 'two-column'
+  | 'diagonal'
+  | 'split'
+  | 'bento'
+  | 'hero-two'
+  | 'grid-4'
+  | 'editorial'
+  | 'stack-3'
+  | 'corner-photo';
 
 interface TemplatesTabProps {
   templateSlots: TemplateSlotSummary[];
@@ -25,6 +34,11 @@ interface TemplatesTabProps {
     cornerPercent: number;
   }) => void;
   onApplyBentoTemplate: (options: { cornerPercent: number }) => void;
+  onApplyHeroTwoTemplate: (options: { cornerPercent: number }) => void;
+  onApplyGridFourTemplate: (options: { cornerPercent: number }) => void;
+  onApplyEditorialTemplate: (options: { cornerPercent: number }) => void;
+  onApplyStackThreeTemplate: (options: { cornerPercent: number }) => void;
+  onApplyCornerPhotoGridTemplate: (options: { cornerPercent: number }) => void;
   onTriggerFillSlot: (slotId: string) => void;
   onSelectSlot: (slotId: string) => void;
 }
@@ -35,6 +49,11 @@ export function TemplatesTab({
   onApplyDiagonalTemplate,
   onApplySplitTemplate,
   onApplyBentoTemplate,
+  onApplyHeroTwoTemplate,
+  onApplyGridFourTemplate,
+  onApplyEditorialTemplate,
+  onApplyStackThreeTemplate,
+  onApplyCornerPhotoGridTemplate,
   onTriggerFillSlot,
   onSelectSlot,
 }: TemplatesTabProps) {
@@ -242,6 +261,275 @@ export function TemplatesTab({
             </svg>
             <span className="text-xs font-medium">3-Photo Bento</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedKind('hero-two')}
+            className={cn(
+              'p-2.5 rounded-lg border flex flex-col items-center gap-1.5 transition-colors',
+              selectedKind === 'hero-two'
+                ? 'bg-neutral-700 border-neutral-500 text-white'
+                : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-800'
+            )}
+          >
+            <svg width="28" height="32" viewBox="0 0 28 32" className="shrink-0">
+              <rect
+                x="1"
+                y="1"
+                width="26"
+                height="30"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity="0.35"
+                strokeWidth="1.5"
+              />
+              <rect
+                x="3.5"
+                y="3.5"
+                width="21"
+                height="13.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="3.5"
+                y="19"
+                width="9.5"
+                height="9.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="15"
+                y="19"
+                width="9.5"
+                height="9.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+            </svg>
+            <span className="text-xs font-medium">Hero + 2</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedKind('grid-4')}
+            className={cn(
+              'p-2.5 rounded-lg border flex flex-col items-center gap-1.5 transition-colors',
+              selectedKind === 'grid-4'
+                ? 'bg-neutral-700 border-neutral-500 text-white'
+                : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-800'
+            )}
+          >
+            <svg width="28" height="32" viewBox="0 0 28 32" className="shrink-0">
+              <rect
+                x="1"
+                y="1"
+                width="26"
+                height="30"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity="0.35"
+                strokeWidth="1.5"
+              />
+              <rect
+                x="3.5"
+                y="3.5"
+                width="9.5"
+                height="11.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="15"
+                y="3.5"
+                width="9.5"
+                height="11.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="3.5"
+                y="17"
+                width="9.5"
+                height="11.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="15"
+                y="17"
+                width="9.5"
+                height="11.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+            </svg>
+            <span className="text-xs font-medium">4-Grid</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedKind('editorial')}
+            className={cn(
+              'p-2.5 rounded-lg border flex flex-col items-center gap-1.5 transition-colors',
+              selectedKind === 'editorial'
+                ? 'bg-neutral-700 border-neutral-500 text-white'
+                : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-800'
+            )}
+          >
+            <svg width="28" height="32" viewBox="0 0 28 32" className="shrink-0">
+              <rect
+                x="1"
+                y="1"
+                width="26"
+                height="30"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity="0.35"
+                strokeWidth="1.5"
+              />
+              <rect
+                x="3.5"
+                y="3.5"
+                width="21"
+                height="15"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="3.5"
+                y="21"
+                width="14"
+                height="2.5"
+                rx="1"
+                fill="currentColor"
+                fillOpacity="0.8"
+              />
+              <rect
+                x="3.5"
+                y="25.5"
+                width="21"
+                height="2"
+                rx="1"
+                fill="currentColor"
+                fillOpacity="0.45"
+              />
+            </svg>
+            <span className="text-xs font-medium">Editorial</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedKind('stack-3')}
+            className={cn(
+              'p-2.5 rounded-lg border flex flex-col items-center gap-1.5 transition-colors',
+              selectedKind === 'stack-3'
+                ? 'bg-neutral-700 border-neutral-500 text-white'
+                : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-800'
+            )}
+          >
+            <svg width="28" height="32" viewBox="0 0 28 32" className="shrink-0">
+              <rect
+                x="1"
+                y="1"
+                width="26"
+                height="30"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity="0.35"
+                strokeWidth="1.5"
+              />
+              <rect
+                x="3.5"
+                y="3.5"
+                width="21"
+                height="7"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="3.5"
+                y="12.5"
+                width="21"
+                height="7"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              <rect
+                x="3.5"
+                y="21.5"
+                width="21"
+                height="7"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+            </svg>
+            <span className="text-xs font-medium">3-Row Stack</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedKind('corner-photo')}
+            className={cn(
+              'p-2.5 rounded-lg border flex flex-col items-center gap-1.5 transition-colors',
+              selectedKind === 'corner-photo'
+                ? 'bg-neutral-700 border-neutral-500 text-white'
+                : 'bg-neutral-800/80 border-neutral-700 text-neutral-300 hover:bg-neutral-800'
+            )}
+          >
+            <svg width="28" height="32" viewBox="0 0 28 32" className="shrink-0">
+              <rect
+                x="1"
+                y="1"
+                width="26"
+                height="30"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity="0.35"
+                strokeWidth="1.5"
+              />
+              {/* 1: Top-Left text */}
+              <rect x="3.5" y="6" width="9" height="1.8" rx="0.9" fill="currentColor" fillOpacity="0.65" />
+              <rect x="3.5" y="9.5" width="7.5" height="1.8" rx="0.9" fill="currentColor" fillOpacity="0.45" />
+              <rect x="3.5" y="13" width="6" height="1.8" rx="0.9" fill="currentColor" fillOpacity="0.35" />
+              {/* 2: Top-Right image */}
+              <rect
+                x="15"
+                y="3.5"
+                width="9.5"
+                height="11.5"
+                rx="1.5"
+                fill="currentColor"
+                fillOpacity="0.65"
+              />
+              {/* 3: Bottom-Left text */}
+              <rect x="3.5" y="19.5" width="9" height="1.8" rx="0.9" fill="currentColor" fillOpacity="0.65" />
+              <rect x="3.5" y="23" width="7.5" height="1.8" rx="0.9" fill="currentColor" fillOpacity="0.45" />
+              <rect x="3.5" y="26.5" width="6" height="1.8" rx="0.9" fill="currentColor" fillOpacity="0.35" />
+              {/* 4: Bottom-Right text */}
+              <rect x="15" y="19.5" width="9" height="1.8" rx="0.9" fill="currentColor" fillOpacity="0.65" />
+              <rect x="15" y="23" width="7.5" height="1.8" rx="0.9" fill="currentColor" fillOpacity="0.45" />
+              <rect x="15" y="26.5" width="6" height="1.8" rx="0.9" fill="currentColor" fillOpacity="0.35" />
+            </svg>
+            <span className="text-xs font-medium">1-Photo + 3 Text</span>
+          </button>
         </div>
       </div>
 
@@ -253,18 +541,20 @@ export function TemplatesTab({
               2-Column Split
             </span>
             <span className="text-[11px] font-mono text-neutral-500">
-              50% H · 16px gap
+              50% H · + Body
             </span>
           </div>
 
           <div className="p-3 rounded-lg bg-neutral-800/60 border border-neutral-700/80 flex items-center justify-center">
-            <div
-              className={cn(
-                'w-24 h-28 rounded-md bg-neutral-900 border border-neutral-700 p-1.5 flex flex-col',
-                columnPlacement === 'top' ? 'justify-start' : 'justify-end'
+            <div className="w-24 h-28 rounded-md bg-neutral-900 border border-neutral-700 p-1.5 flex flex-col justify-between gap-1.5">
+              {columnPlacement === 'bottom' && (
+                <div className="flex flex-col gap-1 px-0.5 pt-1">
+                  <div className="h-1.5 w-full rounded-full bg-neutral-500/70" />
+                  <div className="h-1.5 w-4/5 rounded-full bg-neutral-600/60" />
+                  <div className="h-1.5 w-3/5 rounded-full bg-neutral-600/50" />
+                </div>
               )}
-            >
-              <div className="grid grid-cols-2 gap-1 h-1/2 w-full">
+              <div className="grid grid-cols-2 gap-1 h-1/2 w-full shrink-0">
                 {[0, 1].map((idx) => (
                   <div
                     key={idx}
@@ -275,6 +565,13 @@ export function TemplatesTab({
                   </div>
                 ))}
               </div>
+              {columnPlacement === 'top' && (
+                <div className="flex flex-col gap-1 px-0.5 pb-1">
+                  <div className="h-1.5 w-full rounded-full bg-neutral-500/70" />
+                  <div className="h-1.5 w-4/5 rounded-full bg-neutral-600/60" />
+                  <div className="h-1.5 w-3/5 rounded-full bg-neutral-600/50" />
+                </div>
+              )}
             </div>
           </div>
 
@@ -316,7 +613,7 @@ export function TemplatesTab({
               Diagonal Split
             </span>
             <span className="text-[11px] font-mono text-neutral-500">
-              50%×50% · 16px gap
+              50%×50% · + Body
             </span>
           </div>
 
@@ -328,7 +625,18 @@ export function TemplatesTab({
                   diagDirection === 'ltr'
                     ? cell === 0 || cell === 3
                     : cell === 2 || cell === 1;
-                if (!isSlot) return <div key={cell} />;
+                if (!isSlot) {
+                  return (
+                    <div
+                      key={cell}
+                      className="flex flex-col justify-center gap-1 px-0.5"
+                    >
+                      <div className="h-1 w-full rounded-full bg-neutral-500/70" />
+                      <div className="h-1 w-4/5 rounded-full bg-neutral-600/60" />
+                      <div className="h-1 w-3/5 rounded-full bg-neutral-600/50" />
+                    </div>
+                  );
+                }
                 return (
                   <div
                     key={cell}
@@ -497,8 +805,28 @@ export function TemplatesTab({
                 direction: splitDirection,
                 cornerPercent: effectiveCornerPercent,
               });
-            } else {
+            } else if (selectedKind === 'bento') {
               onApplyBentoTemplate({
+                cornerPercent: effectiveCornerPercent,
+              });
+            } else if (selectedKind === 'hero-two') {
+              onApplyHeroTwoTemplate({
+                cornerPercent: effectiveCornerPercent,
+              });
+            } else if (selectedKind === 'grid-4') {
+              onApplyGridFourTemplate({
+                cornerPercent: effectiveCornerPercent,
+              });
+            } else if (selectedKind === 'editorial') {
+              onApplyEditorialTemplate({
+                cornerPercent: effectiveCornerPercent,
+              });
+            } else if (selectedKind === 'stack-3') {
+              onApplyStackThreeTemplate({
+                cornerPercent: effectiveCornerPercent,
+              });
+            } else {
+              onApplyCornerPhotoGridTemplate({
                 cornerPercent: effectiveCornerPercent,
               });
             }
@@ -515,7 +843,17 @@ export function TemplatesTab({
                   ? 'Add Diagonal Template'
                   : selectedKind === 'split'
                     ? 'Add Split Template'
-                    : 'Add Bento Template'}
+                    : selectedKind === 'bento'
+                      ? 'Add Bento Template'
+                      : selectedKind === 'hero-two'
+                        ? 'Add Hero + 2 Template'
+                        : selectedKind === 'grid-4'
+                          ? 'Add 4-Grid Template'
+                          : selectedKind === 'editorial'
+                            ? 'Add Editorial Template'
+                            : selectedKind === 'stack-3'
+                              ? 'Add 3-Row Stack Template'
+                              : 'Add 1-Photo + 3 Text Template'}
           </span>
         </button>
       </div>

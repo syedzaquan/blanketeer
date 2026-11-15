@@ -2144,6 +2144,90 @@ export function useFabricCanvas(options?: {
     commitHistoryNow();
   }, [commitHistoryNow, syncSelectionAndLayers]);
 
+  const clearTemplatePlaceholders = useCallback((canvas: fabric.Canvas) => {
+    const toRemove = canvas.getObjects().filter((obj) => {
+      if (obj instanceof TemplateSlotRect) return true;
+      return Boolean(
+        (obj as unknown as { isTemplatePlaceholder?: boolean })
+          .isTemplatePlaceholder
+      );
+    });
+    if (toRemove.length > 0) {
+      toRemove.forEach((obj) => canvas.remove(obj));
+    }
+  }, []);
+
+  const createTemplateSlot = useCallback(
+    (
+      slotIndex: number,
+      left: number,
+      top: number,
+      width: number,
+      height: number,
+      cornerPercent: number
+    ) => {
+      const slot = new TemplateSlotRect({
+        left,
+        top,
+        width,
+        height,
+        originX: 'center',
+        originY: 'center',
+        slotIndex,
+        slotCornerPercent: cornerPercent,
+        editorName: `Photo ${slotIndex}`,
+      });
+      ensureObjectMeta(slot);
+      return slot;
+    },
+    []
+  );
+
+  const createTemplateTextbox = useCallback(
+    (opts: {
+      preset: 'heading' | 'body';
+      text?: string;
+      left: number;
+      top: number;
+      width: number;
+      originY?: 'top' | 'center' | 'bottom';
+      textAlign?: 'left' | 'center' | 'right';
+      editorName?: string;
+    }) => {
+      const cfg = TEXT_STYLE_PRESETS_BY_ID[opts.preset];
+      const targetFamily = fontsRef.current[0]?.family ?? 'Fraunces';
+      const textbox = new StoryTextbox(opts.text ?? cfg.defaultText, {
+        left: opts.left,
+        top: opts.top,
+        width: opts.width,
+        originX: 'center',
+        originY: opts.originY ?? 'center',
+        fontFamily: targetFamily,
+        fontSize: cfg.fontSize,
+        fontWeight: cfg.fontWeight,
+        fontOpsz: Math.min(144, Math.max(9, Math.round(cfg.fontSize))),
+        fontSoft: 100,
+        fontWonk: 0,
+        fill: cfg.fill,
+        textAlign: opts.textAlign ?? 'left',
+        lineHeight: cfg.lineHeight,
+        charSpacing: cfg.charSpacing,
+        bgStyle: 'none',
+        textBgColor: '#ffffff',
+        pillRadius: 24,
+        pillPaddingX: 28,
+        pillPaddingY: 10,
+        editorName: opts.editorName ?? cfg.editorName,
+      });
+      (
+        textbox as unknown as { isTemplatePlaceholder?: boolean }
+      ).isTemplatePlaceholder = true;
+      ensureObjectMeta(textbox);
+      return textbox;
+    },
+    []
+  );
+
   const applyTwoColumnTemplate = useCallback(
     (options: { placement: TemplatePlacement; cornerPercent: number }) => {
       const canvas = canvasRef.current;
@@ -2151,47 +2235,58 @@ export function useFabricCanvas(options?: {
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
       const safe = getSafeZoneBounds(width, height);
-      const gap = 16;
+      const gap = 32;
+      const textGap = 56;
       const slotWidth = Math.round((safe.width - gap) / 2);
       const slotHeight = Math.round(safe.height * 0.5);
       const slotTop =
         options.placement === 'top' ? safe.top : safe.bottom - slotHeight;
       const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
 
-      // Replace existing unfilled placeholder slots if the user switches Top/Bottom or re-applies
-      const existingSlots = canvas
-        .getObjects()
-        .filter((obj): obj is TemplateSlotRect => obj instanceof TemplateSlotRect);
-      if (existingSlots.length > 0) {
-        existingSlots.forEach((s) => canvas.remove(s));
-      }
+      clearTemplatePlaceholders(canvas);
 
-      const makeSlot = (slotIndex: number, leftCenter: number) => {
-        const slot = new TemplateSlotRect({
-          left: leftCenter,
-          top: slotTop + slotHeight / 2,
-          width: slotWidth,
-          height: slotHeight,
-          originX: 'center',
-          originY: 'center',
-          slotIndex,
-          slotCornerPercent: cornerPercent,
-          editorName: `Photo ${slotIndex}`,
-        });
-        ensureObjectMeta(slot);
-        return slot;
-      };
+      const slot1 = createTemplateSlot(
+        1,
+        safe.left + slotWidth / 2,
+        slotTop + slotHeight / 2,
+        slotWidth,
+        slotHeight,
+        cornerPercent
+      );
+      const slot2 = createTemplateSlot(
+        2,
+        safe.left + slotWidth + gap + slotWidth / 2,
+        slotTop + slotHeight / 2,
+        slotWidth,
+        slotHeight,
+        cornerPercent
+      );
 
-      const slot1 = makeSlot(1, safe.left + slotWidth / 2);
-      const slot2 = makeSlot(2, safe.left + slotWidth + gap + slotWidth / 2);
+      const bodyTop =
+        options.placement === 'top' ? slotTop + slotHeight + textGap : safe.top;
+      const bodyBox = createTemplateTextbox({
+        preset: 'body',
+        left: safe.left + safe.width / 2,
+        top: bodyTop,
+        width: safe.width,
+        originY: 'top',
+        textAlign: 'left',
+        editorName: 'Body Text',
+      });
 
-      canvas.insertAt(0, slot1, slot2);
+      canvas.insertAt(0, slot1, slot2, bodyBox);
       canvas.setActiveObject(slot1);
       canvas.requestRenderAll();
       syncSelectionAndLayers();
       commitHistoryNow();
     },
-    [commitHistoryNow, syncSelectionAndLayers]
+    [
+      clearTemplatePlaceholders,
+      commitHistoryNow,
+      createTemplateSlot,
+      createTemplateTextbox,
+      syncSelectionAndLayers,
+    ]
   );
 
   const applySplitTemplate = useCallback(
@@ -2201,15 +2296,10 @@ export function useFabricCanvas(options?: {
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
       const safe = getSafeZoneBounds(width, height);
-      const gap = 16;
+      const gap = 32;
       const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
 
-      const existingSlots = canvas
-        .getObjects()
-        .filter((obj): obj is TemplateSlotRect => obj instanceof TemplateSlotRect);
-      if (existingSlots.length > 0) {
-        existingSlots.forEach((s) => canvas.remove(s));
-      }
+      clearTemplatePlaceholders(canvas);
 
       const isVertical = options.direction === 'vertical';
       const slotW = isVertical
@@ -2219,35 +2309,26 @@ export function useFabricCanvas(options?: {
         ? safe.height
         : Math.round((safe.height - gap) / 2);
 
-      const slot1 = new TemplateSlotRect({
-        left: safe.left + slotW / 2,
-        top: safe.top + slotH / 2,
-        width: slotW,
-        height: slotH,
-        originX: 'center',
-        originY: 'center',
-        slotIndex: 1,
-        slotCornerPercent: cornerPercent,
-        editorName: 'Photo 1',
-      });
-      ensureObjectMeta(slot1);
-
-      const slot2 = new TemplateSlotRect({
-        left: isVertical
+      const slot1 = createTemplateSlot(
+        1,
+        safe.left + slotW / 2,
+        safe.top + slotH / 2,
+        slotW,
+        slotH,
+        cornerPercent
+      );
+      const slot2 = createTemplateSlot(
+        2,
+        isVertical
           ? safe.left + slotW + gap + slotW / 2
           : safe.left + slotW / 2,
-        top: isVertical
+        isVertical
           ? safe.top + slotH / 2
           : safe.top + slotH + gap + slotH / 2,
-        width: slotW,
-        height: slotH,
-        originX: 'center',
-        originY: 'center',
-        slotIndex: 2,
-        slotCornerPercent: cornerPercent,
-        editorName: 'Photo 2',
-      });
-      ensureObjectMeta(slot2);
+        slotW,
+        slotH,
+        cornerPercent
+      );
 
       canvas.insertAt(0, slot1, slot2);
       canvas.setActiveObject(slot1);
@@ -2255,7 +2336,12 @@ export function useFabricCanvas(options?: {
       syncSelectionAndLayers();
       commitHistoryNow();
     },
-    [commitHistoryNow, syncSelectionAndLayers]
+    [
+      clearTemplatePlaceholders,
+      commitHistoryNow,
+      createTemplateSlot,
+      syncSelectionAndLayers,
+    ]
   );
 
   const applyBentoTemplate = useCallback(
@@ -2265,58 +2351,39 @@ export function useFabricCanvas(options?: {
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
       const safe = getSafeZoneBounds(width, height);
-      const gap = 16;
+      const gap = 32;
       const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
 
-      const existingSlots = canvas
-        .getObjects()
-        .filter((obj): obj is TemplateSlotRect => obj instanceof TemplateSlotRect);
-      if (existingSlots.length > 0) {
-        existingSlots.forEach((s) => canvas.remove(s));
-      }
+      clearTemplatePlaceholders(canvas);
 
       const colW = Math.round((safe.width - gap) / 2);
       const fullH = safe.height;
       const halfH = Math.round((fullH - gap) / 2);
 
-      const slot1 = new TemplateSlotRect({
-        left: safe.left + colW / 2,
-        top: safe.top + fullH / 2,
-        width: colW,
-        height: fullH,
-        originX: 'center',
-        originY: 'center',
-        slotIndex: 1,
-        slotCornerPercent: cornerPercent,
-        editorName: 'Photo 1',
-      });
-      ensureObjectMeta(slot1);
-
-      const slot2 = new TemplateSlotRect({
-        left: safe.left + colW + gap + colW / 2,
-        top: safe.top + halfH / 2,
-        width: colW,
-        height: halfH,
-        originX: 'center',
-        originY: 'center',
-        slotIndex: 2,
-        slotCornerPercent: cornerPercent,
-        editorName: 'Photo 2',
-      });
-      ensureObjectMeta(slot2);
-
-      const slot3 = new TemplateSlotRect({
-        left: safe.left + colW + gap + colW / 2,
-        top: safe.top + halfH + gap + halfH / 2,
-        width: colW,
-        height: halfH,
-        originX: 'center',
-        originY: 'center',
-        slotIndex: 3,
-        slotCornerPercent: cornerPercent,
-        editorName: 'Photo 3',
-      });
-      ensureObjectMeta(slot3);
+      const slot1 = createTemplateSlot(
+        1,
+        safe.left + colW / 2,
+        safe.top + fullH / 2,
+        colW,
+        fullH,
+        cornerPercent
+      );
+      const slot2 = createTemplateSlot(
+        2,
+        safe.left + colW + gap + colW / 2,
+        safe.top + halfH / 2,
+        colW,
+        halfH,
+        cornerPercent
+      );
+      const slot3 = createTemplateSlot(
+        3,
+        safe.left + colW + gap + colW / 2,
+        safe.top + halfH + gap + halfH / 2,
+        colW,
+        halfH,
+        cornerPercent
+      );
 
       canvas.insertAt(0, slot1, slot2, slot3);
       canvas.setActiveObject(slot1);
@@ -2324,7 +2391,12 @@ export function useFabricCanvas(options?: {
       syncSelectionAndLayers();
       commitHistoryNow();
     },
-    [commitHistoryNow, syncSelectionAndLayers]
+    [
+      clearTemplatePlaceholders,
+      commitHistoryNow,
+      createTemplateSlot,
+      syncSelectionAndLayers,
+    ]
   );
 
   const applyDiagonalTemplate = useCallback(
@@ -2334,18 +2406,13 @@ export function useFabricCanvas(options?: {
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
       const safe = getSafeZoneBounds(width, height);
-      const gap = 16;
+      const gap = 32;
 
       const slotWidth = Math.round((safe.width - gap) / 2);
       const slotHeight = Math.round((safe.height - gap) / 2);
       const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
 
-      const existingSlots = canvas
-        .getObjects()
-        .filter((obj): obj is TemplateSlotRect => obj instanceof TemplateSlotRect);
-      if (existingSlots.length > 0) {
-        existingSlots.forEach((s) => canvas.remove(s));
-      }
+      clearTemplatePlaceholders(canvas);
 
       const leftX = safe.left + slotWidth / 2;
       const rightX = safe.left + slotWidth + gap + slotWidth / 2;
@@ -2354,39 +2421,331 @@ export function useFabricCanvas(options?: {
 
       const isLtr = options.direction === 'ltr';
 
-      const slot1 = new TemplateSlotRect({
-        left: leftX,
-        top: isLtr ? topY : bottomY,
-        width: slotWidth,
-        height: slotHeight,
-        originX: 'center',
-        originY: 'center',
-        slotIndex: 1,
-        slotCornerPercent: cornerPercent,
-        editorName: 'Photo 1',
-      });
-      ensureObjectMeta(slot1);
+      const slot1 = createTemplateSlot(
+        1,
+        leftX,
+        isLtr ? topY : bottomY,
+        slotWidth,
+        slotHeight,
+        cornerPercent
+      );
+      const slot2 = createTemplateSlot(
+        2,
+        rightX,
+        isLtr ? bottomY : topY,
+        slotWidth,
+        slotHeight,
+        cornerPercent
+      );
 
-      const slot2 = new TemplateSlotRect({
-        left: rightX,
-        top: isLtr ? bottomY : topY,
-        width: slotWidth,
-        height: slotHeight,
-        originX: 'center',
+      const textBoxWidth = Math.max(200, slotWidth - 32);
+      const textTop1 = createTemplateTextbox({
+        preset: 'body',
+        left: isLtr ? rightX : leftX,
+        top: topY,
+        width: textBoxWidth,
         originY: 'center',
-        slotIndex: 2,
-        slotCornerPercent: cornerPercent,
-        editorName: 'Photo 2',
+        textAlign: 'left',
+        editorName: 'Body Text 1',
       });
-      ensureObjectMeta(slot2);
+      const textTop2 = createTemplateTextbox({
+        preset: 'body',
+        left: isLtr ? leftX : rightX,
+        top: bottomY,
+        width: textBoxWidth,
+        originY: 'center',
+        textAlign: 'left',
+        editorName: 'Body Text 2',
+      });
 
-      canvas.insertAt(0, slot1, slot2);
+      canvas.insertAt(0, slot1, slot2, textTop1, textTop2);
       canvas.setActiveObject(slot1);
       canvas.requestRenderAll();
       syncSelectionAndLayers();
       commitHistoryNow();
     },
-    [commitHistoryNow, syncSelectionAndLayers]
+    [
+      clearTemplatePlaceholders,
+      commitHistoryNow,
+      createTemplateSlot,
+      createTemplateTextbox,
+      syncSelectionAndLayers,
+    ]
+  );
+
+  const applyHeroTwoTemplate = useCallback(
+    (options: { cornerPercent: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const safe = getSafeZoneBounds(width, height);
+      const gap = 32;
+      const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
+
+      clearTemplatePlaceholders(canvas);
+
+      const heroH = Math.round((safe.height - gap) * 0.58);
+      const bottomH = safe.height - gap - heroH;
+      const colW = Math.round((safe.width - gap) / 2);
+
+      const slot1 = createTemplateSlot(
+        1,
+        safe.left + safe.width / 2,
+        safe.top + heroH / 2,
+        safe.width,
+        heroH,
+        cornerPercent
+      );
+      const slot2 = createTemplateSlot(
+        2,
+        safe.left + colW / 2,
+        safe.top + heroH + gap + bottomH / 2,
+        colW,
+        bottomH,
+        cornerPercent
+      );
+      const slot3 = createTemplateSlot(
+        3,
+        safe.left + colW + gap + colW / 2,
+        safe.top + heroH + gap + bottomH / 2,
+        colW,
+        bottomH,
+        cornerPercent
+      );
+
+      canvas.insertAt(0, slot1, slot2, slot3);
+      canvas.setActiveObject(slot1);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [
+      clearTemplatePlaceholders,
+      commitHistoryNow,
+      createTemplateSlot,
+      syncSelectionAndLayers,
+    ]
+  );
+
+  const applyGridFourTemplate = useCallback(
+    (options: { cornerPercent: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const safe = getSafeZoneBounds(width, height);
+      const gap = 32;
+      const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
+
+      clearTemplatePlaceholders(canvas);
+
+      const colW = Math.round((safe.width - gap) / 2);
+      const rowH = Math.round((safe.height - gap) / 2);
+      const leftX = safe.left + colW / 2;
+      const rightX = safe.left + colW + gap + colW / 2;
+      const topY = safe.top + rowH / 2;
+      const bottomY = safe.top + rowH + gap + rowH / 2;
+
+      const slots = [
+        createTemplateSlot(1, leftX, topY, colW, rowH, cornerPercent),
+        createTemplateSlot(2, rightX, topY, colW, rowH, cornerPercent),
+        createTemplateSlot(3, leftX, bottomY, colW, rowH, cornerPercent),
+        createTemplateSlot(4, rightX, bottomY, colW, rowH, cornerPercent),
+      ];
+
+      canvas.insertAt(0, ...slots);
+      canvas.setActiveObject(slots[0]);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [
+      clearTemplatePlaceholders,
+      commitHistoryNow,
+      createTemplateSlot,
+      syncSelectionAndLayers,
+    ]
+  );
+
+  const applyEditorialTemplate = useCallback(
+    (options: { cornerPercent: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const safe = getSafeZoneBounds(width, height);
+      const textGap = 56;
+      const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
+
+      clearTemplatePlaceholders(canvas);
+
+      const photoH = Math.round(safe.height * 0.6);
+      const slot1 = createTemplateSlot(
+        1,
+        safe.left + safe.width / 2,
+        safe.top + photoH / 2,
+        safe.width,
+        photoH,
+        cornerPercent
+      );
+
+      const headingTop = safe.top + photoH + textGap;
+      const headingBox = createTemplateTextbox({
+        preset: 'heading',
+        left: safe.left + safe.width / 2,
+        top: headingTop,
+        width: safe.width,
+        originY: 'top',
+        textAlign: 'left',
+        editorName: 'Headline',
+      });
+
+      const headingHeight = headingBox.calcTextHeight();
+      const bodyBox = createTemplateTextbox({
+        preset: 'body',
+        left: safe.left + safe.width / 2,
+        top: headingTop + headingHeight + 28,
+        width: safe.width,
+        originY: 'top',
+        textAlign: 'left',
+        editorName: 'Body Text',
+      });
+
+      canvas.insertAt(0, slot1, headingBox, bodyBox);
+      canvas.setActiveObject(slot1);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [
+      clearTemplatePlaceholders,
+      commitHistoryNow,
+      createTemplateSlot,
+      createTemplateTextbox,
+      syncSelectionAndLayers,
+    ]
+  );
+
+  const applyStackThreeTemplate = useCallback(
+    (options: { cornerPercent: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const safe = getSafeZoneBounds(width, height);
+      const gap = 32;
+      const cornerPercent = Math.max(0, Math.min(25, Math.round(options.cornerPercent)));
+
+      clearTemplatePlaceholders(canvas);
+
+      const rowH = Math.round((safe.height - gap * 2) / 3);
+      const centerX = safe.left + safe.width / 2;
+
+      const slots = [0, 1, 2].map((idx) =>
+        createTemplateSlot(
+          idx + 1,
+          centerX,
+          safe.top + idx * (rowH + gap) + rowH / 2,
+          safe.width,
+          rowH,
+          cornerPercent
+        )
+      );
+
+      canvas.insertAt(0, ...slots);
+      canvas.setActiveObject(slots[0]);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [
+      clearTemplatePlaceholders,
+      commitHistoryNow,
+      createTemplateSlot,
+      syncSelectionAndLayers,
+    ]
+  );
+
+  const applyCornerPhotoGridTemplate = useCallback(
+    (options: { cornerPercent: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      const safe = getSafeZoneBounds(width, height);
+      const gap = 32;
+      const cornerPercent = Math.max(
+        0,
+        Math.min(25, Math.round(options.cornerPercent))
+      );
+
+      clearTemplatePlaceholders(canvas);
+
+      const colW = Math.round((safe.width - gap) / 2);
+      const rowH = Math.round((safe.height - gap) / 2);
+      const leftX = safe.left + colW / 2;
+      const rightX = safe.left + colW + gap + colW / 2;
+      const topY = safe.top + rowH / 2;
+      const bottomY = safe.top + rowH + gap + rowH / 2;
+      const textBoxWidth = Math.max(200, colW - 32);
+
+      // 1 (Top-Left): Body text
+      const text1 = createTemplateTextbox({
+        preset: 'body',
+        left: leftX,
+        top: topY,
+        width: textBoxWidth,
+        originY: 'center',
+        textAlign: 'left',
+        editorName: 'Body Text 1',
+      });
+
+      // 2 (Top-Right): Image slot
+      const slot2 = createTemplateSlot(
+        1,
+        rightX,
+        topY,
+        colW,
+        rowH,
+        cornerPercent
+      );
+
+      // 3 (Bottom-Left): Body text
+      const text3 = createTemplateTextbox({
+        preset: 'body',
+        left: leftX,
+        top: bottomY,
+        width: textBoxWidth,
+        originY: 'center',
+        textAlign: 'left',
+        editorName: 'Body Text 2',
+      });
+
+      // 4 (Bottom-Right): Body text
+      const text4 = createTemplateTextbox({
+        preset: 'body',
+        left: rightX,
+        top: bottomY,
+        width: textBoxWidth,
+        originY: 'center',
+        textAlign: 'left',
+        editorName: 'Body Text 3',
+      });
+
+      canvas.insertAt(0, text1, slot2, text3, text4);
+      canvas.setActiveObject(slot2);
+      canvas.requestRenderAll();
+      syncSelectionAndLayers();
+      commitHistoryNow();
+    },
+    [
+      clearTemplatePlaceholders,
+      commitHistoryNow,
+      createTemplateSlot,
+      createTemplateTextbox,
+      syncSelectionAndLayers,
+    ]
   );
 
   const fillTemplateSlot = useCallback(
@@ -4316,6 +4675,11 @@ export function useFabricCanvas(options?: {
     applyDiagonalTemplate,
     applySplitTemplate,
     applyBentoTemplate,
+    applyHeroTwoTemplate,
+    applyGridFourTemplate,
+    applyEditorialTemplate,
+    applyStackThreeTemplate,
+    applyCornerPhotoGridTemplate,
     fillTemplateSlot,
     replaceActiveImageFromFile,
     cropModeActive,
