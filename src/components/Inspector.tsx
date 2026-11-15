@@ -692,12 +692,12 @@ export function Inspector({
                   <input
                     type="number"
                     min={12}
-                    max={Math.max(280, selectedObject.fontSize)}
+                    max={Math.max(560, selectedObject.fontSize)}
                     value={selectedObject.fontSize}
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       if (Number.isFinite(val) && val >= 8) {
-                        onUpdateText({ fontSize: Math.min(400, val) });
+                        onUpdateText({ fontSize: Math.min(800, val) });
                       }
                     }}
                     className="w-16 lg:w-14 px-2 py-1.5 lg:px-1.5 lg:py-0.5 rounded-md lg:rounded bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs font-mono text-right text-neutral-100 focus:outline-none focus:border-neutral-500"
@@ -707,9 +707,9 @@ export function Inspector({
               </div>
               <RangeSlider
                 min={16}
-                max={Math.max(220, selectedObject.fontSize)}
+                max={Math.max(440, selectedObject.fontSize)}
                 value={selectedObject.fontSize}
-                defaultValue={64}
+                defaultValue={128}
                 onValueChange={(fontSize) => onUpdateText({ fontSize })}
                 className="hidden lg:block w-full"
               />
@@ -1465,7 +1465,7 @@ export function Inspector({
               </div>
               <RangeSlider
                 min={0}
-                max={40}
+                max={80}
                 step={1}
                 value={selectedObject.strokeWidth}
                 defaultValue={0}
@@ -1534,10 +1534,10 @@ export function Inspector({
                 id="inspector-shape-radius"
                 aria-label="Shape corner radius"
                 min={0}
-                max={120}
+                max={240}
                 step={1}
                 value={selectedObject.cornerRadius}
-                defaultValue={selectedObject.shapeKind === 'rounded' ? 36 : 0}
+                defaultValue={selectedObject.shapeKind === 'rounded' ? 72 : 0}
                 onValueChange={(cornerRadius) =>
                   onUpdateShape({ cornerRadius })
                 }

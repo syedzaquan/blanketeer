@@ -13,6 +13,7 @@ import {
   type CutoutShape,
   type DiagonalDirection,
   type ExportImageFormat,
+  type ExportScale,
   type GradientConfig,
   type ImageFilterConfig,
   type ImageStrokeStyle,
@@ -187,8 +188,8 @@ function clientPointToCanvas(
 ): { x: number; y: number; cssScale: number } | null {
   const rect = canvas.getElement().getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) return null;
-  const cw = canvas.width || 1080;
-  const ch = canvas.height || 1350;
+  const cw = canvas.width || 2160;
+  const ch = canvas.height || 2700;
   return {
     x: ((clientPt.x - rect.left) / rect.width) * cw,
     y: ((clientPt.y - rect.top) / rect.height) * ch,
@@ -368,7 +369,7 @@ function captureCanvasThumbnail(canvas: fabric.Canvas): string {
     return canvas.toDataURL({
       format: 'jpeg',
       quality: 0.55,
-      multiplier: 0.14,
+      multiplier: 0.07,
     });
   } catch {
     return '';
@@ -922,8 +923,8 @@ export function useFabricCanvas(options?: {
       height: initialPreset.height,
       preserveObjectStacking: true,
       selection: false,
-      // On iOS Retina (3x), a 1080x1920 working canvas exceeds Safari's 16.7 MP canvas limit
-      // and causes memory failures during editing/export. Native 1080px is already sharper than screen.
+      // On iOS Retina (3x), scaling a 2160x3840 working canvas by 3x would exceed Safari's
+      // 16.7 MP canvas limit and cause memory failures. Native 2160px is already 8.3 MP.
       enableRetinaScaling: !isIOSDevice(),
       backgroundColor: DEFAULT_BACKGROUND.color,
     });
@@ -1702,9 +1703,9 @@ export function useFabricCanvas(options?: {
           textShadowEnabled
             ? new fabric.Shadow({
                 color: 'rgba(0, 0, 0, 0.48)',
-                blur: 16,
+                blur: 32,
                 offsetX: 0,
-                offsetY: 4,
+                offsetY: 8,
                 nonScaling: true,
               })
             : null
@@ -1944,42 +1945,42 @@ export function useFabricCanvas(options?: {
           editorName = 'Square';
           shape = new fabric.Rect({
             ...commonProps,
-            width: 320,
-            height: 320,
+            width: 640,
+            height: 640,
             rx: 0,
             ry: 0,
           });
           break;
         case 'rounded':
           editorName = 'Rounded Box';
-          cornerRadius = 36;
+          cornerRadius = 72;
           shape = new fabric.Rect({
             ...commonProps,
-            width: 360,
-            height: 240,
-            rx: 36,
-            ry: 36,
+            width: 720,
+            height: 480,
+            rx: 72,
+            ry: 72,
           });
           break;
         case 'circle':
           editorName = 'Circle';
           shape = new fabric.Circle({
             ...commonProps,
-            radius: 160,
+            radius: 320,
           });
           break;
         case 'triangle':
           editorName = 'Triangle';
           shape = new fabric.Triangle({
             ...commonProps,
-            width: 320,
-            height: 280,
+            width: 640,
+            height: 560,
           });
           break;
         case 'star': {
           editorName = 'Star';
-          const outerR = 170;
-          const innerR = 72;
+          const outerR = 340;
+          const innerR = 144;
           const points: { x: number; y: number }[] = [];
           for (let i = 0; i < 10; i++) {
             const r = i % 2 === 0 ? outerR : innerR;
@@ -1993,13 +1994,13 @@ export function useFabricCanvas(options?: {
         }
         case 'line':
           editorName = 'Line';
-          cornerRadius = 5;
+          cornerRadius = 10;
           shape = new fabric.Rect({
             ...commonProps,
-            width: 480,
-            height: 10,
-            rx: 5,
-            ry: 5,
+            width: 960,
+            height: 20,
+            rx: 10,
+            ry: 10,
           });
           break;
       }
@@ -2054,7 +2055,7 @@ export function useFabricCanvas(options?: {
       }
       if (patch.strokeWidth !== undefined && Number.isFinite(patch.strokeWidth)) {
         active.set({
-          strokeWidth: Math.max(0, Math.min(40, Math.round(patch.strokeWidth))),
+          strokeWidth: Math.max(0, Math.min(80, Math.round(patch.strokeWidth))),
           strokeUniform: true,
         });
       }
@@ -2063,7 +2064,7 @@ export function useFabricCanvas(options?: {
         Number.isFinite(patch.cornerRadius) &&
         active instanceof fabric.Rect
       ) {
-        const clamped = Math.max(0, Math.min(120, Math.round(patch.cornerRadius)));
+        const clamped = Math.max(0, Math.min(240, Math.round(patch.cornerRadius)));
         meta.shapeCornerRadius = clamped;
         active.set({ rx: clamped, ry: clamped });
       }
@@ -2701,7 +2702,7 @@ export function useFabricCanvas(options?: {
       if (patch.strokeWidth !== undefined && Number.isFinite(patch.strokeWidth)) {
         storyImg.set(
           'imageStrokeWidth',
-          Math.max(0, Math.min(64, Math.round(patch.strokeWidth)))
+          Math.max(0, Math.min(128, Math.round(patch.strokeWidth)))
         );
       }
       if (patch.strokeStyle !== undefined) {
@@ -3028,7 +3029,7 @@ export function useFabricCanvas(options?: {
     const rect = canvas.getElement().getBoundingClientRect();
     if (rect.width <= 0) return;
 
-    const cssScale = rect.width / (canvas.width || 1080);
+    const cssScale = rect.width / (canvas.width || 2160);
     const { cornerSize, touchCornerSize } = applyControlStyling(cssScale);
 
     let changed = false;
@@ -3534,7 +3535,8 @@ export function useFabricCanvas(options?: {
   const exportImage = useCallback(
     async (
       format: ExportImageFormat = 'png',
-      quality = 0.92
+      quality = 0.92,
+      scale: ExportScale = 1
     ): Promise<ExportPreviewPayload | null> => {
       const canvas = canvasRef.current;
       if (!canvas) return null;
@@ -3556,6 +3558,7 @@ export function useFabricCanvas(options?: {
         format,
         quality,
         filename: `story-${Date.now()}.${ext}`,
+        scale,
       });
       syncSelectionAndLayers();
       return preview;
@@ -3564,7 +3567,8 @@ export function useFabricCanvas(options?: {
   );
 
   const exportPNG = useCallback(
-    async (): Promise<ExportPreviewPayload | null> => exportImage('png', 1),
+    async (scale: ExportScale = 1): Promise<ExportPreviewPayload | null> =>
+      exportImage('png', 1, scale),
     [exportImage]
   );
 
@@ -4145,7 +4149,8 @@ export function useFabricCanvas(options?: {
     async (
       pageIds: string[],
       format: ExportImageFormat = 'png',
-      quality?: number
+      quality?: number,
+      scale: ExportScale = 1
     ): Promise<ExportedPageItem[]> => {
       captureActivePageIntoRef();
       const idSet = new Set(pageIds);
@@ -4159,7 +4164,8 @@ export function useFabricCanvas(options?: {
           page,
           slideNumber,
           format,
-          quality
+          quality,
+          scale
         );
         results.push(rendered);
       }

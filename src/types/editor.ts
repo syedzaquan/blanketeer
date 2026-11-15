@@ -13,24 +13,26 @@ export const ASPECT_RATIO_PRESETS: Record<AspectRatioKey, AspectRatioPreset> = {
     key: '4:5',
     label: 'Portrait',
     ratioLabel: '4:5',
-    width: 1080,
-    height: 1350,
+    width: 2160,
+    height: 2700,
   },
   '9:16': {
     key: '9:16',
     label: 'Story',
     ratioLabel: '9:16',
-    width: 1080,
-    height: 1920,
+    width: 2160,
+    height: 3840,
   },
   '1:1': {
     key: '1:1',
     label: 'Square',
     ratioLabel: '1:1',
-    width: 1080,
-    height: 1080,
+    width: 2160,
+    height: 2160,
   },
 };
+
+export type ExportScale = 1 | 2;
 
 export type BackgroundMode = 'color' | 'gradient' | 'image';
 

@@ -3,6 +3,7 @@ import {
   ASPECT_RATIO_PRESETS,
   type CanvasPageSnapshot,
   type ExportImageFormat,
+  type ExportScale,
 } from '../types/editor';
 import { applyBackgroundImageAdjustments } from './backgroundFilters';
 import { createLinearGradient } from './canvasHelpers';
@@ -98,10 +99,14 @@ export const exportCanvasToImage = async (
     format?: ExportImageFormat;
     quality?: number;
     filename?: string;
+    scale?: ExportScale;
   } = {}
 ): Promise<ExportPreviewPayload | null> => {
   const format: ExportImageFormat = options.format ?? 'png';
   const quality = format === 'png' ? 1 : (options.quality ?? 0.92);
+  const scale: ExportScale = options.scale === 2 ? 2 : 1;
+  // Working canvas is 2x (2160px wide); 1x exports at 1080px (0.5), 2x exports at 2160px (1).
+  const multiplier = scale === 2 ? 1 : 0.5;
   const ext = format === 'jpeg' ? 'jpg' : format;
   const filename = options.filename ?? `story-${Date.now()}.${ext}`;
   const mimeType = `image/${format}`;
@@ -140,7 +145,7 @@ export const exportCanvasToImage = async (
 
   const dataURL = canvas.toDataURL({
     format,
-    multiplier: 1, // Native resolution export
+    multiplier,
     quality,
   });
 
@@ -184,9 +189,10 @@ export const exportCanvasToImage = async (
 
 export const exportCanvasToPNG = async (
   canvas: fabric.Canvas,
-  filename = `story-${Date.now()}.png`
+  filename = `story-${Date.now()}.png`,
+  scale: ExportScale = 1
 ): Promise<ExportPreviewPayload | null> =>
-  exportCanvasToImage(canvas, { format: 'png', quality: 1, filename });
+  exportCanvasToImage(canvas, { format: 'png', quality: 1, filename, scale });
 
 export interface ExportedPageItem {
   pageId: string;
@@ -203,9 +209,13 @@ export async function renderPageSnapshotToPayload(
   page: CanvasPageSnapshot,
   slideNumber: number,
   format: ExportImageFormat = 'png',
-  quality?: number
+  quality?: number,
+  scale: ExportScale = 1
 ): Promise<ExportedPageItem> {
   const preset = ASPECT_RATIO_PRESETS[page.aspectRatio] ?? ASPECT_RATIO_PRESETS['4:5'];
+  const multiplier = scale === 2 ? 1 : 0.5;
+  const exportWidth = Math.round(preset.width * multiplier);
+  const exportHeight = Math.round(preset.height * multiplier);
   const ext = format === 'jpeg' ? 'jpg' : format;
   const safeSlug = page.name
     .toLowerCase()
@@ -289,7 +299,7 @@ export async function renderPageSnapshotToPayload(
 
     const dataURL = staticCanvas.toDataURL({
       format,
-      multiplier: 1,
+      multiplier,
       quality: finalQuality,
     });
 
@@ -307,8 +317,8 @@ export async function renderPageSnapshotToPayload(
       blobUrl,
       dataURL,
       filename,
-      width: preset.width,
-      height: preset.height,
+      width: exportWidth,
+      height: exportHeight,
     };
   } finally {
     staticCanvas.dispose();

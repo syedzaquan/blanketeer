@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Check, Download, Layers, Loader2, X } from 'lucide-react';
-import type { CanvasPageItem, ExportImageFormat } from '../types/editor';
+import type {
+  CanvasPageItem,
+  ExportImageFormat,
+  ExportScale,
+} from '../types/editor';
 import {
   shareOrDownloadExportedPages,
   type ExportedPageItem,
@@ -14,7 +18,8 @@ interface ExportPagesModalProps {
   onRenderSelectedPages: (
     pageIds: string[],
     format: ExportImageFormat,
-    quality?: number
+    quality?: number,
+    scale?: ExportScale
   ) => Promise<ExportedPageItem[]>;
 }
 
@@ -39,6 +44,7 @@ export const ExportPagesModal: React.FC<ExportPagesModalProps> = ({
     pages.map((p) => p.id)
   );
   const [format, setFormat] = useState<ExportImageFormat>('png');
+  const [scale, setScale] = useState<ExportScale>(1);
   const [isExporting, setIsExporting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -66,7 +72,7 @@ export const ExportPagesModal: React.FC<ExportPagesModalProps> = ({
     setErrorMsg(null);
     let rendered: ExportedPageItem[] = [];
     try {
-      rendered = await onRenderSelectedPages(selectedIds, format);
+      rendered = await onRenderSelectedPages(selectedIds, format, undefined, scale);
       const result = await shareOrDownloadExportedPages(rendered, format);
       if (result !== 'cancelled') {
         onClose();
@@ -179,6 +185,42 @@ export const ExportPagesModal: React.FC<ExportPagesModalProps> = ({
                 </button>
               );
             })}
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">
+              Resolution
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  {
+                    value: 1 as ExportScale,
+                    label: '1× Original (1080px)',
+                    hint: 'Recommended for Instagram',
+                  },
+                  {
+                    value: 2 as ExportScale,
+                    label: '2× High-Res (2160px)',
+                    hint: 'Full canvas resolution',
+                  },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setScale(opt.value)}
+                  className={`px-3 py-2 rounded-xl border text-left transition ${
+                    scale === opt.value
+                      ? 'border-indigo-500 bg-indigo-500/15 text-white'
+                      : 'border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.07]'
+                  }`}
+                >
+                  <div className="text-xs font-semibold">{opt.label}</div>
+                  <div className="text-[10px] text-zinc-400">{opt.hint}</div>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2 pt-1">

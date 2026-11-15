@@ -633,7 +633,7 @@ export function ImageStyleControls({
                   ariaLabel="Image border width in pixels"
                   value={strokeWidth}
                   min={0}
-                  max={64}
+                  max={128}
                   disabled={!selectedImage}
                   suffix="px"
                   onCommit={(val) => onUpdateImageProps({ strokeWidth: val })}
@@ -644,11 +644,11 @@ export function ImageStyleControls({
               id={`${idPrefix}-stroke-width-slider`}
               aria-label="Image border width slider"
               min={0}
-              max={64}
+              max={128}
               step={1}
               disabled={!selectedImage}
               value={strokeWidth}
-              defaultValue={isFrameStyle ? 24 : 0}
+              defaultValue={isFrameStyle ? 48 : 0}
               onValueChange={(val) => onUpdateImageProps({ strokeWidth: val })}
               className="w-full"
             />

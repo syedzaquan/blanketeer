@@ -25,7 +25,7 @@ import { TemplatesTab } from './components/Sidebar/TemplatesTab';
 import { TextTab } from './components/Sidebar/TextTab';
 import { Toolbar } from './components/Toolbar';
 import { useFabricCanvas } from './hooks/useFabricCanvas';
-import type { ExportImageFormat, SidebarTab } from './types/editor';
+import type { ExportImageFormat, ExportScale, SidebarTab } from './types/editor';
 import { cn } from './utils/cn';
 import { extractImageFileFromClipboardData } from './utils/clipboardImage';
 import { sharePngBlob, type ExportPreviewPayload } from './utils/exportCanvas';
@@ -294,9 +294,16 @@ export function App() {
     });
   };
 
-  const handleExportImage = async (format: ExportImageFormat = 'png') => {
+  const handleExportImage = async (
+    format: ExportImageFormat = 'png',
+    scale: ExportScale = 1
+  ) => {
     try {
-      const preview = await exportImage(format);
+      const preview = await exportImage(
+        format,
+        format === 'png' ? 1 : 0.92,
+        scale
+      );
       if (preview) {
         setExportPreview((prev) => {
           if (prev?.blobUrl) {
@@ -321,7 +328,7 @@ export function App() {
         onUndo={() => void undo()}
         onRedo={() => void redo()}
         onResetProject={() => setShowResetConfirm(true)}
-        onExportImage={(format) => void handleExportImage(format)}
+        onExportImage={(format, scale) => void handleExportImage(format, scale)}
         onOpenExportPages={() => setShowExportPagesModal(true)}
         onAddPage={() => void addPage(true)}
         pageCount={pages.length}

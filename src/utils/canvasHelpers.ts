@@ -515,11 +515,11 @@ export function readFileAsDataURL(file: File): Promise<string> {
 /**
  * Downscales oversized camera photos (e.g., 12–48 MP) on upload so they stay
  * within WebGL texture limits (<= 4096px), keep Undo snapshots lightweight,
- * and still exceed 2x the 1080px story export width.
+ * and still cover the 2x (2160×3840) working canvas without upscaling.
  */
 export async function prepareBackgroundImageDataURL(
   file: File,
-  maxDimension = 2400
+  maxDimension = 3840
 ): Promise<string> {
   const objectUrl = URL.createObjectURL(file);
   try {

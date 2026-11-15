@@ -14,6 +14,7 @@ import {
   ASPECT_RATIO_PRESETS,
   type AspectRatioKey,
   type ExportImageFormat,
+  type ExportScale,
 } from '../types/editor';
 import { cn } from '../utils/cn';
 
@@ -25,7 +26,7 @@ interface HeaderProps {
   onUndo: () => void;
   onRedo: () => void;
   onResetProject: () => void;
-  onExportImage: (format: ExportImageFormat) => void;
+  onExportImage: (format: ExportImageFormat, scale?: ExportScale) => void;
   onOpenExportPages: () => void;
   onAddPage?: () => void;
   pageCount: number;
@@ -50,6 +51,7 @@ export function Header({
 }: HeaderProps) {
   const currentPreset = ASPECT_RATIO_PRESETS[aspectRatio];
   const [menuOpen, setMenuOpen] = useState(false);
+  const [exportScale, setExportScale] = useState<ExportScale>(1);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const jsonInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -182,9 +184,9 @@ export function Header({
         <div ref={menuRef} className="relative flex items-center">
           <button
             type="button"
-            onClick={() => onExportImage('png')}
-            aria-label="Export PNG"
-            title="Export PNG"
+            onClick={() => onExportImage('png', exportScale)}
+            aria-label={`Export PNG (${exportScale === 2 ? '2160px' : '1080px'})`}
+            title={`Export PNG (${exportScale === 2 ? '2160px' : '1080px'})`}
             className="flex items-center gap-1.5 px-3 py-2 lg:px-2.5 lg:py-1 rounded-l-md bg-neutral-100 hover:bg-white active:bg-neutral-200 text-neutral-950 text-xs font-medium transition-colors"
           >
             <Download className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
@@ -202,9 +204,33 @@ export function Header({
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-48 rounded-lg bg-[#1c1c1e] border border-neutral-700/90 shadow-xl py-1 z-50 text-xs text-neutral-200">
+            <div className="absolute right-0 top-full mt-1.5 w-56 rounded-lg bg-[#1c1c1e] border border-neutral-700/90 shadow-xl py-1 z-50 text-xs text-neutral-200">
               <div className="px-2.5 py-1 text-[10px] font-medium text-neutral-500 uppercase tracking-wider">
-                Export Image
+                Export Resolution
+              </div>
+              <div className="px-2 pb-1.5 grid grid-cols-2 gap-1">
+                {([1, 2] as const).map((s) => {
+                  const active = exportScale === s;
+                  const targetW = s === 2 ? 2160 : 1080;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setExportScale(s)}
+                      className={cn(
+                        'px-2 py-1 rounded text-[11px] font-medium transition-colors border',
+                        active
+                          ? 'bg-neutral-700 border-neutral-500 text-white'
+                          : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                      )}
+                    >
+                      {s}× ({targetW}px)
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="px-2.5 py-1 text-[10px] font-medium text-neutral-500 uppercase tracking-wider">
+                Export Image · {exportScale === 2 ? '2160px' : '1080px'}
               </div>
               {(
                 [
@@ -218,7 +244,7 @@ export function Header({
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    onExportImage(item.format);
+                    onExportImage(item.format, exportScale);
                   }}
                   className="w-full px-3 py-2 lg:py-1.5 text-left hover:bg-neutral-800 flex items-center gap-2 transition-colors"
                 >

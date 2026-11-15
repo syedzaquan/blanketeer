@@ -35,7 +35,7 @@ interface SnapCandidate {
   spanEnd?: number;
 }
 
-const SNAP_THRESHOLD = 18;
+const SNAP_THRESHOLD = 36;
 const ROTATION_SNAP_ANGLES = [0, 45, 90, 180, 270, 360] as const;
 const ROTATION_SNAP_THRESHOLD = 6;
 
@@ -43,11 +43,11 @@ export function getSafeZoneBounds(
   canvasWidth: number,
   canvasHeight: number
 ): SafeZoneBounds {
-  const marginX = 44;
+  const marginX = 88;
   const aspect = canvasHeight / Math.max(canvasWidth, 1);
 
   // Story (9:16) reserves taller top/bottom margins for Instagram UI overlays
-  const marginY = aspect >= 1.5 ? 130 : aspect >= 1.15 ? 60 : 44;
+  const marginY = aspect >= 1.5 ? 260 : aspect >= 1.15 ? 120 : 88;
 
   return {
     left: marginX,
@@ -498,8 +498,8 @@ export function renderGuidesOnTopContext(
     return;
   }
 
-  const width = canvas.width || 1080;
-  const height = canvas.height || 1920;
+  const width = canvas.width || 2160;
+  const height = canvas.height || 3840;
   const safe = getSafeZoneBounds(width, height);
 
   topCtx.save();
