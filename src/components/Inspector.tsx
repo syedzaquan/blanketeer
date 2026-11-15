@@ -707,7 +707,7 @@ export function Inspector({
               </div>
               <RangeSlider
                 min={16}
-                max={Math.max(440, selectedObject.fontSize)}
+                max={Math.max(400, selectedObject.fontSize)}
                 value={selectedObject.fontSize}
                 defaultValue={128}
                 onValueChange={(fontSize) => onUpdateText({ fontSize })}

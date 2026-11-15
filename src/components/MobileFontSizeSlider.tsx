@@ -11,7 +11,7 @@ interface MobileFontSizeSliderProps {
 export function MobileFontSizeSlider({
   fontSize,
   min = 16,
-  max = 440,
+  max = 400,
   onChange,
 }: MobileFontSizeSliderProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);

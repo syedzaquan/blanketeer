@@ -151,10 +151,7 @@ function normalizeTextboxScale(target: fabric.FabricObject): boolean {
   const uniformScale = (sx + sy) / 2;
   const prevCenter = target.getCenterPoint();
   const baseFontSize = target.fontSize || 48;
-  const nextFontSize = Math.max(
-    12,
-    Math.min(400, Math.round(baseFontSize * uniformScale))
-  );
+  const nextFontSize = Math.max(12, Math.round(baseFontSize * uniformScale));
   const factor = nextFontSize / baseFontSize;
   const nextWidth = Math.max(20, (target.width || 100) * factor);
   target.set({
@@ -354,6 +351,8 @@ interface OverflowDragSession {
   startAngle: number;
   startPointerAngle: number;
   centerPoint: fabric.Point;
+  startSceneX: number;
+  startSceneY: number;
   isTextbox: boolean;
 }
 
@@ -3257,10 +3256,7 @@ export function useFabricCanvas(options?: {
       } = session;
 
       if (isTextbox) {
-        const uniformScale = Math.min(
-          12,
-          Math.max(0.15, Math.abs(initialScaleX) * rawFactor)
-        );
+        const uniformScale = Math.max(0.05, Math.abs(initialScaleX) * rawFactor);
         target.set({ scaleX: uniformScale, scaleY: uniformScale });
       } else {
         const signX = initialScaleX < 0 ? -1 : 1;
@@ -3331,7 +3327,12 @@ export function useFabricCanvas(options?: {
       const target = canvas?.getActiveObject();
       if (!canvas || !target) return false;
       const meta = ensureObjectMeta(target);
-      if (meta.locked || !target.hasControls) return false;
+      if (meta.locked) return false;
+      if (corner === 'move') {
+        if (target.lockMovementX && target.lockMovementY) return false;
+      } else if (!target.hasControls) {
+        return false;
+      }
 
       target.setCoords();
 
@@ -3371,6 +3372,8 @@ export function useFabricCanvas(options?: {
         startPointerAngle:
           (Math.atan2(sceneY - centerPoint.y, sceneX - centerPoint.x) * 180) / Math.PI,
         centerPoint,
+        startSceneX: sceneX,
+        startSceneY: sceneY,
         isTextbox:
           target instanceof StoryTextbox || target instanceof fabric.Textbox,
       };
@@ -3386,6 +3389,27 @@ export function useFabricCanvas(options?: {
       if (!session || !canvas) return;
 
       const { target, corner, originX, originY, anchorPoint } = session;
+
+      if (corner === 'move') {
+        const dx = target.lockMovementX ? 0 : sceneX - session.startSceneX;
+        const dy = target.lockMovementY ? 0 : sceneY - session.startSceneY;
+        const nextCenter = new fabric.Point(
+          session.centerPoint.x + dx,
+          session.centerPoint.y + dy
+        );
+        target.setPositionByOrigin(nextCenter, 'center', 'center');
+        const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+        activeSnapGuidesRef.current = snapObjectToGuides(
+          target,
+          width,
+          height,
+          canvas.getObjects()
+        );
+        target.setCoords();
+        setSelectionBox(buildSelectionBoxSnapshot(target));
+        canvas.requestRenderAll();
+        return;
+      }
 
       if (corner === 'mtr') {
         const currentPointerAngle =

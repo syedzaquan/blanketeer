@@ -1063,7 +1063,7 @@ export function CanvasViewport({
   };
 
   const handleOverflowControlPointerDown = useCallback(
-    (corner: OverflowControlKey, e: ReactPointerEvent<HTMLButtonElement>) => {
+    (corner: OverflowControlKey, e: ReactPointerEvent<Element>) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1192,6 +1192,27 @@ export function CanvasViewport({
               viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
               className="w-full h-full overflow-visible pointer-events-none"
             >
+              <defs>
+                <clipPath id="overflow-outside-canvas-clip">
+                  <path
+                    clipRule="evenodd"
+                    d={`M -50000 -50000 H 50000 V 50000 H -50000 Z M 0 0 H ${canvasWidth} V ${canvasHeight} H 0 Z`}
+                  />
+                </clipPath>
+              </defs>
+              {!selectionBox.locked && (
+                <g clipPath="url(#overflow-outside-canvas-clip)">
+                  <polygon
+                    points={`${selectionBox.corners.tl.x},${selectionBox.corners.tl.y} ${selectionBox.corners.tr.x},${selectionBox.corners.tr.y} ${selectionBox.corners.br.x},${selectionBox.corners.br.y} ${selectionBox.corners.bl.x},${selectionBox.corners.bl.y}`}
+                    fill="transparent"
+                    style={{ pointerEvents: 'all', cursor: 'move' }}
+                    className="touch-none"
+                    onPointerDown={(e) =>
+                      handleOverflowControlPointerDown('move', e)
+                    }
+                  />
+                </g>
+              )}
               <polygon
                 points={`${selectionBox.corners.tl.x},${selectionBox.corners.tl.y} ${selectionBox.corners.tr.x},${selectionBox.corners.tr.y} ${selectionBox.corners.br.x},${selectionBox.corners.br.y} ${selectionBox.corners.bl.x},${selectionBox.corners.bl.y}`}
                 fill="none"

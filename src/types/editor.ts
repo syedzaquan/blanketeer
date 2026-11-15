@@ -315,7 +315,8 @@ export type OverflowControlKey =
   | 'mr'
   | 'mt'
   | 'mb'
-  | 'mtr';
+  | 'mtr'
+  | 'move';
 
 export interface SelectionBoxSnapshot {
   id: string;
