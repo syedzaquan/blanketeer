@@ -105,10 +105,10 @@ interface CanvasViewportProps {
   isCanvasEmpty?: boolean;
 }
 
-const DEFAULT_CANVAS_SCALE = 0.26;
-const MIN_CANVAS_SCALE = 0.1;
-const MAX_CANVAS_SCALE = 2.5;
-const SCALE_BUTTON_STEP = 0.1;
+const DEFAULT_CANVAS_SCALE = 0.13;
+const MIN_CANVAS_SCALE = 0.05;
+const MAX_CANVAS_SCALE = 1.5;
+const SCALE_BUTTON_STEP = 0.05;
 
 const clampCanvasScale = (value: number): number =>
   Math.min(MAX_CANVAS_SCALE, Math.max(MIN_CANVAS_SCALE, Number(value.toFixed(3))));
@@ -195,14 +195,28 @@ export function CanvasViewport({
   } | null>(null);
   const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
   const clipboardNoticeTimerRef = useRef<number | null>(null);
-  const [showFirstLoadHint, setShowFirstLoadHint] = useState(true);
+  const [showFirstLoadHint, setShowFirstLoadHint] = useState(false);
+  const hasShownInitialHintRef = useRef(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    const shouldShow = !hasShownInitialHintRef.current || isCanvasEmpty;
+    if (!shouldShow) {
       setShowFirstLoadHint(false);
-    }, 3000);
-    return () => window.clearTimeout(timer);
-  }, []);
+      return;
+    }
+
+    const showTimer = window.setTimeout(() => {
+      hasShownInitialHintRef.current = true;
+      setShowFirstLoadHint(true);
+    }, 150);
+    const hideTimer = window.setTimeout(() => {
+      setShowFirstLoadHint(false);
+    }, 4650);
+    return () => {
+      window.clearTimeout(showTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [isCanvasEmpty]);
 
   const showClipboardNotice = useCallback((msg: string) => {
     setClipboardNotice(msg);
@@ -1348,7 +1362,7 @@ export function CanvasViewport({
             type="button"
             onClick={resetViewport}
             aria-label="Reset canvas zoom"
-            title={`Reset to 26% & center (${canvasWidth} × ${canvasHeight})`}
+            title={`Reset to 13% & center (${canvasWidth} × ${canvasHeight})`}
             className="px-2 py-1.5 lg:px-1.5 lg:py-0.5 rounded hover:bg-neutral-800 text-neutral-200 font-medium min-w-[2.75rem] lg:min-w-[2.5rem] text-center transition-colors"
           >
             {Math.round(canvasScale * 100)}%
@@ -1370,7 +1384,7 @@ export function CanvasViewport({
               type="button"
               onClick={resetViewport}
               aria-label="Reset canvas position and zoom"
-              title="Reset to default position & 26% zoom (Cmd/Ctrl 0)"
+              title="Reset to default position & 13% zoom (Cmd/Ctrl 0)"
               className="p-2 lg:p-1 rounded flex items-center justify-center bg-neutral-800 text-neutral-100 hover:bg-neutral-700 transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
@@ -1461,9 +1475,14 @@ export function CanvasViewport({
         </div>
       )}
 
-      {/* First-Load 3-Second Instruction Hint */}
-      {showFirstLoadHint && isCanvasEmpty && !canvasTapPopover && !clipboardNotice && (
-        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 rounded-full border border-neutral-700/80 bg-neutral-900/90 px-4 py-2 text-xs font-medium text-neutral-100 shadow-xl backdrop-blur-md whitespace-nowrap">
+      {/* First-Load Instruction Hint (fades in & out smoothly) */}
+      {!canvasTapPopover && !clipboardNotice && (
+        <div
+          className={cn(
+            'pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 rounded-full border border-neutral-700/80 bg-neutral-900/90 px-4 py-2 text-xs font-medium text-neutral-100 shadow-xl backdrop-blur-md whitespace-nowrap transition-opacity duration-500',
+            showFirstLoadHint ? 'opacity-100' : 'opacity-0'
+          )}
+        >
           Tap canvas to add text or image
         </div>
       )}

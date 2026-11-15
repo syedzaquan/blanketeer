@@ -40,11 +40,15 @@ export function RangeSlider({
   const lastInputWasKeyboardRef = useRef(false);
   const lastTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
   const ignoreChangeUntilRef = useRef(0);
+  const detentStateRef = useRef<'idle' | 'holding' | 'passed'>('idle');
+  const prevRawRef = useRef<number>(value);
 
   const resetToDefault = () => {
     if (disabled || defaultValue === undefined) return;
     const clamped = Math.min(max, Math.max(min, defaultValue));
     ignoreChangeUntilRef.current = Date.now() + 400;
+    detentStateRef.current = 'holding';
+    prevRawRef.current = clamped;
     if (inputRef.current) {
       inputRef.current.value = String(clamped);
       inputRef.current.blur();
@@ -63,15 +67,45 @@ export function RangeSlider({
     const raw = Number(e.target.value);
     if (!Number.isFinite(raw)) return;
 
+    const prevRaw = prevRawRef.current;
+    prevRawRef.current = raw;
+
     if (defaultValue !== undefined && !lastInputWasKeyboardRef.current) {
+      const clampedDefault = Math.min(max, Math.max(min, defaultValue));
       const range = Math.max(0, max - min);
-      const snapRadius = Math.max(
-        step * 0.6,
-        Math.min(range * 0.02, step * 5)
+      const detentRadius = Math.max(
+        step * 1.2,
+        Math.min(range * 0.025, step * 4)
       );
-      if (Math.abs(raw - defaultValue) <= snapRadius) {
-        onValueChange(Math.min(max, Math.max(min, defaultValue)));
+      const state = detentStateRef.current;
+
+      if (state === 'holding') {
+        if (Math.abs(raw - clampedDefault) <= detentRadius) {
+          e.target.value = String(clampedDefault);
+          onValueChange(clampedDefault);
+          return;
+        }
+        detentStateRef.current = 'passed';
+        onValueChange(raw);
         return;
+      }
+
+      if (state === 'idle') {
+        const hitDefault = Math.abs(raw - clampedDefault) < step * 0.5;
+        const crossedDefault =
+          (prevRaw < clampedDefault && raw >= clampedDefault) ||
+          (prevRaw > clampedDefault && raw <= clampedDefault);
+        if (hitDefault || crossedDefault) {
+          detentStateRef.current = 'holding';
+          e.target.value = String(clampedDefault);
+          onValueChange(clampedDefault);
+          return;
+        }
+      } else if (
+        state === 'passed' &&
+        Math.abs(raw - clampedDefault) > detentRadius * 1.5
+      ) {
+        detentStateRef.current = 'idle';
       }
     }
 
@@ -89,11 +123,21 @@ export function RangeSlider({
       ignoreChangeUntilRef.current = 0;
     }
     lastInputWasKeyboardRef.current = false;
+    prevRawRef.current = value;
+    detentStateRef.current =
+      defaultValue !== undefined && Math.abs(value - defaultValue) < step * 0.5
+        ? 'holding'
+        : 'idle';
     onPointerDown?.(e);
   };
 
   const handleTouchStart = (e: TouchEvent<HTMLInputElement>) => {
     lastInputWasKeyboardRef.current = false;
+    prevRawRef.current = value;
+    detentStateRef.current =
+      defaultValue !== undefined && Math.abs(value - defaultValue) < step * 0.5
+        ? 'holding'
+        : 'idle';
     if (!disabled && defaultValue !== undefined) {
       const touch = e.touches[0];
       const prev = lastTapRef.current;

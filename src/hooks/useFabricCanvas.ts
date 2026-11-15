@@ -942,6 +942,31 @@ export function useFabricCanvas(options?: {
       }
     };
 
+    // Prioritize the currently selected object during hit-testing so a selected
+    // lower layer can still be dragged/moved even when another element sits on top.
+    const origFindTarget = canvas.findTarget.bind(canvas);
+    canvas.findTarget = (e: fabric.TPointerEvent) => {
+      const active = canvas.getActiveObject();
+      if (
+        !cropSessionRef.current &&
+        active &&
+        active.visible !== false &&
+        active.selectable !== false &&
+        active.evented !== false &&
+        canvas.getActiveObjects().length === 1
+      ) {
+        const pointer = canvas.getViewportPoint(e);
+        const isTouch = 'touches' in e || ('pointerType' in e && e.pointerType === 'touch');
+        if (
+          active.findControl(pointer, isTouch) ||
+          active === canvas.searchPossibleTargets([active], pointer)
+        ) {
+          return active;
+        }
+      }
+      return origFindTarget(e);
+    };
+
     canvasRef.current = canvas;
     canvas.backgroundColor = DEFAULT_BACKGROUND.color;
     canvas.requestRenderAll();
