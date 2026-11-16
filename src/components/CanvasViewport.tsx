@@ -1235,7 +1235,7 @@ export function CanvasViewport({
                 points={`${selectionBox.corners.tl.x},${selectionBox.corners.tl.y} ${selectionBox.corners.tr.x},${selectionBox.corners.tr.y} ${selectionBox.corners.br.x},${selectionBox.corners.br.y} ${selectionBox.corners.bl.x},${selectionBox.corners.bl.y}`}
                 fill="none"
                 stroke="#8b5cf6"
-                strokeWidth={2 / Math.max(canvasScale, 0.1)}
+                strokeWidth={1.5 / Math.max(canvasScale, 0.1)}
               />
               {selectionBox.controls.mtr && (
                 <line
@@ -1244,7 +1244,7 @@ export function CanvasViewport({
                   x2={selectionBox.controls.mtr.x}
                   y2={selectionBox.controls.mtr.y}
                   stroke="#8b5cf6"
-                  strokeWidth={2 / Math.max(canvasScale, 0.1)}
+                  strokeWidth={1.5 / Math.max(canvasScale, 0.1)}
                 />
               )}
             </svg>
@@ -1280,7 +1280,7 @@ export function CanvasViewport({
                     interactive ? 'pointer-events-auto' : 'pointer-events-none'
                   )}
                 >
-                  <span className="block w-3 h-3 rounded-full bg-white border-2 border-[#8b5cf6] shadow-sm" />
+                  <span className="block w-2.5 h-2.5 rounded-full bg-white border-[1.5px] border-[#8b5cf6] shadow-sm" />
                 </button>
               );
             })}

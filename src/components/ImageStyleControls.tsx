@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type {
   CutoutShape,
+  ImageBlendMode,
   ImageFilterConfig,
   ImageStrokeStyle,
   SelectedImageProps,
@@ -47,6 +48,8 @@ export type ImagePropsPatch = Partial<{
   shadowOffsetY: number;
   filter: Partial<ImageFilterConfig>;
   filterQuality: AdjustmentQuality;
+  opacity: number;
+  blendMode: ImageBlendMode;
 }>;
 
 interface ImageStyleControlsProps {
@@ -61,6 +64,21 @@ interface ImageStyleControlsProps {
 }
 
 const SIZE_PERCENT_PRESETS = [100, 50, 25] as const;
+
+const IMAGE_BLEND_OPTIONS: { id: ImageBlendMode; label: string }[] = [
+  { id: 'source-over', label: 'Normal' },
+  { id: 'multiply', label: 'Multiply' },
+  { id: 'screen', label: 'Screen' },
+  { id: 'overlay', label: 'Overlay' },
+  { id: 'soft-light', label: 'Soft Light' },
+  { id: 'hard-light', label: 'Hard Light' },
+  { id: 'darken', label: 'Darken' },
+  { id: 'lighten', label: 'Lighten' },
+  { id: 'color-dodge', label: 'Color Dodge' },
+  { id: 'color-burn', label: 'Color Burn' },
+  { id: 'difference', label: 'Difference' },
+  { id: 'exclusion', label: 'Exclusion' },
+];
 
 const CUTOUT_OPTIONS: {
   id: CutoutShape;
@@ -259,6 +277,81 @@ export function ImageStyleControls({
             <ImagePlus className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
             <span>Replace Image</span>
           </button>
+        </div>
+      )}
+
+      {/* Opacity & Blend */}
+      {selectedImage && (
+        <div className="border-t border-neutral-800/80 pt-3.5 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-medium text-neutral-300">
+              Opacity &amp; Blend
+            </h3>
+            {(selectedImage.opacity < 1 ||
+              selectedImage.blendMode !== 'source-over') && (
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateImageProps({ opacity: 1, blendMode: 'source-over' })
+                }
+                className="text-[11px] text-neutral-400 hover:text-neutral-200 transition-colors"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between text-xs lg:text-[11px] mb-1">
+              <label
+                htmlFor={`${idPrefix}-opacity`}
+                className="text-neutral-400"
+              >
+                Opacity
+              </label>
+              <span className="font-mono text-neutral-300">
+                {Math.round((selectedImage.opacity ?? 1) * 100)}%
+              </span>
+            </div>
+            <RangeSlider
+              id={`${idPrefix}-opacity`}
+              aria-label="Image opacity"
+              min={0}
+              max={100}
+              step={1}
+              value={Math.round((selectedImage.opacity ?? 1) * 100)}
+              defaultValue={100}
+              onValueChange={(val) =>
+                onUpdateImageProps({ opacity: val / 100 })
+              }
+              className="w-full"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <label
+              htmlFor={`${idPrefix}-blend-mode`}
+              className="text-xs lg:text-[11px] text-neutral-400 shrink-0"
+            >
+              Blend Mode
+            </label>
+            <select
+              id={`${idPrefix}-blend-mode`}
+              value={selectedImage.blendMode ?? 'source-over'}
+              onChange={(e) =>
+                onUpdateImageProps({
+                  blendMode: e.target.value as ImageBlendMode,
+                })
+              }
+              className="w-36 px-2 py-1.5 lg:py-1 rounded-lg lg:rounded-md bg-neutral-900 border border-neutral-800 text-xs lg:text-[11px] text-neutral-100 focus:outline-none focus:border-neutral-600"
+            >
+              {IMAGE_BLEND_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 

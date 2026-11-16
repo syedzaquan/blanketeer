@@ -248,7 +248,7 @@ const DEFAULT_BACKGROUND: BackgroundState = {
 
 const MAX_HISTORY = 40;
 
-let latestMtrOffsetY = -115;
+let latestControlSizes = computeControlSizes(0.26);
 
 function computeControlSizes(cssScale = 0.26): {
   cornerSize: number;
@@ -258,11 +258,11 @@ function computeControlSizes(cssScale = 0.26): {
 } {
   const safeScale = Math.max(0.1, cssScale);
   return {
-    // Keep visual corner dots ~12px, borders ~2px, rotation handle ~22px out, and touch hit zones ~44px on screen regardless of CSS zoom.
-    cornerSize: Math.round(Math.min(120, Math.max(12, 12 / safeScale))),
+    // Keep visual corner dots ~9px, borders ~1.5px, rotation handle ~20px out, and touch hit zones ~44px on screen regardless of CSS zoom.
+    cornerSize: Math.round(Math.min(90, Math.max(9, 9 / safeScale))),
     touchCornerSize: Math.round(Math.min(200, Math.max(44, 44 / safeScale))),
-    borderScaleFactor: Math.min(20, Math.max(2, 2 / safeScale)),
-    mtrOffsetY: -Math.round(Math.min(180, Math.max(28, 22 / safeScale))),
+    borderScaleFactor: Math.min(16, Math.max(1.5, 1.5 / safeScale)),
+    mtrOffsetY: -Math.round(Math.min(160, Math.max(24, 20 / safeScale))),
   };
 }
 
@@ -280,7 +280,7 @@ function applyControlStyling(cssScale = 0.26): {
   mtrOffsetY: number;
 } {
   const sizes = computeControlSizes(cssScale);
-  latestMtrOffsetY = sizes.mtrOffsetY;
+  latestControlSizes = sizes;
   Object.assign(fabric.InteractiveFabricObject.ownDefaults, {
     cornerColor: '#ffffff',
     cornerStrokeColor: '#8b5cf6',
@@ -1290,8 +1290,19 @@ export function useFabricCanvas(options?: {
     };
 
     const handleObjectAdded = (e: { target?: fabric.FabricObject }) => {
-      if (e.target && applyMtrOffsetToObject(e.target, latestMtrOffsetY)) {
-        e.target.setCoords();
+      if (e.target) {
+        const { cornerSize, touchCornerSize, borderScaleFactor, mtrOffsetY } =
+          latestControlSizes;
+        const mtrChanged = applyMtrOffsetToObject(e.target, mtrOffsetY);
+        if (
+          mtrChanged ||
+          e.target.cornerSize !== cornerSize ||
+          e.target.touchCornerSize !== touchCornerSize ||
+          e.target.borderScaleFactor !== borderScaleFactor
+        ) {
+          e.target.set({ cornerSize, touchCornerSize, borderScaleFactor });
+          e.target.setCoords();
+        }
       }
       handleStackChange();
     };
@@ -2499,22 +2510,23 @@ export function useFabricCanvas(options?: {
         cornerPercent
       );
 
-      const textBoxWidth = Math.max(200, slotWidth - 32);
+      const rowTop1 = safe.top;
+      const rowTop2 = safe.top + slotHeight + gap;
       const textTop1 = createTemplateTextbox({
         preset: 'body',
         left: isLtr ? rightX : leftX,
-        top: topY,
-        width: textBoxWidth,
-        originY: 'center',
+        top: rowTop1,
+        width: slotWidth,
+        originY: 'top',
         textAlign: 'left',
         editorName: 'Body Text 1',
       });
       const textTop2 = createTemplateTextbox({
         preset: 'body',
         left: isLtr ? leftX : rightX,
-        top: bottomY,
-        width: textBoxWidth,
-        originY: 'center',
+        top: rowTop2,
+        width: slotWidth,
+        originY: 'top',
         textAlign: 'left',
         editorName: 'Body Text 2',
       });
@@ -2748,16 +2760,16 @@ export function useFabricCanvas(options?: {
       const leftX = safe.left + colW / 2;
       const rightX = safe.left + colW + gap + colW / 2;
       const topY = safe.top + rowH / 2;
-      const bottomY = safe.top + rowH + gap + rowH / 2;
-      const textBoxWidth = Math.max(200, colW - 32);
+      const rowTop1 = safe.top;
+      const rowTop2 = safe.top + rowH + gap;
 
       // 1 (Top-Left): Body text
       const text1 = createTemplateTextbox({
         preset: 'body',
         left: leftX,
-        top: topY,
-        width: textBoxWidth,
-        originY: 'center',
+        top: rowTop1,
+        width: colW,
+        originY: 'top',
         textAlign: 'left',
         editorName: 'Body Text 1',
       });
@@ -2776,9 +2788,9 @@ export function useFabricCanvas(options?: {
       const text3 = createTemplateTextbox({
         preset: 'body',
         left: leftX,
-        top: bottomY,
-        width: textBoxWidth,
-        originY: 'center',
+        top: rowTop2,
+        width: colW,
+        originY: 'top',
         textAlign: 'left',
         editorName: 'Body Text 2',
       });
@@ -2787,9 +2799,9 @@ export function useFabricCanvas(options?: {
       const text4 = createTemplateTextbox({
         preset: 'body',
         left: rightX,
-        top: bottomY,
-        width: textBoxWidth,
-        originY: 'center',
+        top: rowTop2,
+        width: colW,
+        originY: 'top',
         textAlign: 'left',
         editorName: 'Body Text 3',
       });
@@ -3072,6 +3084,8 @@ export function useFabricCanvas(options?: {
         shadowOffsetY: number;
         filter: Partial<ImageFilterConfig>;
         filterQuality: AdjustmentQuality;
+        opacity: number;
+        blendMode: string;
       }>
     ) => {
       const canvas = canvasRef.current;
@@ -3185,6 +3199,16 @@ export function useFabricCanvas(options?: {
             nextOffsetX,
             nextOffsetY
           )
+        );
+      }
+
+      if (patch.opacity !== undefined && Number.isFinite(patch.opacity)) {
+        storyImg.set('opacity', Math.max(0, Math.min(1, patch.opacity)));
+      }
+      if (patch.blendMode !== undefined) {
+        storyImg.set(
+          'globalCompositeOperation',
+          patch.blendMode as GlobalCompositeOperation
         );
       }
 

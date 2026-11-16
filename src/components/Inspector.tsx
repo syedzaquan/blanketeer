@@ -469,13 +469,26 @@ export function Inspector({
               </div>
             </div>
 
-            <textarea
-              rows={5}
-              value={selectedObject.text}
-              onChange={(e) => onUpdateText({ text: e.target.value })}
-              className="w-full min-h-[108px] px-3 py-2.5 lg:px-2.5 lg:py-2 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 placeholder:text-neutral-100/50 focus:outline-none focus:border-neutral-500 resize-y"
-              placeholder="Type text..."
-            />
+            <div className="relative">
+              <textarea
+                rows={5}
+                value={selectedObject.text}
+                onChange={(e) => onUpdateText({ text: e.target.value })}
+                className="w-full min-h-[108px] px-3 py-2.5 pr-8 lg:px-2.5 lg:py-2 lg:pr-7 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 placeholder:text-neutral-100/50 focus:outline-none focus:border-neutral-500 resize-y"
+                placeholder="Type text..."
+              />
+              {selectedObject.text.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onUpdateText({ text: '' })}
+                  aria-label="Clear text"
+                  title="Clear text"
+                  className="absolute top-2 right-2 p-1 rounded-md bg-neutral-900/80 hover:bg-neutral-700 text-neutral-400 hover:text-neutral-100 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Line Highlight / Pill */}

@@ -57,6 +57,14 @@ export type GradientBlendMode =
   | 'darken'
   | 'lighten';
 
+export type ImageBlendMode =
+  | GradientBlendMode
+  | 'hard-light'
+  | 'color-dodge'
+  | 'color-burn'
+  | 'difference'
+  | 'exclusion';
+
 export interface BackgroundOverlayGradient {
   enabled: boolean;
   startColor: string;
@@ -203,6 +211,7 @@ export interface SelectedImageProps {
   shadowOffsetY: number;
   filter: ImageFilterConfig;
   opacity: number;
+  blendMode: ImageBlendMode;
   angle: number;
   scaleX: number;
   scaleY: number;

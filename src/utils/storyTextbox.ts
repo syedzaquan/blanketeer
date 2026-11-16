@@ -116,15 +116,16 @@ function renderWidthPillControl(
   const stroke =
     styleOverride?.cornerStrokeColor || fabricObject.cornerStrokeColor || '#8b5cf6';
   const boxHeight = fabricObject.getScaledHeight();
-  const pillW = 10;
-  const pillH = Math.max(20, Math.min(38, boxHeight * 0.5));
+  const unit = Math.max(9, fabricObject.cornerSize || 18);
+  const pillW = Math.max(4, Math.round(unit * 0.45));
+  const pillH = Math.max(unit * 1.2, Math.min(unit * 2.0, boxHeight * 0.45));
 
   ctx.save();
   ctx.translate(left, top);
   ctx.rotate(fabric.util.degreesToRadians(fabricObject.getTotalAngle()));
   ctx.fillStyle = fill;
   ctx.strokeStyle = stroke;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = Math.max(1.5, fabricObject.borderScaleFactor || 1.5);
   drawRoundedRectPath(ctx, -pillW / 2, -pillH / 2, pillW, pillH, pillW / 2);
   ctx.fill();
   ctx.stroke();
@@ -144,8 +145,8 @@ function createStoryTextboxControls(): Record<string, fabric.Control> {
 
   const configureWidthBar = (ctrl: fabric.Control): fabric.Control => {
     ctrl.actionHandler = fabric.controlsUtils.changeWidth;
-    ctrl.sizeX = 14;
-    ctrl.sizeY = 42;
+    ctrl.sizeX = 0;
+    ctrl.sizeY = 0;
     ctrl.touchSizeX = 0;
     ctrl.touchSizeY = 0;
     ctrl.render = renderWidthPillControl;
