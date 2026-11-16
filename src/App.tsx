@@ -67,6 +67,8 @@ export function App() {
     availableFonts,
     showSafeArea,
     toggleSafeArea,
+    showBodySafeArea,
+    toggleBodySafeArea,
     pages,
     activePageId,
     selectPage,
@@ -411,6 +413,7 @@ export function App() {
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
             showSafeArea={showSafeArea}
+            showBodySafeArea={showBodySafeArea}
             selectedTextFontSize={
               selectedObject?.kind === 'text' ? selectedObject.fontSize : null
             }
@@ -418,6 +421,7 @@ export function App() {
               void updateTextProps({ fontSize })
             }
             onToggleSafeArea={toggleSafeArea}
+            onToggleBodySafeArea={toggleBodySafeArea}
             onOpenPreview={() => setShowFullPreview(true)}
             onDeselectAll={() => {
               deselectAll();

@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
+  CheckSquare,
   Eye,
   EyeOff,
   Image as ImageIcon,
@@ -8,6 +10,7 @@ import {
   LayoutTemplate,
   Lock,
   Shapes,
+  Square,
   Trash2,
   Type,
   Unlock,
@@ -17,7 +20,7 @@ import { cn } from '../../utils/cn';
 
 interface LayersTabProps {
   layers: LayerItem[];
-  onSelectLayer: (id: string) => void;
+  onSelectLayer: (id: string, options?: { toggle?: boolean }) => void;
   onToggleVisibility: (id: string) => void;
   onToggleLock: (id: string) => void;
   onMoveLayer: (id: string, direction: 'up' | 'down' | 'top' | 'bottom') => void;
@@ -32,15 +35,39 @@ export function LayersTab({
   onMoveLayer,
   onDeleteLayer,
 }: LayersTabProps) {
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const selectedCount = layers.filter((l) => l.isSelected).length;
+
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xs font-medium text-neutral-300">
-          Layers
-        </h2>
-        <span className="text-[11px] font-mono text-neutral-500">
-          {layers.length} {layers.length === 1 ? 'layer' : 'layers'}
-        </span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xs font-medium text-neutral-300">
+            Layers
+          </h2>
+          <span className="text-[11px] font-mono text-neutral-500">
+            {selectedCount > 1
+              ? `${selectedCount}/${layers.length} selected`
+              : `${layers.length} ${layers.length === 1 ? 'layer' : 'layers'}`}
+          </span>
+        </div>
+        {layers.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setMultiSelectMode((prev) => !prev)}
+            aria-pressed={multiSelectMode}
+            title="Select multiple layers to move or scale together"
+            className={cn(
+              'flex items-center gap-1 px-2 py-1 lg:py-0.5 rounded-md text-[11px] font-medium border transition-colors',
+              multiSelectMode
+                ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+            )}
+          >
+            <CheckSquare className="w-3 h-3" />
+            <span>Multi</span>
+          </button>
+        )}
       </div>
 
       {layers.length === 0 ? (
@@ -68,13 +95,20 @@ export function LayersTab({
             return (
               <div
                 key={layer.id}
-                onClick={() => onSelectLayer(layer.id)}
+                onClick={(e) =>
+                  onSelectLayer(layer.id, {
+                    toggle:
+                      multiSelectMode || e.shiftKey || e.metaKey || e.ctrlKey,
+                  })
+                }
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    onSelectLayer(layer.id);
+                    onSelectLayer(layer.id, {
+                      toggle: multiSelectMode || e.shiftKey,
+                    });
                   }
                 }}
                 className={cn(
@@ -84,6 +118,15 @@ export function LayersTab({
                     : 'bg-neutral-800/70 border-neutral-700/80 text-neutral-200 hover:bg-neutral-800'
                 )}
               >
+                {multiSelectMode && (
+                  <span className="shrink-0 text-neutral-300">
+                    {layer.isSelected ? (
+                      <CheckSquare className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-white" />
+                    ) : (
+                      <Square className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-neutral-500" />
+                    )}
+                  </span>
+                )}
                 <div
                   className={cn(
                     'w-7 h-7 lg:w-6 lg:h-6 rounded flex items-center justify-center shrink-0',

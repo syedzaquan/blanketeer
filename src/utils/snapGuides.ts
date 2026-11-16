@@ -83,6 +83,24 @@ export function getSafeZoneBounds(
   };
 }
 
+export function getBodySafeZoneBounds(
+  canvasWidth: number,
+  canvasHeight: number
+): SafeZoneBounds {
+  const marginX = Math.round(canvasWidth * 0.12);
+  const aspect = canvasHeight / Math.max(canvasWidth, 1);
+  const marginY = aspect >= 1.5 ? 360 : aspect >= 1.15 ? 220 : 180;
+
+  return {
+    left: marginX,
+    top: marginY,
+    right: canvasWidth - marginX,
+    bottom: canvasHeight - marginY,
+    width: canvasWidth - marginX * 2,
+    height: canvasHeight - marginY * 2,
+  };
+}
+
 function pickBestCandidate(candidates: SnapCandidate[]): SnapCandidate | null {
   let best: SnapCandidate | null = null;
   for (const c of candidates) {
@@ -107,7 +125,8 @@ function collectGuideTargets(
   obj: fabric.FabricObject,
   canvasWidth: number,
   canvasHeight: number,
-  canvasObjects: fabric.FabricObject[]
+  canvasObjects: fabric.FabricObject[],
+  includeBodySafe = false
 ): { xTargets: GuideTarget[]; yTargets: GuideTarget[] } {
   const safe = getSafeZoneBounds(canvasWidth, canvasHeight);
   const centerX = canvasWidth / 2;
@@ -128,6 +147,18 @@ function collectGuideTargets(
     { guide: 0, kind: 'edge' },
     { guide: canvasHeight, kind: 'edge' },
   ];
+
+  if (includeBodySafe) {
+    const bodySafe = getBodySafeZoneBounds(canvasWidth, canvasHeight);
+    xTargets.push(
+      { guide: bodySafe.left, kind: 'safe' },
+      { guide: bodySafe.right, kind: 'safe' }
+    );
+    yTargets.push(
+      { guide: bodySafe.top, kind: 'safe' },
+      { guide: bodySafe.bottom, kind: 'safe' }
+    );
+  }
 
   const selectedChildren =
     obj instanceof fabric.ActiveSelection ? new Set(obj.getObjects()) : null;
@@ -195,7 +226,8 @@ export function snapObjectToGuides(
   obj: fabric.FabricObject,
   canvasWidth: number,
   canvasHeight: number,
-  canvasObjects: fabric.FabricObject[] = []
+  canvasObjects: fabric.FabricObject[] = [],
+  includeBodySafe = false
 ): ActiveSnapGuides {
   obj.setCoords();
   const rect = obj.getBoundingRect();
@@ -203,7 +235,8 @@ export function snapObjectToGuides(
     obj,
     canvasWidth,
     canvasHeight,
-    canvasObjects
+    canvasObjects,
+    includeBodySafe
   );
 
   const objLeft = rect.left;
@@ -309,7 +342,8 @@ export function snapObjectResizeToGuides(
   canvasWidth: number,
   canvasHeight: number,
   canvasObjects: fabric.FabricObject[] = [],
-  mode: 'scaling' | 'resizing' = 'scaling'
+  mode: 'scaling' | 'resizing' = 'scaling',
+  includeBodySafe = false
 ): ActiveSnapGuides {
   obj.setCoords();
   const rect = obj.getBoundingRect();
@@ -333,7 +367,8 @@ export function snapObjectResizeToGuides(
     obj,
     canvasWidth,
     canvasHeight,
-    canvasObjects
+    canvasObjects,
+    includeBodySafe
   );
 
   const objLeft = rect.left;
@@ -505,7 +540,8 @@ export function renderGuidesOnTopContext(
   guides: ActiveSnapGuides,
   showSafeAreaOverlay: boolean,
   rotationSnap?: ActiveRotationSnap,
-  resizeHud?: ActiveResizeHud
+  resizeHud?: ActiveResizeHud,
+  showBodySafeAreaOverlay = false
 ): void {
   const topCtx = canvas.contextTop;
   if (!topCtx) return;
@@ -520,7 +556,13 @@ export function renderGuidesOnTopContext(
 
   const isRotating = Boolean(rotationSnap?.isRotating);
   const isResizing = Boolean(resizeHud?.isResizing);
-  if (!guides.isDragging && !showSafeAreaOverlay && !isRotating && !isResizing) {
+  if (
+    !guides.isDragging &&
+    !showSafeAreaOverlay &&
+    !showBodySafeAreaOverlay &&
+    !isRotating &&
+    !isResizing
+  ) {
     return;
   }
 
@@ -553,6 +595,26 @@ export function renderGuidesOnTopContext(
       topCtx.font = '600 18px Inter, system-ui, sans-serif';
       topCtx.fillText('SAFE AREA', safe.left + 12, safe.top - 12);
     }
+  }
+
+  // Smaller Body Safe Area boundary box for paragraphs/body text
+  if (showBodySafeAreaOverlay) {
+    const bodySafe = getBodySafeZoneBounds(width, height);
+    topCtx.save();
+    topCtx.strokeStyle = 'rgba(167, 139, 250, 0.65)';
+    topCtx.lineWidth = 2.5;
+    topCtx.setLineDash([10, 8]);
+    topCtx.strokeRect(
+      bodySafe.left,
+      bodySafe.top,
+      bodySafe.width,
+      bodySafe.height
+    );
+    topCtx.setLineDash([]);
+    topCtx.fillStyle = 'rgba(196, 181, 253, 0.78)';
+    topCtx.font = '600 18px Inter, system-ui, sans-serif';
+    topCtx.fillText('BODY SAFE', bodySafe.left + 12, bodySafe.top - 12);
+    topCtx.restore();
   }
 
   // Active magnetic snap lines

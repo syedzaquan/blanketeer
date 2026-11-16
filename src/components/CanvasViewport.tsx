@@ -18,6 +18,7 @@ import {
   Minus,
   Plus,
   RotateCcw,
+  Scan,
   Type,
   Unlock,
   X,
@@ -43,9 +44,11 @@ interface CanvasViewportProps {
   canvasWidth: number;
   canvasHeight: number;
   showSafeArea?: boolean;
+  showBodySafeArea?: boolean;
   selectedTextFontSize?: number | null;
   onChangeTextFontSize?: (size: number) => void;
   onToggleSafeArea?: () => void;
+  onToggleBodySafeArea?: () => void;
   onOpenPreview?: () => void;
   onDeselectAll: () => void;
   onDropImageFile: (file: File, position?: { x: number; y: number }) => void;
@@ -136,8 +139,10 @@ export function CanvasViewport({
   canvasElRef,
   canvasWidth,
   canvasHeight,
+  showBodySafeArea = false,
   selectedTextFontSize = null,
   onChangeTextFontSize,
+  onToggleBodySafeArea,
   onOpenPreview,
   onDeselectAll,
   onDropImageFile,
@@ -1390,6 +1395,25 @@ export function CanvasViewport({
             </button>
           )}
         </div>
+
+        {onToggleBodySafeArea && (
+          <button
+            type="button"
+            onClick={onToggleBodySafeArea}
+            aria-pressed={showBodySafeArea}
+            aria-label="Toggle body text safe area"
+            title="Toggle Body Text Safe Area"
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-2 lg:px-2 lg:py-1.5 rounded-lg lg:rounded-md border text-xs lg:text-[11px] font-medium transition-colors',
+              showBodySafeArea
+                ? 'bg-violet-500/20 border-violet-400/70 text-violet-200'
+                : 'bg-[#1c1c1e] border-neutral-700/80 text-neutral-300 hover:text-white hover:bg-neutral-800'
+            )}
+          >
+            <Scan className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
+            <span>Body Safe</span>
+          </button>
+        )}
 
         <button
           type="button"

@@ -435,6 +435,7 @@ export function useFabricCanvas(options?: {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [showSafeArea, setShowSafeArea] = useState(false);
+  const [showBodySafeArea, setShowBodySafeArea] = useState(false);
   const copiedObjectRef = useRef<fabric.FabricObject | null>(null);
   const [hasCopiedElement, setHasCopiedElement] = useState(false);
 
@@ -442,6 +443,7 @@ export function useFabricCanvas(options?: {
   const backgroundRef = useRef<BackgroundState>(DEFAULT_BACKGROUND);
   const fontsRef = useRef<FontOption[]>(SUPPORTED_FONTS);
   const showSafeAreaRef = useRef<boolean>(false);
+  const showBodySafeAreaRef = useRef<boolean>(false);
   const activeSnapGuidesRef = useRef<ActiveSnapGuides>({
     x: null,
     xKind: null,
@@ -1223,7 +1225,8 @@ export function useFabricCanvas(options?: {
         e.target,
         width,
         height,
-        canvas.getObjects()
+        canvas.getObjects(),
+        showBodySafeAreaRef.current
       );
       setSelectionBox(buildSelectionBoxSnapshot(e.target));
     };
@@ -1262,7 +1265,8 @@ export function useFabricCanvas(options?: {
         width,
         height,
         canvas.getObjects(),
-        'scaling'
+        'scaling',
+        showBodySafeAreaRef.current
       );
       setSelectionBox(buildSelectionBoxSnapshot(target));
       updateImageResizeHud(target);
@@ -1282,7 +1286,8 @@ export function useFabricCanvas(options?: {
         width,
         height,
         canvas.getObjects(),
-        'resizing'
+        'resizing',
+        showBodySafeAreaRef.current
       );
       setSelectionBox(buildSelectionBoxSnapshot(target));
       updateImageResizeHud(target);
@@ -1345,7 +1350,8 @@ export function useFabricCanvas(options?: {
         activeSnapGuidesRef.current,
         showSafeAreaRef.current,
         activeRotationSnapRef.current,
-        activeResizeHudRef.current
+        activeResizeHudRef.current,
+        showBodySafeAreaRef.current
       );
     };
 
@@ -3458,11 +3464,37 @@ export function useFabricCanvas(options?: {
   }, [commitHistoryNow, syncSelectionAndLayers]);
 
   const selectLayerById = useCallback(
-    (id: string) => {
+    (id: string, options?: { toggle?: boolean }) => {
       const canvas = canvasRef.current;
       const obj = findObjectById(id);
       if (!canvas || !obj) return;
-      canvas.setActiveObject(obj);
+
+      if (!options?.toggle) {
+        canvas.setActiveObject(obj);
+        canvas.requestRenderAll();
+        syncSelectionAndLayers();
+        return;
+      }
+
+      const current = canvas.getActiveObjects();
+      const exists = current.includes(obj);
+      const nextObjects = exists
+        ? current.filter((item) => item !== obj)
+        : [...current, obj];
+
+      canvas.discardActiveObject();
+      if (nextObjects.length === 1) {
+        canvas.setActiveObject(nextObjects[0]);
+      } else if (nextObjects.length > 1) {
+        const selection = new fabric.ActiveSelection(nextObjects, { canvas });
+        const { cornerSize, touchCornerSize, borderScaleFactor, mtrOffsetY } =
+          latestControlSizes;
+        applyMtrOffsetToObject(selection, mtrOffsetY);
+        selection.set({ cornerSize, touchCornerSize, borderScaleFactor });
+        selection.setCoords();
+        canvas.setActiveObject(selection);
+      }
+
       canvas.requestRenderAll();
       syncSelectionAndLayers();
     },
@@ -3829,7 +3861,8 @@ export function useFabricCanvas(options?: {
           target,
           width,
           height,
-          canvas.getObjects()
+          canvas.getObjects(),
+          showBodySafeAreaRef.current
         );
       }
 
@@ -3941,7 +3974,8 @@ export function useFabricCanvas(options?: {
           target,
           width,
           height,
-          canvas.getObjects()
+          canvas.getObjects(),
+          showBodySafeAreaRef.current
         );
         target.setCoords();
         setSelectionBox(buildSelectionBoxSnapshot(target));
@@ -4002,7 +4036,8 @@ export function useFabricCanvas(options?: {
           canvasW,
           canvasH,
           canvas.getObjects(),
-          'resizing'
+          'resizing',
+          showBodySafeAreaRef.current
         );
       } else if (session.isTextbox) {
         const ratio = Math.max(
@@ -4019,7 +4054,8 @@ export function useFabricCanvas(options?: {
           canvasW,
           canvasH,
           canvas.getObjects(),
-          'scaling'
+          'scaling',
+          showBodySafeAreaRef.current
         );
       } else {
         const isCorner =
@@ -4053,7 +4089,8 @@ export function useFabricCanvas(options?: {
           canvasW,
           canvasH,
           canvas.getObjects(),
-          'scaling'
+          'scaling',
+          showBodySafeAreaRef.current
         );
       }
 
@@ -4093,6 +4130,15 @@ export function useFabricCanvas(options?: {
     setShowSafeArea((prev) => {
       const next = !prev;
       showSafeAreaRef.current = next;
+      canvasRef.current?.requestRenderAll();
+      return next;
+    });
+  }, []);
+
+  const toggleBodySafeArea = useCallback(() => {
+    setShowBodySafeArea((prev) => {
+      const next = !prev;
+      showBodySafeAreaRef.current = next;
       canvasRef.current?.requestRenderAll();
       return next;
     });
@@ -4933,6 +4979,8 @@ export function useFabricCanvas(options?: {
     exitTextEditing,
     showSafeArea,
     toggleSafeArea,
+    showBodySafeArea,
+    toggleBodySafeArea,
     pages,
     activePageId,
     selectPage,

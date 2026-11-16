@@ -480,8 +480,9 @@ export function extractTemplateSlots(canvas: fabric.Canvas): TemplateSlotSummary
 
 export function extractLayersList(canvas: fabric.Canvas): LayerItem[] {
   const objects = canvas.getObjects();
-  const active = canvas.getActiveObject();
-  const activeId = active ? ensureObjectMeta(active).editorId : null;
+  const activeIds = new Set(
+    canvas.getActiveObjects().map((o) => ensureObjectMeta(o).editorId)
+  );
 
   return objects
     .map((obj, index): LayerItem => {
@@ -513,7 +514,7 @@ export function extractLayersList(canvas: fabric.Canvas): LayerItem[] {
         visible: obj.visible !== false,
         locked: Boolean(meta.locked),
         index,
-        isSelected: meta.editorId === activeId,
+        isSelected: Boolean(meta.editorId && activeIds.has(meta.editorId)),
       };
     })
     .reverse(); // Topmost layer first in UI
