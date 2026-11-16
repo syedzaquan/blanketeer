@@ -654,7 +654,7 @@ export function ImageStyleControls({
                   ariaLabel="Squircle border radius percentage"
                   value={selectedImage.cutoutRadius}
                   min={0}
-                  max={50}
+                  max={25}
                   suffix="%"
                   onCommit={(val) => onApplyCutout('rounded', val)}
                 />
@@ -664,10 +664,10 @@ export function ImageStyleControls({
               id={`${idPrefix}-squircle-radius-slider`}
               aria-label="Squircle border radius slider"
               min={0}
-              max={50}
+              max={25}
               step={1}
               value={selectedImage.cutoutRadius}
-              defaultValue={16}
+              defaultValue={6}
               onValueChange={(val) => onApplyCutout('rounded', val)}
               className="w-full"
             />

@@ -273,7 +273,7 @@ export function syncCropSessionFromRect(session: ActiveCropSession): void {
     dirty: true,
   });
   if (snapshot.cutoutShape && snapshot.cutoutShape !== 'none') {
-    applyCutoutMask(target, snapshot.cutoutShape, snapshot.cutoutRadius ?? 16);
+    applyCutoutMask(target, snapshot.cutoutShape, snapshot.cutoutRadius ?? 6);
   }
   target.setCoords();
 }
@@ -340,7 +340,7 @@ export function endImageCropSession(
       dirty: true,
     });
     if (snapshot.cutoutShape && snapshot.cutoutShape !== 'none') {
-      applyCutoutMask(target, snapshot.cutoutShape, snapshot.cutoutRadius ?? 16);
+      applyCutoutMask(target, snapshot.cutoutShape, snapshot.cutoutRadius ?? 6);
     }
     target.setCoords();
   }

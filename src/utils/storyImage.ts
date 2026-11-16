@@ -353,7 +353,7 @@ export class StoryImage extends fabric.FabricImage {
   ) {
     super(element, options);
     this.cutoutShape = options.cutoutShape ?? 'none';
-    this.cutoutRadius = options.cutoutRadius ?? 16;
+    this.cutoutRadius = options.cutoutRadius ?? 6;
     this.aspectLocked = options.aspectLocked ?? true;
     this.imageStrokeColor = options.imageStrokeColor ?? '#ffffff';
     this.imageStrokeWidth = options.imageStrokeWidth ?? 0;
@@ -506,7 +506,7 @@ export class StoryImage extends fabric.FabricImage {
         ctx.ellipse(0, 0, innerRx, innerRy, 0, 0, Math.PI * 2);
       } else if (shape === 'rounded') {
         const rawR = Math.min(
-          (minLocalDim * (this.cutoutRadius ?? 16)) / 100,
+          (minLocalDim * (this.cutoutRadius ?? 6)) / 100,
           minLocalDim / 2
         );
         const holeW = Math.max(1, innerW - 1);
@@ -561,7 +561,7 @@ export class StoryImage extends fabric.FabricImage {
 
       if (shape === 'rounded') {
         const rawR = Math.min(
-          (minLocalDim * (this.cutoutRadius ?? 16)) / 100,
+          (minLocalDim * (this.cutoutRadius ?? 6)) / 100,
           minLocalDim / 2
         );
         const holeW = Math.max(1, innerW - 1);
@@ -632,7 +632,7 @@ export class StoryImage extends fabric.FabricImage {
 
     // shape === 'rounded' (Squircle)
     const rawR = Math.min(
-      (minLocalDim * (this.cutoutRadius ?? 16)) / 100,
+      (minLocalDim * (this.cutoutRadius ?? 6)) / 100,
       minLocalDim / 2
     );
     const rw = Math.max(1, scaledW + outset * 2);

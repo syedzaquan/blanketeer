@@ -780,7 +780,7 @@ export function TemplatesTab({
               max={20}
               step={1}
               value={cornerPercent}
-              defaultValue={8}
+              defaultValue={6}
               onValueChange={setCornerPercent}
               className="w-full"
             />

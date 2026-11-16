@@ -1350,8 +1350,7 @@ export function useFabricCanvas(options?: {
         activeSnapGuidesRef.current,
         showSafeAreaRef.current,
         activeRotationSnapRef.current,
-        activeResizeHudRef.current,
-        showBodySafeAreaRef.current
+        activeResizeHudRef.current
       );
     };
 
@@ -1972,7 +1971,7 @@ export function useFabricCanvas(options?: {
     };
     meta.editorName = name;
     meta.cutoutShape = 'none';
-    meta.cutoutRadius = 16;
+    meta.cutoutRadius = 6;
     meta.aspectLocked = true;
     meta.imageStrokeColor = '#ffffff';
     meta.imageStrokeWidth = 0;
@@ -2956,7 +2955,7 @@ export function useFabricCanvas(options?: {
       const stackIndex = Math.max(0, canvas.getObjects().indexOf(active));
 
       const cutoutShape = oldMeta.cutoutShape ?? 'none';
-      const cutoutRadius = oldMeta.cutoutRadius ?? 16;
+      const cutoutRadius = oldMeta.cutoutRadius ?? 6;
       const aspectLocked = oldMeta.aspectLocked ?? true;
       const imageStrokeColor = oldMeta.imageStrokeColor;
       const imageStrokeWidth = oldMeta.imageStrokeWidth;
@@ -3102,7 +3101,7 @@ export function useFabricCanvas(options?: {
 
       const currentRadius =
         cornerPercent ??
-        ((active as { cutoutRadius?: number }).cutoutRadius ?? 16);
+        ((active as { cutoutRadius?: number }).cutoutRadius ?? 6);
 
       applyCutoutMask(active, shape, currentRadius);
       canvas.requestRenderAll();

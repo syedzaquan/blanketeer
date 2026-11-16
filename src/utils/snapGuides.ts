@@ -540,8 +540,7 @@ export function renderGuidesOnTopContext(
   guides: ActiveSnapGuides,
   showSafeAreaOverlay: boolean,
   rotationSnap?: ActiveRotationSnap,
-  resizeHud?: ActiveResizeHud,
-  showBodySafeAreaOverlay = false
+  resizeHud?: ActiveResizeHud
 ): void {
   const topCtx = canvas.contextTop;
   if (!topCtx) return;
@@ -559,7 +558,6 @@ export function renderGuidesOnTopContext(
   if (
     !guides.isDragging &&
     !showSafeAreaOverlay &&
-    !showBodySafeAreaOverlay &&
     !isRotating &&
     !isResizing
   ) {
@@ -595,26 +593,6 @@ export function renderGuidesOnTopContext(
       topCtx.font = '600 18px Inter, system-ui, sans-serif';
       topCtx.fillText('SAFE AREA', safe.left + 12, safe.top - 12);
     }
-  }
-
-  // Smaller Body Safe Area boundary box for paragraphs/body text
-  if (showBodySafeAreaOverlay) {
-    const bodySafe = getBodySafeZoneBounds(width, height);
-    topCtx.save();
-    topCtx.strokeStyle = 'rgba(167, 139, 250, 0.65)';
-    topCtx.lineWidth = 2.5;
-    topCtx.setLineDash([10, 8]);
-    topCtx.strokeRect(
-      bodySafe.left,
-      bodySafe.top,
-      bodySafe.width,
-      bodySafe.height
-    );
-    topCtx.setLineDash([]);
-    topCtx.fillStyle = 'rgba(196, 181, 253, 0.78)';
-    topCtx.font = '600 18px Inter, system-ui, sans-serif';
-    topCtx.fillText('BODY SAFE', bodySafe.left + 12, bodySafe.top - 12);
-    topCtx.restore();
   }
 
   // Active magnetic snap lines

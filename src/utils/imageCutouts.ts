@@ -117,7 +117,7 @@ export const applyHeartMask = (image: fabric.FabricImage): void => {
 export const applyCutoutMask = (
   image: fabric.FabricImage,
   shape: CutoutShape,
-  cornerPercent = 16
+  cornerPercent = 6
 ): void => {
   const metaImage = image as ImageWithCutoutMeta;
   metaImage.cutoutShape = shape;

@@ -363,7 +363,7 @@ export function extractSelectedState(
       id: meta.editorId!,
       name: meta.editorName!,
       cutoutShape: imgMeta.cutoutShape || 'none',
-      cutoutRadius: imgMeta.cutoutRadius ?? 16,
+      cutoutRadius: imgMeta.cutoutRadius ?? 6,
       naturalWidth: natW,
       naturalHeight: natH,
       width: Math.max(1, Math.round(natW * sx)),
