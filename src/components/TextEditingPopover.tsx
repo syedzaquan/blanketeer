@@ -46,10 +46,24 @@ export function TextEditingPopover({
     176,
     Math.min(viewportW - 176, boxRect.left + boxRect.width / 2)
   );
-  const placeAbove = boxRect.top >= 124;
+  const placeAbove = boxRect.top >= 164;
   const topY = placeAbove
     ? boxRect.top - 12
     : boxRect.top + boxRect.height + 12;
+
+  const fullText = (editingState.text || '').replace(/\r?\n/g, ' ');
+  const start = Math.max(0, Math.min(fullText.length, editingState.selectionStart));
+  const end = Math.max(start, Math.min(fullText.length, editingState.selectionEnd));
+  const beforeRaw = fullText.slice(Math.max(0, start - 16), start);
+  const beforeText = (start > 16 ? '…' : '') + beforeRaw;
+  const selectedRaw = fullText.slice(start, end);
+  const selectedText =
+    selectedRaw.length > 28
+      ? `${selectedRaw.slice(0, 13)}…${selectedRaw.slice(-13)}`
+      : selectedRaw;
+  const afterRaw = fullText.slice(end, Math.min(fullText.length, end + 16));
+  const afterText =
+    afterRaw + (end + 16 < fullText.length ? '…' : '');
 
   const keepFocus = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -69,6 +83,27 @@ export function TextEditingPopover({
       }}
       className="fixed z-40 flex flex-col items-center gap-2 max-w-[calc(100vw-16px)] select-none"
     >
+      {fullText.length > 0 && (
+        <div
+          data-testid="text-selection-loupe"
+          className="px-3 py-1.5 rounded-xl bg-neutral-900/95 backdrop-blur-md border border-neutral-700/90 shadow-lg text-xs sm:text-[13px] leading-snug max-w-[min(340px,calc(100vw-24px))] truncate pointer-events-none"
+        >
+          {beforeText && (
+            <span className="text-neutral-400 whitespace-pre">{beforeText}</span>
+          )}
+          {editingState.hasSelection ? (
+            <span className="bg-violet-500/35 text-white border border-violet-400/60 px-1 py-0.5 rounded font-medium whitespace-pre">
+              {selectedText}
+            </span>
+          ) : (
+            <span className="inline-block w-0.5 h-3.5 bg-violet-400 align-middle mx-0.5 rounded-full" />
+          )}
+          {afterText && (
+            <span className="text-neutral-400 whitespace-pre">{afterText}</span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center gap-1 lg:gap-0.5 p-1.5 lg:p-1 rounded-2xl lg:rounded-xl bg-[#1c1c1e]/95 backdrop-blur-md border border-neutral-700/90 shadow-xl text-neutral-200">
         <button
           type="button"

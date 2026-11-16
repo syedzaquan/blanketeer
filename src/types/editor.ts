@@ -116,6 +116,7 @@ export type TextBackgroundStyle = 'none' | 'solid' | 'pill';
 
 export interface TextEditingSelectionState {
   isEditing: boolean;
+  text: string;
   hasSelection: boolean;
   selectionStart: number;
   selectionEnd: number;

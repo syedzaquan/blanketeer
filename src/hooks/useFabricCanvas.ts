@@ -542,6 +542,7 @@ export function useFabricCanvas(options?: {
 
     setTextEditingState({
       isEditing: true,
+      text: active.text || '',
       hasSelection,
       selectionStart: start,
       selectionEnd: end,
