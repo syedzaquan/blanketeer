@@ -53,7 +53,7 @@ export function TextTab({
     if (selectedText) {
       onApplyFont(family);
     } else {
-      onAddText('heading', family);
+      onAddText('body', family);
     }
   };
 

@@ -430,7 +430,7 @@ export function App() {
               setMobileSheet((prev) => (prev === 'inspector' ? 'none' : prev));
             }}
             onDropImageFile={(file, pt) => void addImageFromFile(file, pt)}
-            onAddText={(pt) => void addText('heading', undefined, pt, 400)}
+            onAddText={(pt) => void addText('body', undefined, pt, 400)}
             hasCopiedElement={hasCopiedElement}
             onPasteElement={(pt) => void pasteCopiedObject(pt)}
             onTriggerImageUpload={(pt) => {

@@ -249,6 +249,13 @@ const DEFAULT_BACKGROUND: BackgroundState = {
     ],
   },
   image: null,
+  reversePrint: {
+    enabled: true,
+    opacity: 5,
+    seed: 1,
+    inkBleedBlur: 0.15,
+    inkBleedThreshold: 20,
+  },
 };
 
 const MAX_HISTORY = 40;
@@ -1768,7 +1775,7 @@ export function useFabricCanvas(options?: {
 
   const addText = useCallback(
     async (
-      presetType: TextStylePresetId = 'heading',
+      presetType: TextStylePresetId = 'body',
       fontFamily?: string,
       position?: { x: number; y: number },
       fontWeightOverride?: number
