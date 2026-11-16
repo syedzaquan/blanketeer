@@ -6,6 +6,7 @@ import {
   Upload,
 } from 'lucide-react';
 import type {
+  BackgroundColorOverlay,
   BackgroundImageAdjustments,
   BackgroundImageConfig,
   BackgroundMode,
@@ -13,6 +14,7 @@ import type {
   BackgroundState,
   GradientBlendMode,
   GradientConfig,
+  ImageBlendMode,
 } from '../../types/editor';
 import {
   DEFAULT_BG_ADJUSTMENTS,
@@ -238,6 +240,37 @@ const BLEND_MODES: { value: GradientBlendMode; label: string }[] = [
   { value: 'lighten', label: 'Lighten' },
 ];
 
+const COLOR_OVERLAY_BLEND_MODES: { value: ImageBlendMode; label: string }[] = [
+  { value: 'source-over', label: 'Normal' },
+  { value: 'multiply', label: 'Multiply' },
+  { value: 'screen', label: 'Screen' },
+  { value: 'overlay', label: 'Overlay' },
+  { value: 'soft-light', label: 'Soft Light' },
+  { value: 'hard-light', label: 'Hard Light' },
+  { value: 'darken', label: 'Darken' },
+  { value: 'lighten', label: 'Lighten' },
+  { value: 'color-dodge', label: 'Color Dodge' },
+  { value: 'color-burn', label: 'Color Burn' },
+  { value: 'difference', label: 'Difference' },
+  { value: 'exclusion', label: 'Exclusion' },
+];
+
+const DEFAULT_COLOR_OVERLAY: BackgroundColorOverlay = {
+  enabled: false,
+  color: '#000000',
+  opacity: 35,
+  blendMode: 'source-over',
+};
+
+const COLOR_OVERLAY_SWATCHES = [
+  '#000000',
+  '#ffffff',
+  '#1c1917',
+  '#7c3aed',
+  '#0284c7',
+  '#d97706',
+];
+
 const OVERLAY_ANGLE_PRESETS = [
   { angle: 0, label: '0° ↑' },
   { angle: 90, label: '90° →' },
@@ -263,6 +296,15 @@ export function BackgroundTab({
       onUploadBgImage(file);
     }
     e.target.value = '';
+  };
+
+  const colorOverlay: BackgroundColorOverlay =
+    background.image?.colorOverlay ?? DEFAULT_COLOR_OVERLAY;
+
+  const updateColorOverlay = (patch: Partial<BackgroundColorOverlay>) => {
+    onUpdateBgImageConfig({
+      colorOverlay: { ...colorOverlay, ...patch },
+    });
   };
 
   const overlayGradient: BackgroundOverlayGradient =
@@ -644,6 +686,124 @@ export function BackgroundTab({
                 >
                   <Trash2 className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
                 </button>
+              </div>
+
+              {/* Background Image Color Overlay Controls */}
+              <div className="flex flex-col gap-2.5 pt-3 border-t border-neutral-800/80">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-neutral-300">
+                    Color Overlay
+                  </span>
+                  <button
+                    id="bg-color-overlay-toggle"
+                    type="button"
+                    role="switch"
+                    aria-checked={colorOverlay.enabled}
+                    aria-label="Toggle Background Color Overlay"
+                    onClick={() =>
+                      updateColorOverlay({ enabled: !colorOverlay.enabled })
+                    }
+                    className={cn(
+                      'px-3 py-1.5 lg:px-2 lg:py-0.5 rounded-md lg:rounded text-xs lg:text-[11px] font-medium border transition-colors',
+                      colorOverlay.enabled
+                        ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                        : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                    )}
+                  >
+                    {colorOverlay.enabled ? 'On' : 'Off'}
+                  </button>
+                </div>
+
+                {colorOverlay.enabled && (
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="bg-color-overlay-picker"
+                          type="color"
+                          aria-label="Color overlay color"
+                          value={colorOverlay.color}
+                          onChange={(e) =>
+                            updateColorOverlay({ color: e.target.value })
+                          }
+                          className="w-7 h-7 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
+                        />
+                        <span className="text-xs font-mono text-neutral-300 uppercase">
+                          {colorOverlay.color}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {COLOR_OVERLAY_SWATCHES.map((swatch) => (
+                          <button
+                            key={swatch}
+                            type="button"
+                            onClick={() => updateColorOverlay({ color: swatch })}
+                            aria-label={`Set overlay color ${swatch}`}
+                            className={cn(
+                              'w-5 h-5 rounded-full border transition-transform',
+                              colorOverlay.color.toLowerCase() === swatch.toLowerCase()
+                                ? 'border-white scale-110'
+                                : 'border-neutral-700 hover:scale-105'
+                            )}
+                            style={{ backgroundColor: swatch }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <label
+                          htmlFor="bg-color-overlay-opacity"
+                          className="text-neutral-400"
+                        >
+                          Opacity
+                        </label>
+                        <span className="font-mono text-neutral-200">
+                          {colorOverlay.opacity}%
+                        </span>
+                      </div>
+                      <RangeSlider
+                        id="bg-color-overlay-opacity"
+                        aria-label="Color overlay opacity"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={colorOverlay.opacity}
+                        defaultValue={35}
+                        onValueChange={(opacity) =>
+                          updateColorOverlay({ opacity })
+                        }
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="bg-color-overlay-blend"
+                        className="block text-xs text-neutral-400 mb-1"
+                      >
+                        Blend Mode
+                      </label>
+                      <select
+                        id="bg-color-overlay-blend"
+                        value={colorOverlay.blendMode}
+                        onChange={(e) =>
+                          updateColorOverlay({
+                            blendMode: e.target.value as ImageBlendMode,
+                          })
+                        }
+                        className="w-full px-3 py-2.5 lg:px-2.5 lg:py-1.5 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 text-sm lg:text-xs text-neutral-100 focus:outline-none focus:border-neutral-500"
+                      >
+                        {COLOR_OVERLAY_BLEND_MODES.map((m) => (
+                          <option key={m.value} value={m.value}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Background Image Gradient Overlay Controls */}

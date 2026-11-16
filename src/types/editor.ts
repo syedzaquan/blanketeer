@@ -78,6 +78,13 @@ export interface BackgroundOverlayGradient {
   blendMode: GradientBlendMode;
 }
 
+export interface BackgroundColorOverlay {
+  enabled: boolean;
+  color: string;
+  opacity: number;
+  blendMode: ImageBlendMode;
+}
+
 export interface BackgroundImageAdjustments {
   brightness: number;
   contrast: number;
@@ -93,6 +100,7 @@ export interface BackgroundImageConfig {
   panX: number;
   panY: number;
   fitMode: 'cover' | 'contain';
+  colorOverlay?: BackgroundColorOverlay;
   overlayGradient?: BackgroundOverlayGradient;
   adjustments?: BackgroundImageAdjustments;
 }

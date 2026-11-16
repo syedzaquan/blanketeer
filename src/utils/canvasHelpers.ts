@@ -1,5 +1,6 @@
 import * as fabric from 'fabric';
 import type {
+  BackgroundColorOverlay,
   BackgroundImageConfig,
   BackgroundOverlayGradient,
   BasicShapeKind,
@@ -147,6 +148,25 @@ function parseHexRgb(hex: string): { r: number; g: number; b: number } {
 function toRgba(r: number, g: number, b: number, alpha01: number): string {
   const a = Math.max(0, Math.min(1, alpha01));
   return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${Number(a.toFixed(4))})`;
+}
+
+export function renderBackgroundColorOverlay(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  overlay: BackgroundColorOverlay | undefined
+): void {
+  if (!overlay || !overlay.enabled) return;
+
+  const alpha = Math.max(0, Math.min(1, overlay.opacity / 100));
+  if (alpha <= 0) return;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.globalCompositeOperation = overlay.blendMode || 'source-over';
+  ctx.fillStyle = overlay.color || '#000000';
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
 }
 
 export function renderBackgroundOverlayGradient(

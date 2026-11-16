@@ -45,6 +45,7 @@ import {
   positionBackgroundImage,
   prepareBackgroundImageDataURL,
   readFileAsDataURL,
+  renderBackgroundColorOverlay,
   renderBackgroundOverlayGradient,
   type FabricObjectWithMeta,
 } from '../utils/canvasHelpers';
@@ -970,8 +971,13 @@ export function useFabricCanvas(options?: {
       const currentBg = backgroundRef.current;
       const w = canvas.width || initialPreset.width;
       const h = canvas.height || initialPreset.height;
-      if (currentBg.mode === 'image' && currentBg.image?.overlayGradient) {
-        renderBackgroundOverlayGradient(ctx, w, h, currentBg.image.overlayGradient);
+      if (currentBg.mode === 'image' && currentBg.image) {
+        if (currentBg.image.colorOverlay) {
+          renderBackgroundColorOverlay(ctx, w, h, currentBg.image.colorOverlay);
+        }
+        if (currentBg.image.overlayGradient) {
+          renderBackgroundOverlayGradient(ctx, w, h, currentBg.image.overlayGradient);
+        }
       }
     };
 
