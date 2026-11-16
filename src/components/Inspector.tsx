@@ -677,6 +677,7 @@ export function Inspector({
                       onClick={() => onApplyTextPreset(preset.id)}
                       className={cn(
                         'px-2.5 py-2 lg:py-1.5 rounded-lg lg:rounded-md border text-left transition-colors flex items-center justify-between gap-1.5',
+                        preset.id === 'hero' && 'col-span-2',
                         isActive
                           ? 'bg-neutral-700 border-neutral-500 text-white'
                           : 'bg-neutral-800/80 border-neutral-700 text-neutral-200 hover:bg-neutral-700/70'

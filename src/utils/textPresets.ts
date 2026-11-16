@@ -1,13 +1,22 @@
-export type TextStylePresetId = 'heading' | 'subheading' | 'body' | 'small';
+export type TextStylePresetId =
+  | 'hero'
+  | 'heading'
+  | 'subheading'
+  | 'body'
+  | 'small';
 
 export interface TextStylePreset {
   id: TextStylePresetId;
   label: string;
+  fontFamily?: string;
   fontSize: number;
   fontWeight: number;
   fill: string;
   lineHeight: number;
   charSpacing: number;
+  inkBleed?: boolean;
+  inkBleedBlur?: number;
+  inkBleedThreshold?: number;
   boxWidth: number;
   defaultText: string;
   editorName: string;
@@ -15,13 +24,31 @@ export interface TextStylePreset {
 
 export const TEXT_STYLE_PRESETS: TextStylePreset[] = [
   {
-    id: 'heading',
-    label: 'Heading',
-    fontSize: 128,
-    fontWeight: 600,
+    id: 'hero',
+    label: 'Hero Heading',
+    fontFamily: 'Plantin MT Pro',
+    fontSize: 170,
+    fontWeight: 400,
     fill: '#000000',
     lineHeight: 1.0,
-    charSpacing: 0,
+    charSpacing: -30,
+    inkBleed: true,
+    inkBleedBlur: 0.05,
+    inkBleedThreshold: 10,
+    boxWidth: 1680,
+    defaultText: 'Hero Heading',
+    editorName: 'Hero Heading',
+  },
+  {
+    id: 'heading',
+    label: 'Heading',
+    fontFamily: 'Plantin MT Pro',
+    fontSize: 128,
+    fontWeight: 400,
+    fill: '#000000',
+    lineHeight: 0.9,
+    charSpacing: -10,
+    inkBleed: false,
     boxWidth: 1520,
     defaultText: 'Editorial Heading',
     editorName: 'Heading',
@@ -29,11 +56,13 @@ export const TEXT_STYLE_PRESETS: TextStylePreset[] = [
   {
     id: 'subheading',
     label: 'Subheading',
+    fontFamily: 'Plantin MT Pro',
     fontSize: 96,
     fontWeight: 500,
     fill: '#171717',
     lineHeight: 1.0,
     charSpacing: 0,
+    inkBleed: false,
     boxWidth: 1480,
     defaultText: 'Subheading goes here',
     editorName: 'Subheading',
@@ -41,11 +70,13 @@ export const TEXT_STYLE_PRESETS: TextStylePreset[] = [
   {
     id: 'body',
     label: 'Body',
-    fontSize: 72,
+    fontFamily: 'Plantin MT Pro',
+    fontSize: 90,
     fontWeight: 400,
     fill: '#262626',
     lineHeight: 1.0,
-    charSpacing: 5,
+    charSpacing: 0,
+    inkBleed: false,
     boxWidth: 1480,
     defaultText: 'Write your caption or story details here. Drag side handles to wrap lines.',
     editorName: 'Body Text',
@@ -53,11 +84,13 @@ export const TEXT_STYLE_PRESETS: TextStylePreset[] = [
   {
     id: 'small',
     label: 'Small',
+    fontFamily: 'Plantin MT Pro',
     fontSize: 64,
     fontWeight: 400,
     fill: '#333333',
     lineHeight: 1.0,
     charSpacing: 10,
+    inkBleed: false,
     boxWidth: 1360,
     defaultText: 'Small label or caption',
     editorName: 'Small Text',
@@ -65,10 +98,11 @@ export const TEXT_STYLE_PRESETS: TextStylePreset[] = [
 ];
 
 export const TEXT_STYLE_PRESETS_BY_ID: Record<TextStylePresetId, TextStylePreset> = {
-  heading: TEXT_STYLE_PRESETS[0],
-  subheading: TEXT_STYLE_PRESETS[1],
-  body: TEXT_STYLE_PRESETS[2],
-  small: TEXT_STYLE_PRESETS[3],
+  hero: TEXT_STYLE_PRESETS[0],
+  heading: TEXT_STYLE_PRESETS[1],
+  subheading: TEXT_STYLE_PRESETS[2],
+  body: TEXT_STYLE_PRESETS[3],
+  small: TEXT_STYLE_PRESETS[4],
 };
 
 export function findMatchingTextPreset(

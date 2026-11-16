@@ -1680,7 +1680,7 @@ export function useFabricCanvas(options?: {
 
       const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
       const cfg = TEXT_STYLE_PRESETS_BY_ID[presetType];
-      const targetFamily = fontFamily || 'Plantin MT Pro';
+      const targetFamily = fontFamily || cfg.fontFamily || 'Plantin MT Pro';
       const desiredWeight = fontWeightOverride ?? cfg.fontWeight;
       const targetWeight = isFrauncesFamily(targetFamily)
         ? desiredWeight
@@ -1711,6 +1711,9 @@ export function useFabricCanvas(options?: {
         textAlign: 'center',
         lineHeight: cfg.lineHeight,
         charSpacing: cfg.charSpacing,
+        inkBleed: cfg.inkBleed ?? false,
+        inkBleedBlur: cfg.inkBleedBlur ?? 0.05,
+        inkBleedThreshold: cfg.inkBleedThreshold ?? 10,
         bgStyle: 'none',
         textBgColor: '#ffffff',
         pillRadius: 24,
@@ -1845,17 +1848,21 @@ export function useFabricCanvas(options?: {
       }
 
       const preset = TEXT_STYLE_PRESETS_BY_ID[presetId];
-      const family = active.fontFamily || 'Plantin MT Pro';
+      const family = preset.fontFamily || active.fontFamily || 'Plantin MT Pro';
       const nextWeight = isFrauncesFamily(family)
         ? preset.fontWeight
         : snapToSupportedWeight(preset.fontWeight, family, fontsRef.current);
 
       await updateTextProps({
+        fontFamily: family,
         fontSize: preset.fontSize,
         fontWeight: nextWeight,
         fill: preset.fill,
         lineHeight: preset.lineHeight,
         charSpacing: preset.charSpacing,
+        inkBleed: preset.inkBleed ?? false,
+        inkBleedBlur: preset.inkBleedBlur ?? 0.05,
+        inkBleedThreshold: preset.inkBleedThreshold ?? 10,
         ...(isFrauncesFamily(family)
           ? { fontOpsz: Math.min(144, Math.max(9, Math.round(preset.fontSize))) }
           : {}),
@@ -2284,6 +2291,9 @@ export function useFabricCanvas(options?: {
         textAlign: opts.textAlign ?? 'left',
         lineHeight: cfg.lineHeight,
         charSpacing: cfg.charSpacing,
+        inkBleed: cfg.inkBleed ?? false,
+        inkBleedBlur: cfg.inkBleedBlur ?? 0.05,
+        inkBleedThreshold: cfg.inkBleedThreshold ?? 10,
         bgStyle: 'none',
         textBgColor: '#ffffff',
         pillRadius: 24,

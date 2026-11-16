@@ -86,6 +86,7 @@ export function TextTab({
                 key={preset.id}
                 className={cn(
                   'relative flex items-stretch rounded-lg lg:rounded-md border transition-colors overflow-hidden',
+                  preset.id === 'hero' && 'col-span-2',
                   isActive
                     ? 'bg-neutral-700 border-neutral-500 text-white'
                     : 'bg-neutral-800/75 border-neutral-700/80 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-600'

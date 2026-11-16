@@ -56,34 +56,35 @@ export class TemplateSlotRect extends fabric.Rect {
     const sx = Math.abs(this.scaleX ?? 1) || 1;
     const sy = Math.abs(this.scaleY ?? 1) || 1;
     const invAvg = 1 / Math.sqrt(sx * sy);
-    const badgeRadius = 32 * invAvg;
+    const badgeRadius = 64 * invAvg;
+    const badgeCenterY = -28 * invAvg;
 
     ctx.save();
     ctx.beginPath();
-    ctx.arc(0, -16 * invAvg, badgeRadius, 0, Math.PI * 2);
+    ctx.arc(0, badgeCenterY, badgeRadius, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
     ctx.fill();
-    ctx.lineWidth = 2.5 * invAvg;
+    ctx.lineWidth = 4.5 * invAvg;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
     ctx.stroke();
 
-    const plusArm = 13 * invAvg;
+    const plusArm = 26 * invAvg;
     ctx.beginPath();
-    ctx.moveTo(-plusArm, -16 * invAvg);
-    ctx.lineTo(plusArm, -16 * invAvg);
-    ctx.moveTo(0, -16 * invAvg - plusArm);
-    ctx.lineTo(0, -16 * invAvg + plusArm);
-    ctx.lineWidth = 3 * invAvg;
+    ctx.moveTo(-plusArm, badgeCenterY);
+    ctx.lineTo(plusArm, badgeCenterY);
+    ctx.moveTo(0, badgeCenterY - plusArm);
+    ctx.lineTo(0, badgeCenterY + plusArm);
+    ctx.lineWidth = 6 * invAvg;
     ctx.lineCap = 'round';
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
     ctx.stroke();
 
     const label = this.editorName || `Photo ${this.slotIndex}`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
-    ctx.font = `600 ${Math.round(24 * invAvg)}px Inter, system-ui, sans-serif`;
+    ctx.font = `600 ${Math.round(42 * invAvg)}px Inter, system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, 0, 28 * invAvg);
+    ctx.fillText(label, 0, 52 * invAvg);
     ctx.restore();
   }
 
