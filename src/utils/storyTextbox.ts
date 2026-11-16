@@ -34,6 +34,7 @@ export interface StoryTextboxExtraProps {
   inkBleed?: boolean;
   inkBleedBlur?: number;
   inkBleedThreshold?: number;
+  highlightInkTint?: boolean;
   placeholder?: string;
   locked?: boolean;
 }
@@ -188,6 +189,7 @@ export class StoryTextbox extends fabric.Textbox {
     'inkBleed',
     'inkBleedBlur',
     'inkBleedThreshold',
+    'highlightInkTint',
     'placeholder',
   ];
 
@@ -204,6 +206,7 @@ export class StoryTextbox extends fabric.Textbox {
   declare inkBleed: boolean;
   declare inkBleedBlur: number;
   declare inkBleedThreshold: number;
+  declare highlightInkTint: boolean;
   declare placeholder: string;
   declare locked: boolean;
   private _skipBgInRender = false;
@@ -223,8 +226,11 @@ export class StoryTextbox extends fabric.Textbox {
       inkBleed = false,
       inkBleedBlur = 0.05,
       inkBleedThreshold = 10,
+      highlightInkTint = false,
       placeholder = '',
       locked = false,
+      cursorColor = '#38bdf8',
+      cursorWidth = 10,
       ...textboxOptions
     } = options;
 
@@ -239,6 +245,8 @@ export class StoryTextbox extends fabric.Textbox {
 
     // Seed custom axis values before super() calls initDimensions() during construction.
     super(text, {
+      cursorColor,
+      cursorWidth,
       ...textboxOptions,
       lineHeight: textboxOptions.lineHeight ?? 1.0,
       ...(resolvedWeight !== undefined ? { fontWeight: resolvedWeight } : {}),
@@ -260,6 +268,7 @@ export class StoryTextbox extends fabric.Textbox {
     this.inkBleed = inkBleed;
     this.inkBleedBlur = inkBleedBlur;
     this.inkBleedThreshold = inkBleedThreshold;
+    this.highlightInkTint = highlightInkTint;
     this.placeholder = placeholder;
     this.locked = locked;
   }
@@ -726,6 +735,32 @@ export class StoryTextbox extends fabric.Textbox {
     ctx.drawImage(offCanvas, -this.width / 2 - pad, -this.height / 2 - pad);
   }
 
+  _renderChar(
+    method: 'fillText' | 'strokeText',
+    ctx: CanvasRenderingContext2D,
+    lineIndex: number,
+    charIndex: number,
+    _char: string,
+    left: number,
+    top: number
+  ): void {
+    super._renderChar(method, ctx, lineIndex, charIndex, _char, left, top);
+    if (!this.highlightInkTint || method !== 'fillText') return;
+
+    const decl = this._getStyleDeclaration(lineIndex, charIndex);
+    const highlightColor = decl?.textBackgroundColor;
+    if (typeof highlightColor !== 'string' || !highlightColor) return;
+
+    const fullDecl = this.getCompleteStyleDeclaration(lineIndex, charIndex);
+    ctx.save();
+    ctx.font = this._getFontDeclaration(fullDecl);
+    const drawTop = decl.deltaY ? top + decl.deltaY : top;
+    ctx.globalAlpha = (ctx.globalAlpha ?? 1) * 0.24;
+    ctx.fillStyle = highlightColor;
+    ctx.fillText(_char, left, drawTop);
+    ctx.restore();
+  }
+
   toObject<
     T extends Omit<
       TOptions<TextboxProps> & fabric.TClassProperties<this>,
@@ -747,6 +782,7 @@ export class StoryTextbox extends fabric.Textbox {
       'inkBleed',
       'inkBleedBlur',
       'inkBleedThreshold',
+      'highlightInkTint',
       'placeholder',
       'locked',
       ...propertiesToInclude,

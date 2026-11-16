@@ -30,6 +30,7 @@ export const CUSTOM_SERIALIZED_PROPS = [
   'inkBleed',
   'inkBleedBlur',
   'inkBleedThreshold',
+  'highlightInkTint',
   'placeholder',
   'cutoutShape',
   'cutoutRadius',

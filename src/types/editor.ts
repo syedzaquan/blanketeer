@@ -125,6 +125,7 @@ export interface TextEditingSelectionState {
   underline: boolean;
   fill: string;
   textBackgroundColor: string;
+  highlightInkTint: boolean;
   boxRect: { left: number; top: number; width: number; height: number } | null;
 }
 

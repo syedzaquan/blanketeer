@@ -95,6 +95,7 @@ interface CanvasViewportProps {
       underline: boolean;
       fill: string;
       textBackgroundColor: string;
+      highlightInkTint: boolean;
     }>
   ) => void;
   onSelectAllEditingText?: () => void;

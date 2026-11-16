@@ -258,14 +258,16 @@ function computeControlSizes(cssScale = 0.26): {
   touchCornerSize: number;
   borderScaleFactor: number;
   mtrOffsetY: number;
+  cursorWidth: number;
 } {
   const safeScale = Math.max(0.1, cssScale);
   return {
-    // Keep visual corner dots ~9px, borders ~1.5px, rotation handle ~20px out, and touch hit zones ~44px on screen regardless of CSS zoom.
+    // Keep visual corner dots ~9px, borders ~1.5px, rotation handle ~20px out, cursor ~2.5px, and touch hit zones ~44px on screen regardless of CSS zoom.
     cornerSize: Math.round(Math.min(90, Math.max(9, 9 / safeScale))),
     touchCornerSize: Math.round(Math.min(200, Math.max(44, 44 / safeScale))),
     borderScaleFactor: Math.min(16, Math.max(1.5, 1.5 / safeScale)),
     mtrOffsetY: -Math.round(Math.min(160, Math.max(24, 20 / safeScale))),
+    cursorWidth: Math.round(Math.min(18, Math.max(3, 2.5 / safeScale))),
   };
 }
 
@@ -281,6 +283,7 @@ function applyControlStyling(cssScale = 0.26): {
   touchCornerSize: number;
   borderScaleFactor: number;
   mtrOffsetY: number;
+  cursorWidth: number;
 } {
   const sizes = computeControlSizes(cssScale);
   latestControlSizes = sizes;
@@ -551,6 +554,7 @@ export function useFabricCanvas(options?: {
       underline,
       fill,
       textBackgroundColor,
+      highlightInkTint: Boolean((active as StoryTextbox).highlightInkTint),
       boxRect:
         canvasRect.width > 0
           ? {
@@ -1328,16 +1332,33 @@ export function useFabricCanvas(options?: {
 
     const handleObjectAdded = (e: { target?: fabric.FabricObject }) => {
       if (e.target) {
-        const { cornerSize, touchCornerSize, borderScaleFactor, mtrOffsetY } =
-          latestControlSizes;
+        const {
+          cornerSize,
+          touchCornerSize,
+          borderScaleFactor,
+          mtrOffsetY,
+          cursorWidth,
+        } = latestControlSizes;
         const mtrChanged = applyMtrOffsetToObject(e.target, mtrOffsetY);
+        const textTarget =
+          e.target instanceof StoryTextbox || e.target instanceof fabric.Textbox
+            ? e.target
+            : null;
         if (
           mtrChanged ||
           e.target.cornerSize !== cornerSize ||
           e.target.touchCornerSize !== touchCornerSize ||
-          e.target.borderScaleFactor !== borderScaleFactor
+          e.target.borderScaleFactor !== borderScaleFactor ||
+          (textTarget &&
+            (textTarget.cursorWidth !== cursorWidth ||
+              textTarget.cursorColor !== '#38bdf8'))
         ) {
-          e.target.set({ cornerSize, touchCornerSize, borderScaleFactor });
+          e.target.set({
+            cornerSize,
+            touchCornerSize,
+            borderScaleFactor,
+            ...(textTarget ? { cursorWidth, cursorColor: '#38bdf8' } : {}),
+          });
           e.target.setCoords();
         }
       }
@@ -3586,19 +3607,33 @@ export function useFabricCanvas(options?: {
     if (rect.width <= 0) return;
 
     const cssScale = rect.width / (canvas.width || 2160);
-    const { cornerSize, touchCornerSize, borderScaleFactor, mtrOffsetY } =
-      applyControlStyling(cssScale);
+    const {
+      cornerSize,
+      touchCornerSize,
+      borderScaleFactor,
+      mtrOffsetY,
+      cursorWidth,
+    } = applyControlStyling(cssScale);
 
     let changed = false;
     for (const obj of canvas.getObjects()) {
       const mtrChanged = applyMtrOffsetToObject(obj, mtrOffsetY);
+      const isText =
+        obj instanceof StoryTextbox || obj instanceof fabric.Textbox;
       if (
         mtrChanged ||
         obj.cornerSize !== cornerSize ||
         obj.touchCornerSize !== touchCornerSize ||
-        obj.borderScaleFactor !== borderScaleFactor
+        obj.borderScaleFactor !== borderScaleFactor ||
+        (isText &&
+          (obj.cursorWidth !== cursorWidth || obj.cursorColor !== '#38bdf8'))
       ) {
-        obj.set({ cornerSize, touchCornerSize, borderScaleFactor });
+        obj.set({
+          cornerSize,
+          touchCornerSize,
+          borderScaleFactor,
+          ...(isText ? { cursorWidth, cursorColor: '#38bdf8' } : {}),
+        });
         obj.setCoords();
         changed = true;
       }
@@ -4328,6 +4363,7 @@ export function useFabricCanvas(options?: {
         underline: boolean;
         fill: string;
         textBackgroundColor: string;
+        highlightInkTint: boolean;
       }>
     ) => {
       const canvas = canvasRef.current;
@@ -4355,6 +4391,12 @@ export function useFabricCanvas(options?: {
       }
       if (patch.textBackgroundColor !== undefined) {
         stylePatch.textBackgroundColor = patch.textBackgroundColor;
+      }
+
+      if (patch.highlightInkTint !== undefined) {
+        (active as StoryTextbox).set({
+          highlightInkTint: patch.highlightInkTint,
+        });
       }
 
       const start = active.selectionStart ?? 0;

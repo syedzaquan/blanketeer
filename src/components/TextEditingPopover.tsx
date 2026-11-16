@@ -20,6 +20,7 @@ interface TextEditingPopoverProps {
       underline: boolean;
       fill: string;
       textBackgroundColor: string;
+      highlightInkTint: boolean;
     }>
   ) => void;
   onSelectAll: () => void;
@@ -86,17 +87,17 @@ export function TextEditingPopover({
       {fullText.length > 0 && (
         <div
           data-testid="text-selection-loupe"
-          className="px-3 py-1.5 rounded-xl bg-neutral-900/95 backdrop-blur-md border border-neutral-700/90 shadow-lg text-xs sm:text-[13px] leading-snug max-w-[min(340px,calc(100vw-24px))] truncate pointer-events-none"
+          className="px-3 py-1.5 rounded-xl bg-neutral-900/90 backdrop-blur-md border border-neutral-700/60 shadow-lg text-xs sm:text-[13px] leading-snug max-w-[min(340px,calc(100vw-24px))] truncate pointer-events-none"
         >
           {beforeText && (
             <span className="text-neutral-400 whitespace-pre">{beforeText}</span>
           )}
           {editingState.hasSelection ? (
-            <span className="bg-violet-500/35 text-white border border-violet-400/60 px-1 py-0.5 rounded font-medium whitespace-pre">
+            <span className="bg-sky-400/30 text-white rounded-sm px-0.5 whitespace-pre">
               {selectedText}
             </span>
           ) : (
-            <span className="inline-block w-0.5 h-3.5 bg-violet-400 align-middle mx-0.5 rounded-full" />
+            <span className="inline-block w-0.5 h-3.5 bg-sky-400 align-middle mx-0.5 rounded-full" />
           )}
           {afterText && (
             <span className="text-neutral-400 whitespace-pre">{afterText}</span>
@@ -231,19 +232,40 @@ export function TextEditingPopover({
       {openPalette !== 'none' && (
         <div className="flex items-center gap-2 lg:gap-1.5 px-3 py-2.5 lg:px-2.5 lg:py-2 rounded-2xl lg:rounded-xl bg-[#1c1c1e]/95 backdrop-blur-md border border-neutral-700/90 shadow-xl max-w-[calc(100vw-16px)] flex-wrap justify-center">
           {openPalette === 'highlight' && (
-            <button
-              type="button"
-              onMouseDown={keepFocus}
-              onClick={() => onApplyStyle({ textBackgroundColor: '' })}
-              className={cn(
-                'px-3 h-8 lg:px-2 lg:h-6 rounded-lg lg:rounded-md text-xs lg:text-[11px] font-medium border transition-colors',
-                !editingState.textBackgroundColor
-                  ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
-                  : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:text-white'
-              )}
-            >
-              None
-            </button>
+            <>
+              <button
+                type="button"
+                onMouseDown={keepFocus}
+                onClick={() => onApplyStyle({ textBackgroundColor: '' })}
+                className={cn(
+                  'px-3 h-8 lg:px-2 lg:h-6 rounded-lg lg:rounded-md text-xs lg:text-[11px] font-medium border transition-colors',
+                  !editingState.textBackgroundColor
+                    ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                    : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:text-white'
+                )}
+              >
+                None
+              </button>
+              <button
+                type="button"
+                onMouseDown={keepFocus}
+                onClick={() =>
+                  onApplyStyle({
+                    highlightInkTint: !editingState.highlightInkTint,
+                  })
+                }
+                aria-pressed={editingState.highlightInkTint}
+                title="Tint highlighted text slightly toward highlight color like ink on book paper"
+                className={cn(
+                  'px-3 h-8 lg:px-2 lg:h-6 rounded-lg lg:rounded-md text-xs lg:text-[11px] font-medium border transition-colors',
+                  editingState.highlightInkTint
+                    ? 'bg-amber-400/20 border-amber-300/70 text-amber-200'
+                    : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:text-white'
+                )}
+              >
+                Book Ink
+              </button>
+            </>
           )}
           {PRESET_COLOR_SWATCHES.map((swatch) => {
             const activeColor =
