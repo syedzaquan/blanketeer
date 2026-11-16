@@ -117,6 +117,7 @@ export function App() {
     setBackgroundImageFromFile,
     updateBackgroundImageConfig,
     removeBackgroundImage,
+    updateBackgroundReversePrint,
     bringForward,
     sendBackward,
     bringToFront,
@@ -261,6 +262,7 @@ export function App() {
           onUploadBgImage={(file) => void setBackgroundImageFromFile(file)}
           onUpdateBgImageConfig={(patch) => void updateBackgroundImageConfig(patch)}
           onRemoveBgImage={() => void removeBackgroundImage()}
+          onUpdateReversePrint={updateBackgroundReversePrint}
         />
       );
     }

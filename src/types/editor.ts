@@ -105,11 +105,20 @@ export interface BackgroundImageConfig {
   adjustments?: BackgroundImageAdjustments;
 }
 
+export interface BackgroundReversePrint {
+  enabled: boolean;
+  opacity: number;
+  seed: number;
+  inkBleedBlur?: number;
+  inkBleedThreshold?: number;
+}
+
 export interface BackgroundState {
   mode: BackgroundMode;
   color: string;
   gradient: GradientConfig;
   image: BackgroundImageConfig | null;
+  reversePrint?: BackgroundReversePrint;
 }
 
 export type TextBackgroundStyle = 'none' | 'solid' | 'pill';

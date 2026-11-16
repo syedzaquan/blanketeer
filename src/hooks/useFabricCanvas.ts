@@ -5,6 +5,7 @@ import {
   type AspectRatioKey,
   type BackgroundImageConfig,
   type BackgroundMode,
+  type BackgroundReversePrint,
   type BackgroundState,
   type BasicShapeKind,
   type CanvasPageItem,
@@ -104,6 +105,7 @@ import {
   type ActiveSnapGuides,
   type ResizeSnapTransform,
 } from '../utils/snapGuides';
+import { renderBackgroundReversePrint } from '../utils/reversePrintBackground';
 import { StoryImage, buildImageShadow } from '../utils/storyImage';
 import {
   DEFAULT_IMAGE_FILTER,
@@ -447,6 +449,7 @@ export function useFabricCanvas(options?: {
   const fontsRef = useRef<FontOption[]>(SUPPORTED_FONTS);
   const showSafeAreaRef = useRef<boolean>(false);
   const showBodySafeAreaRef = useRef<boolean>(false);
+  const reversePrintQualityRef = useRef<'preview' | 'full'>('full');
   const activeSnapGuidesRef = useRef<ActiveSnapGuides>({
     x: null,
     xKind: null,
@@ -985,6 +988,15 @@ export function useFabricCanvas(options?: {
         if (currentBg.image.overlayGradient) {
           renderBackgroundOverlayGradient(ctx, w, h, currentBg.image.overlayGradient);
         }
+      }
+      if (currentBg.reversePrint?.enabled) {
+        renderBackgroundReversePrint(
+          ctx,
+          w,
+          h,
+          currentBg.reversePrint,
+          reversePrintQualityRef.current
+        );
       }
     };
 
@@ -1726,6 +1738,33 @@ export function useFabricCanvas(options?: {
     await applyCanvasBackground(next, width, height, 'full');
     commitHistoryNow();
   }, [applyCanvasBackground, cancelPendingBgWork, commitHistoryNow]);
+
+  const updateBackgroundReversePrint = useCallback(
+    (
+      patch: Partial<BackgroundReversePrint>,
+      quality: 'preview' | 'full' = 'full'
+    ) => {
+      const prev: BackgroundReversePrint = backgroundRef.current.reversePrint ?? {
+        enabled: false,
+        opacity: 5,
+        seed: 1,
+        inkBleedBlur: 0.15,
+        inkBleedThreshold: 20,
+      };
+      const next: BackgroundState = {
+        ...backgroundRef.current,
+        reversePrint: { ...prev, ...patch },
+      };
+      reversePrintQualityRef.current = quality;
+      backgroundRef.current = next;
+      setBackgroundState(next);
+      canvasRef.current?.requestRenderAll();
+      if (quality === 'full') {
+        scheduleHistoryCommit(200);
+      }
+    },
+    [scheduleHistoryCommit]
+  );
 
   const addText = useCallback(
     async (
@@ -4985,6 +5024,7 @@ export function useFabricCanvas(options?: {
     setBackgroundImageFromFile,
     updateBackgroundImageConfig,
     removeBackgroundImage,
+    updateBackgroundReversePrint,
     bringForward,
     sendBackward,
     bringToFront,

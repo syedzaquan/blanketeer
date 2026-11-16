@@ -11,6 +11,7 @@ import type {
   BackgroundImageConfig,
   BackgroundMode,
   BackgroundOverlayGradient,
+  BackgroundReversePrint,
   BackgroundState,
   GradientBlendMode,
   GradientConfig,
@@ -37,6 +38,10 @@ interface BackgroundTabProps {
   onUploadBgImage: (file: File) => void;
   onUpdateBgImageConfig: (patch: Partial<BackgroundImageConfig>) => void;
   onRemoveBgImage: () => void;
+  onUpdateReversePrint?: (
+    patch: Partial<BackgroundReversePrint>,
+    quality?: 'preview' | 'full'
+  ) => void;
 }
 
 const GRADIENT_PRESETS: { name: string; gradient: GradientConfig }[] = [
@@ -287,6 +292,7 @@ export function BackgroundTab({
   onUploadBgImage,
   onUpdateBgImageConfig,
   onRemoveBgImage,
+  onUpdateReversePrint,
 }: BackgroundTabProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -1155,6 +1161,138 @@ export function BackgroundTab({
             <p className="text-xs text-neutral-500 text-center py-4 px-2 rounded-md bg-neutral-900/50 border border-neutral-800/80">
               Upload an image to use as the canvas background.
             </p>
+          )}
+        </div>
+      )}
+
+      {onUpdateReversePrint && (
+        <div className="flex flex-col gap-2.5 pt-3 border-t border-neutral-800/80">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-neutral-300">
+              Back-Page Ink Bleed
+            </span>
+            <button
+              id="bg-reverse-print-toggle"
+              type="button"
+              role="switch"
+              aria-checked={Boolean(background.reversePrint?.enabled)}
+              aria-label="Toggle Back-Page Ink Bleed"
+              onClick={() =>
+                onUpdateReversePrint({
+                  enabled: !background.reversePrint?.enabled,
+                })
+              }
+              className={cn(
+                'px-3 py-1.5 lg:px-2 lg:py-0.5 rounded-md lg:rounded text-xs lg:text-[11px] font-medium border transition-colors',
+                background.reversePrint?.enabled
+                  ? 'bg-neutral-100 border-neutral-100 text-neutral-950'
+                  : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+              )}
+            >
+              {background.reversePrint?.enabled ? 'On' : 'Off'}
+            </button>
+          </div>
+
+          {background.reversePrint?.enabled && (
+            <div className="flex flex-col gap-2.5">
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <label
+                    htmlFor="bg-reverse-print-opacity"
+                    className="text-neutral-400"
+                  >
+                    Opacity
+                  </label>
+                  <span className="font-mono text-neutral-200">
+                    {background.reversePrint.opacity}%
+                  </span>
+                </div>
+                <RangeSlider
+                  id="bg-reverse-print-opacity"
+                  aria-label="Back-page ink opacity"
+                  min={1}
+                  max={40}
+                  step={1}
+                  value={background.reversePrint.opacity}
+                  defaultValue={5}
+                  onValueChange={(opacity) =>
+                    onUpdateReversePrint({ opacity })
+                  }
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <label
+                    htmlFor="bg-reverse-print-blur"
+                    className="text-neutral-400"
+                  >
+                    Ink Bleed Blur
+                  </label>
+                  <span className="font-mono text-neutral-200">
+                    {(background.reversePrint.inkBleedBlur ?? 0.15).toFixed(2)}px
+                  </span>
+                </div>
+                <RangeSlider
+                  id="bg-reverse-print-blur"
+                  aria-label="Back-page ink bleed blur"
+                  min={0}
+                  max={5}
+                  step={0.05}
+                  value={background.reversePrint.inkBleedBlur ?? 0.15}
+                  defaultValue={0.15}
+                  onValueChange={(inkBleedBlur) =>
+                    onUpdateReversePrint({ inkBleedBlur }, 'preview')
+                  }
+                  onPointerUp={() => onUpdateReversePrint({}, 'full')}
+                  onTouchEnd={() => onUpdateReversePrint({}, 'full')}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <label
+                    htmlFor="bg-reverse-print-threshold"
+                    className="text-neutral-400"
+                  >
+                    Threshold
+                  </label>
+                  <span className="font-mono text-neutral-200">
+                    {Math.round(background.reversePrint.inkBleedThreshold ?? 20)}%
+                  </span>
+                </div>
+                <RangeSlider
+                  id="bg-reverse-print-threshold"
+                  aria-label="Back-page ink bleed threshold"
+                  min={5}
+                  max={95}
+                  step={1}
+                  value={background.reversePrint.inkBleedThreshold ?? 20}
+                  defaultValue={20}
+                  onValueChange={(inkBleedThreshold) =>
+                    onUpdateReversePrint({ inkBleedThreshold }, 'preview')
+                  }
+                  onPointerUp={() => onUpdateReversePrint({}, 'full')}
+                  onTouchEnd={() => onUpdateReversePrint({}, 'full')}
+                  className="w-full"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateReversePrint({
+                    seed: Math.floor(Math.random() * 100000) + 1,
+                  })
+                }
+                className="w-full flex items-center justify-center gap-1.5 py-2 lg:py-1.5 px-3 rounded-lg lg:rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-medium text-neutral-300 transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
+                <span>Shuffle Text &amp; Ink Bleed</span>
+              </button>
+            </div>
           )}
         </div>
       )}
