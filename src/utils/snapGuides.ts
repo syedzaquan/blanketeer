@@ -27,6 +27,30 @@ export interface ActiveRotationSnap {
   snapped: boolean;
 }
 
+export interface ActiveResizeHud {
+  isResizing: boolean;
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+}
+
+export function buildImageResizeHud(
+  target: fabric.FabricObject,
+  canvasHeight: number
+): ActiveResizeHud {
+  const bounds = target.getBoundingRect();
+  const belowY = bounds.top + bounds.height + 24;
+  const y = belowY + 52 > canvasHeight ? Math.max(16, bounds.top - 68) : belowY;
+  return {
+    isResizing: true,
+    width: Math.max(1, Math.round((target.width || 0) * Math.abs(target.scaleX ?? 1))),
+    height: Math.max(1, Math.round((target.height || 0) * Math.abs(target.scaleY ?? 1))),
+    x: bounds.left + bounds.width / 2,
+    y,
+  };
+}
+
 interface SnapCandidate {
   delta: number;
   guide: number;
@@ -480,7 +504,8 @@ export function renderGuidesOnTopContext(
   canvas: fabric.Canvas,
   guides: ActiveSnapGuides,
   showSafeAreaOverlay: boolean,
-  rotationSnap?: ActiveRotationSnap
+  rotationSnap?: ActiveRotationSnap,
+  resizeHud?: ActiveResizeHud
 ): void {
   const topCtx = canvas.contextTop;
   if (!topCtx) return;
@@ -494,7 +519,8 @@ export function renderGuidesOnTopContext(
   }
 
   const isRotating = Boolean(rotationSnap?.isRotating);
-  if (!guides.isDragging && !showSafeAreaOverlay && !isRotating) {
+  const isResizing = Boolean(resizeHud?.isResizing);
+  if (!guides.isDragging && !showSafeAreaOverlay && !isRotating && !isResizing) {
     return;
   }
 
@@ -606,6 +632,40 @@ export function renderGuidesOnTopContext(
     topCtx.textAlign = 'center';
     topCtx.textBaseline = 'middle';
     topCtx.fillText(label, width / 2, boxY + boxH / 2 + 1);
+  }
+
+  // Live image dimension badge HUD on contextTop when resizing/pinching
+  if (resizeHud?.isResizing) {
+    const rect = canvas.getElement()?.getBoundingClientRect();
+    const cssScale =
+      rect && rect.width > 0 ? rect.width / Math.max(1, width) : 0.25;
+    const invScale = 1 / Math.max(0.1, cssScale);
+
+    const fontSize = Math.round(12 * invScale);
+    const padX = Math.round(11 * invScale);
+    const boxH = Math.round(26 * invScale);
+    const radius = Math.round(9 * invScale);
+    const margin = Math.round(8 * invScale);
+
+    const label = `${resizeHud.width} × ${resizeHud.height}`;
+    topCtx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+    const textW = topCtx.measureText(label).width;
+    const boxW = Math.round(textW + padX * 2);
+    const boxX = Math.max(margin, Math.min(width - boxW - margin, resizeHud.x - boxW / 2));
+    const boxY = Math.max(margin, Math.min(height - boxH - margin, resizeHud.y));
+
+    topCtx.fillStyle = 'rgba(24, 24, 27, 0.92)';
+    topCtx.strokeStyle = 'rgba(161, 161, 170, 0.45)';
+    topCtx.lineWidth = 1.25 * invScale;
+    topCtx.beginPath();
+    topCtx.roundRect(boxX, boxY, boxW, boxH, radius);
+    topCtx.fill();
+    topCtx.stroke();
+
+    topCtx.fillStyle = '#ffffff';
+    topCtx.textAlign = 'center';
+    topCtx.textBaseline = 'middle';
+    topCtx.fillText(label, boxX + boxW / 2, boxY + boxH / 2 + invScale * 0.5);
   }
 
   topCtx.restore();

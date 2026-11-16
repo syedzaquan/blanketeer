@@ -92,11 +92,13 @@ import {
   type SavedCustomFont,
 } from '../utils/projectStorage';
 import {
+  buildImageResizeHud,
   getSafeZoneBounds,
   renderGuidesOnTopContext,
   snapObjectToGuides,
   snapObjectResizeToGuides,
   snapRotationAngle,
+  type ActiveResizeHud,
   type ActiveRotationSnap,
   type ActiveSnapGuides,
   type ResizeSnapTransform,
@@ -450,6 +452,13 @@ export function useFabricCanvas(options?: {
     isRotating: false,
     angle: 0,
     snapped: false,
+  });
+  const activeResizeHudRef = useRef<ActiveResizeHud>({
+    isResizing: false,
+    width: 0,
+    height: 0,
+    x: 0,
+    y: 0,
   });
 
   const historyRef = useRef<HistorySnapshot[]>([]);
@@ -1160,10 +1169,17 @@ export function useFabricCanvas(options?: {
       syncSelectionAndLayers();
     };
 
+    const updateImageResizeHud = (target: fabric.FabricObject) => {
+      if (!(target instanceof fabric.FabricImage)) return;
+      const { height: canvasH } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+      activeResizeHudRef.current = buildImageResizeHud(target, canvasH);
+    };
+
     const clearSnapGuides = () => {
       if (
         activeSnapGuidesRef.current.isDragging ||
-        activeRotationSnapRef.current.isRotating
+        activeRotationSnapRef.current.isRotating ||
+        activeResizeHudRef.current.isResizing
       ) {
         activeSnapGuidesRef.current = {
           x: null,
@@ -1176,6 +1192,13 @@ export function useFabricCanvas(options?: {
           isRotating: false,
           angle: 0,
           snapped: false,
+        };
+        activeResizeHudRef.current = {
+          isResizing: false,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
         };
         canvas.requestRenderAll();
       }
@@ -1236,6 +1259,7 @@ export function useFabricCanvas(options?: {
         'scaling'
       );
       setSelectionBox(buildSelectionBoxSnapshot(target));
+      updateImageResizeHud(target);
       refreshShapeImagePatternTransform(target);
     };
 
@@ -1255,6 +1279,7 @@ export function useFabricCanvas(options?: {
         'resizing'
       );
       setSelectionBox(buildSelectionBoxSnapshot(target));
+      updateImageResizeHud(target);
       refreshShapeImagePatternTransform(target);
     };
 
@@ -1313,7 +1338,8 @@ export function useFabricCanvas(options?: {
         canvas,
         activeSnapGuidesRef.current,
         showSafeAreaRef.current,
-        activeRotationSnapRef.current
+        activeRotationSnapRef.current,
+        activeResizeHudRef.current
       );
     };
 
@@ -3786,6 +3812,11 @@ export function useFabricCanvas(options?: {
       target.setPositionByOrigin(nextCenter, 'center', 'center');
       target.setCoords();
 
+      if (target instanceof fabric.FabricImage) {
+        const { height: canvasH } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
+        activeResizeHudRef.current = buildImageResizeHud(target, canvasH);
+      }
+
       if (Math.hypot(dx, dy) > 4) {
         const { width, height } = ASPECT_RATIO_PRESETS[aspectRatioRef.current];
         activeSnapGuidesRef.current = snapObjectToGuides(
@@ -3816,6 +3847,7 @@ export function useFabricCanvas(options?: {
     }
 
     activeSnapGuidesRef.current = { ...EMPTY_SNAP_GUIDES };
+    activeResizeHudRef.current = { isResizing: false, width: 0, height: 0, x: 0, y: 0 };
     canvas.requestRenderAll();
     syncSelectionAndLayers();
     commitHistoryNow();
@@ -4020,6 +4052,9 @@ export function useFabricCanvas(options?: {
       }
 
       target.setCoords();
+      if (target instanceof fabric.FabricImage) {
+        activeResizeHudRef.current = buildImageResizeHud(target, canvasH);
+      }
       setSelectionBox(buildSelectionBoxSnapshot(target));
       canvas.requestRenderAll();
     },
@@ -4042,6 +4077,7 @@ export function useFabricCanvas(options?: {
 
     activeSnapGuidesRef.current = { ...EMPTY_SNAP_GUIDES };
     activeRotationSnapRef.current = { isRotating: false, angle: 0, snapped: false };
+    activeResizeHudRef.current = { isResizing: false, width: 0, height: 0, x: 0, y: 0 };
     canvas.requestRenderAll();
     syncSelectionAndLayers();
     commitHistoryNow();
