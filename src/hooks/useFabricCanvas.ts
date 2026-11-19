@@ -986,8 +986,15 @@ export function useFabricCanvas(options?: {
     rawCanvas._renderBackground = (ctx: CanvasRenderingContext2D) => {
       origRenderBackground(ctx);
       const currentBg = backgroundRef.current;
-      const w = canvas.width || initialPreset.width;
-      const h = canvas.height || initialPreset.height;
+      const vpt = canvas.viewportTransform;
+      const scaleX = vpt?.[0] || 1;
+      const scaleY = vpt?.[3] || 1;
+      const w = (canvas.width || initialPreset.width) / scaleX;
+      const h = (canvas.height || initialPreset.height) / scaleY;
+      ctx.save();
+      if (vpt) {
+        ctx.transform(...vpt);
+      }
       if (currentBg.mode === 'image' && currentBg.image) {
         if (currentBg.image.colorOverlay) {
           renderBackgroundColorOverlay(ctx, w, h, currentBg.image.colorOverlay);
@@ -1005,6 +1012,7 @@ export function useFabricCanvas(options?: {
           reversePrintQualityRef.current
         );
       }
+      ctx.restore();
     };
 
     // Prioritize the currently selected object during hit-testing so a selected

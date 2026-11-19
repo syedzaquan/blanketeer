@@ -246,6 +246,11 @@ export async function renderPageSnapshotToPayload(
   rawStaticCanvas._renderBackground = (ctx: CanvasRenderingContext2D) => {
     origRenderBackground(ctx);
     const bg = page.background;
+    const vpt = staticCanvas.viewportTransform;
+    ctx.save();
+    if (vpt) {
+      ctx.transform(...vpt);
+    }
     if (bg.mode === 'image' && bg.image) {
       if (bg.image.colorOverlay) {
         renderBackgroundColorOverlay(ctx, preset.width, preset.height, bg.image.colorOverlay);
@@ -257,6 +262,7 @@ export async function renderPageSnapshotToPayload(
     if (bg.reversePrint?.enabled) {
       renderBackgroundReversePrint(ctx, preset.width, preset.height, bg.reversePrint, 'full');
     }
+    ctx.restore();
   };
 
   try {
