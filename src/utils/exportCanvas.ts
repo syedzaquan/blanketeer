@@ -6,7 +6,12 @@ import {
   type ExportScale,
 } from '../types/editor';
 import { applyBackgroundImageAdjustments } from './backgroundFilters';
-import { createLinearGradient } from './canvasHelpers';
+import {
+  createLinearGradient,
+  renderBackgroundColorOverlay,
+  renderBackgroundOverlayGradient,
+} from './canvasHelpers';
+import { renderBackgroundReversePrint } from './reversePrintBackground';
 import { applyStoryImageFilters } from './imageFilters';
 import type { StoryImage } from './storyImage';
 import { StoryTextbox } from './storyTextbox';
@@ -233,6 +238,26 @@ export async function renderPageSnapshotToPayload(
     enableRetinaScaling: false,
     renderOnAddRemove: false,
   });
+
+  const rawStaticCanvas = staticCanvas as unknown as {
+    _renderBackground: (ctx: CanvasRenderingContext2D) => void;
+  };
+  const origRenderBackground = rawStaticCanvas._renderBackground.bind(staticCanvas);
+  rawStaticCanvas._renderBackground = (ctx: CanvasRenderingContext2D) => {
+    origRenderBackground(ctx);
+    const bg = page.background;
+    if (bg.mode === 'image' && bg.image) {
+      if (bg.image.colorOverlay) {
+        renderBackgroundColorOverlay(ctx, preset.width, preset.height, bg.image.colorOverlay);
+      }
+      if (bg.image.overlayGradient) {
+        renderBackgroundOverlayGradient(ctx, preset.width, preset.height, bg.image.overlayGradient);
+      }
+    }
+    if (bg.reversePrint?.enabled) {
+      renderBackgroundReversePrint(ctx, preset.width, preset.height, bg.reversePrint, 'full');
+    }
+  };
 
   try {
     if (page.background.mode === 'color') {

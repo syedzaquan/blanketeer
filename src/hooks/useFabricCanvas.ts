@@ -4234,6 +4234,7 @@ export function useFabricCanvas(options?: {
       const canvas = canvasRef.current;
       if (!canvas) return null;
       cancelPendingBgWork();
+      reversePrintQualityRef.current = 'full';
       const currentBg = backgroundRef.current;
       if (
         currentBg.mode === 'image' &&
