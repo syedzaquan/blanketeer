@@ -178,6 +178,8 @@ export interface SelectedTextProps {
   inkBleedBlur: number;
   inkBleedThreshold: number;
   opacity: number;
+  left: number;
+  top: number;
   angle: number;
   flipX: boolean;
   flipY: boolean;
@@ -231,6 +233,8 @@ export interface SelectedImageProps {
   filter: ImageFilterConfig;
   opacity: number;
   blendMode: ImageBlendMode;
+  left: number;
+  top: number;
   angle: number;
   scaleX: number;
   scaleY: number;
@@ -248,6 +252,8 @@ export interface SelectedTemplateSlotProps {
   height: number;
   cornerPercent: number;
   opacity: number;
+  left: number;
+  top: number;
   angle: number;
   flipX: boolean;
   flipY: boolean;
@@ -279,6 +285,8 @@ export interface SelectedShapeProps {
   strokeWidth: number;
   cornerRadius: number;
   opacity: number;
+  left: number;
+  top: number;
   angle: number;
   flipX: boolean;
   flipY: boolean;
@@ -290,6 +298,8 @@ export interface SelectedOtherProps {
   id: string;
   name: string;
   opacity: number;
+  left: number;
+  top: number;
   angle: number;
   flipX: boolean;
   flipY: boolean;

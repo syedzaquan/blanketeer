@@ -118,6 +118,8 @@ interface InspectorProps {
   onUpdateCommon: (
     patch: Partial<{
       opacity: number;
+      left: number;
+      top: number;
       angle: number;
       flipX: boolean;
       flipY: boolean;
@@ -1656,6 +1658,39 @@ export function Inspector({
           >
             <RotateCcw className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
           </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 lg:gap-1.5">
+          <label className="flex items-center gap-1.5 px-2.5 py-2 lg:px-2 lg:py-1 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 focus-within:border-neutral-500">
+            <span className="text-[11px] font-medium text-neutral-400">X</span>
+            <input
+              type="number"
+              aria-label="Position X"
+              value={selectedObject.left}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                if (Number.isFinite(val)) {
+                  onUpdateCommon({ left: Math.round(val) });
+                }
+              }}
+              className="w-full min-w-0 bg-transparent text-sm lg:text-xs font-mono text-right text-neutral-100 focus:outline-none"
+            />
+          </label>
+          <label className="flex items-center gap-1.5 px-2.5 py-2 lg:px-2 lg:py-1 rounded-lg lg:rounded-md bg-neutral-800/80 border border-neutral-700 focus-within:border-neutral-500">
+            <span className="text-[11px] font-medium text-neutral-400">Y</span>
+            <input
+              type="number"
+              aria-label="Position Y"
+              value={selectedObject.top}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                if (Number.isFinite(val)) {
+                  onUpdateCommon({ top: Math.round(val) });
+                }
+              }}
+              className="w-full min-w-0 bg-transparent text-sm lg:text-xs font-mono text-right text-neutral-100 focus:outline-none"
+            />
+          </label>
         </div>
 
         <div className="grid grid-cols-2 gap-2 lg:gap-1.5">

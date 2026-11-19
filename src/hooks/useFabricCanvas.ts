@@ -95,11 +95,13 @@ import {
 } from '../utils/projectStorage';
 import {
   buildImageResizeHud,
+  buildMoveHud,
   getSafeZoneBounds,
   renderGuidesOnTopContext,
   snapObjectToGuides,
   snapObjectResizeToGuides,
   snapRotationAngle,
+  type ActiveMoveHud,
   type ActiveResizeHud,
   type ActiveRotationSnap,
   type ActiveSnapGuides,
@@ -473,6 +475,13 @@ export function useFabricCanvas(options?: {
     isResizing: false,
     width: 0,
     height: 0,
+    x: 0,
+    y: 0,
+  });
+  const activeMoveHudRef = useRef<ActiveMoveHud>({
+    isMoving: false,
+    left: 0,
+    top: 0,
     x: 0,
     y: 0,
   });
@@ -1219,7 +1228,8 @@ export function useFabricCanvas(options?: {
       if (
         activeSnapGuidesRef.current.isDragging ||
         activeRotationSnapRef.current.isRotating ||
-        activeResizeHudRef.current.isResizing
+        activeResizeHudRef.current.isResizing ||
+        activeMoveHudRef.current.isMoving
       ) {
         activeSnapGuidesRef.current = {
           x: null,
@@ -1237,6 +1247,13 @@ export function useFabricCanvas(options?: {
           isResizing: false,
           width: 0,
           height: 0,
+          x: 0,
+          y: 0,
+        };
+        activeMoveHudRef.current = {
+          isMoving: false,
+          left: 0,
+          top: 0,
           x: 0,
           y: 0,
         };
@@ -1260,6 +1277,7 @@ export function useFabricCanvas(options?: {
         canvas.getObjects(),
         showBodySafeAreaRef.current
       );
+      activeMoveHudRef.current = buildMoveHud(e.target, height);
       setSelectionBox(buildSelectionBoxSnapshot(e.target));
     };
 
@@ -1399,7 +1417,8 @@ export function useFabricCanvas(options?: {
         activeSnapGuidesRef.current,
         showSafeAreaRef.current,
         activeRotationSnapRef.current,
-        activeResizeHudRef.current
+        activeResizeHudRef.current,
+        activeMoveHudRef.current
       );
     };
 
@@ -3363,6 +3382,8 @@ export function useFabricCanvas(options?: {
     (
       patch: Partial<{
         opacity: number;
+        left: number;
+        top: number;
         angle: number;
         flipX: boolean;
         flipY: boolean;

@@ -35,18 +35,51 @@ export interface ActiveResizeHud {
   y: number;
 }
 
-export function buildImageResizeHud(
+export interface ActiveMoveHud {
+  isMoving: boolean;
+  left: number;
+  top: number;
+  x: number;
+  y: number;
+}
+
+function getHudAnchorBelowOrAbove(
   target: fabric.FabricObject,
   canvasHeight: number
-): ActiveResizeHud {
+): { x: number; y: number } {
   const bounds = target.getBoundingRect();
   const belowY = bounds.top + bounds.height + 24;
   const y = belowY + 52 > canvasHeight ? Math.max(16, bounds.top - 68) : belowY;
   return {
+    x: bounds.left + bounds.width / 2,
+    y,
+  };
+}
+
+export function buildImageResizeHud(
+  target: fabric.FabricObject,
+  canvasHeight: number
+): ActiveResizeHud {
+  const { x, y } = getHudAnchorBelowOrAbove(target, canvasHeight);
+  return {
     isResizing: true,
     width: Math.max(1, Math.round((target.width || 0) * Math.abs(target.scaleX ?? 1))),
     height: Math.max(1, Math.round((target.height || 0) * Math.abs(target.scaleY ?? 1))),
-    x: bounds.left + bounds.width / 2,
+    x,
+    y,
+  };
+}
+
+export function buildMoveHud(
+  target: fabric.FabricObject,
+  canvasHeight: number
+): ActiveMoveHud {
+  const { x, y } = getHudAnchorBelowOrAbove(target, canvasHeight);
+  return {
+    isMoving: true,
+    left: Math.round(target.left ?? 0),
+    top: Math.round(target.top ?? 0),
+    x,
     y,
   };
 }
@@ -540,7 +573,8 @@ export function renderGuidesOnTopContext(
   guides: ActiveSnapGuides,
   showSafeAreaOverlay: boolean,
   rotationSnap?: ActiveRotationSnap,
-  resizeHud?: ActiveResizeHud
+  resizeHud?: ActiveResizeHud,
+  moveHud?: ActiveMoveHud
 ): void {
   const topCtx = canvas.contextTop;
   if (!topCtx) return;
@@ -555,11 +589,13 @@ export function renderGuidesOnTopContext(
 
   const isRotating = Boolean(rotationSnap?.isRotating);
   const isResizing = Boolean(resizeHud?.isResizing);
+  const isMoving = Boolean(moveHud?.isMoving);
   if (
     !guides.isDragging &&
     !showSafeAreaOverlay &&
     !isRotating &&
-    !isResizing
+    !isResizing &&
+    !isMoving
   ) {
     return;
   }
@@ -674,8 +710,8 @@ export function renderGuidesOnTopContext(
     topCtx.fillText(label, width / 2, boxY + boxH / 2 + 1);
   }
 
-  // Live image dimension badge HUD on contextTop when resizing/pinching
-  if (resizeHud?.isResizing) {
+  // Live image dimension / element position badge HUD on contextTop
+  const drawHudPill = (label: string, anchorX: number, anchorY: number) => {
     const rect = canvas.getElement()?.getBoundingClientRect();
     const cssScale =
       rect && rect.width > 0 ? rect.width / Math.max(1, width) : 0.25;
@@ -687,12 +723,11 @@ export function renderGuidesOnTopContext(
     const radius = Math.round(9 * invScale);
     const margin = Math.round(8 * invScale);
 
-    const label = `${resizeHud.width} × ${resizeHud.height}`;
     topCtx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
     const textW = topCtx.measureText(label).width;
     const boxW = Math.round(textW + padX * 2);
-    const boxX = Math.max(margin, Math.min(width - boxW - margin, resizeHud.x - boxW / 2));
-    const boxY = Math.max(margin, Math.min(height - boxH - margin, resizeHud.y));
+    const boxX = Math.max(margin, Math.min(width - boxW - margin, anchorX - boxW / 2));
+    const boxY = Math.max(margin, Math.min(height - boxH - margin, anchorY));
 
     topCtx.fillStyle = 'rgba(24, 24, 27, 0.92)';
     topCtx.strokeStyle = 'rgba(161, 161, 170, 0.45)';
@@ -706,6 +741,12 @@ export function renderGuidesOnTopContext(
     topCtx.textAlign = 'center';
     topCtx.textBaseline = 'middle';
     topCtx.fillText(label, boxX + boxW / 2, boxY + boxH / 2 + invScale * 0.5);
+  };
+
+  if (resizeHud?.isResizing) {
+    drawHudPill(`${resizeHud.width} × ${resizeHud.height}`, resizeHud.x, resizeHud.y);
+  } else if (moveHud?.isMoving) {
+    drawHudPill(`X ${moveHud.left} · Y ${moveHud.top}`, moveHud.x, moveHud.y);
   }
 
   topCtx.restore();
