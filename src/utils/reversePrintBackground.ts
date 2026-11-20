@@ -272,7 +272,7 @@ export function renderBackgroundReversePrint(
   const alpha = Math.max(0, Math.min(1, reversePrint.opacity / 100));
   if (alpha <= 0) return;
 
-  const scale = quality === 'preview' ? 0.25 : 0.5;
+  const scale = quality === 'preview' ? 0.25 : 1;
   const seed = reversePrint.seed || 1;
   const inkBleedBlur = reversePrint.inkBleedBlur ?? 0.15;
   const inkBleedThreshold = reversePrint.inkBleedThreshold ?? 20;
